@@ -114,9 +114,10 @@ bool process_single_file(const art2image::CLI::Options& options, const std::stri
                 if (!palette_path.empty()) {
                     std::cout << "Warning: Cannot open palette file '" << palette_path << "'" << std::endl;
                 }
-                std::cout << "Using Monolith's Blood(TM) hardcoded palette" << std::endl;
+                std::cout << "Using default Duke Nukem 3D palette" << std::endl;
             }
-            palette.load_blood_default();
+            // Use Duke Nukem 3D as default palette instead of Blood
+            palette.load_duke3d_default();
         }
         
         // Create extractor with modified output directory for directory processing
