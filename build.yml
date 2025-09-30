@@ -1,61 +1,55 @@
-name: Build art2image
+name: Build and Release art2image
 
 on:
   push:
-    paths:
-      - 'vendor/rebuild/src/arttools_optimized/**'
+    branches: [ main ]
   pull_request:
-    paths:
-      - 'vendor/rebuild/src/arttools_optimized/**'
+    branches: [ main ]
   release:
     types: [published]
 
 jobs:
   build:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        submodules: recursive
+        fetch-depth: 0
     
-    - name: Change to art2image directory
-      run: cd vendor/rebuild/src/arttools_optimized
-    
-    - name: Set up build environment
+    - name: Install build dependencies
       run: |
-        if [ "$RUNNER_OS" == "Windows" ]; then
-          # Windows setup
-          choco install make -y
-        elif [ "$RUNNER_OS" == "Linux" ]; then
-          # Linux setup
-          sudo apt-get update
-          sudo apt-get install -y build-essential
-        elif [ "$RUNNER_OS" == "macOS" ]; then
-          # macOS setup - make should be available by default
-          brew install make || true
-        fi
+        sudo apt-get update
+        sudo apt-get install -y build-essential g++-mingw-w64-x86-64
     
-    - name: Build art2image
+    - name: Build Linux binaries
       run: |
-        cd vendor/rebuild/src/arttools_optimized
-        make release
+        make clean
+        make linux
+        echo "Linux binaries built successfully"
+    
+    - name: Build Windows binaries (cross-compile)
+      run: |
+        make windows
+        echo "Windows binaries built successfully"
+    
+    - name: Verify binary architectures
+      run: |
+        make verify
+        echo "Binary architectures verified"
     
     - name: Run tests
       run: |
-        cd vendor/rebuild/src/arttools_optimized
-        make test-all
+        make test
+        echo "Tests completed successfully"
     
-    - name: Upload artifacts
+    - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: art2image-${{ matrix.os }}
-        path: vendor/rebuild/src/arttools_optimized/bin/*
+        name: art2image-binaries
+        path: bin/
         retention-days: 7
 
   release:
@@ -66,49 +60,51 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        submodules: recursive
     
-    - name: Download all artifacts
+    - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
-        path: artifacts
+        name: art2image-binaries
+        path: artifacts/
     
-    - name: Create release assets
+    - name: Create release package
       run: |
         mkdir -p release
-        # Copy artifacts and organize by platform
-        for artifact in artifacts/*; do
-          platform=$(basename $artifact)
-          mkdir -p release/$platform
-          cp $artifact/* release/$platform/ 2>/dev/null || true
-        done
+        cp -r artifacts/* release/
         
-        # Create README for release
+        # Create simple README for release
         cat > release/README.md << 'EOF'
         # art2image Release
         
         Multi-platform ART to image converter (TGA/PNG) for Duke Nukem 3D assets.
         
-        ## Platforms Available
-        - Linux: art2image (ELF binary)
-        - Windows: art2image.exe (PE binary)  
-        - macOS: art2image (Mach-O binary)
+        ## Binaries Included
+        - Linux: art2image, art_diagnostic (ELF binaries)
+        - Windows: art2image.exe, art_diagnostic.exe (PE binaries)
         
         ## Usage
         ```bash
-        art2image -f png -p PALETTE.DAT TILES000.ART
+        # Linux
+        ./art2image -f png -p PALETTE.DAT TILES000.ART
+        
+        # Windows
+        art2image.exe -f png -p PALETTE.DAT TILES000.ART
         ```
         
         See project README for full documentation.
         EOF
+        
+        # Create archive
+        tar -czf art2image-${{ github.event.release.tag_name }}.tar.gz release/
+        
+        echo "Release package created: art2image-${{ github.event.release.tag_name }}.tar.gz"
     
-    - name: Upload release assets
+    - name: Upload release asset
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: release/
-        asset_name: art2image-${{ github.event.release.tag_name }}.zip
-        asset_content_type: application/zip
+        asset_path: art2image-${{ github.event.release.tag_name }}.tar.gz
+        asset_name: art2image-${{ github.event.release.tag_name }}.tar.gz
+        asset_content_type: application/gzip
