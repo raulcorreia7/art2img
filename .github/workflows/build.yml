@@ -1,0 +1,110 @@
+name: Build and Release art2image
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential g++-mingw-w64-x86-64
+    
+    - name: Build Linux binaries
+      run: |
+        make clean
+        make linux
+        echo "Linux binaries built successfully"
+    
+    - name: Build Windows binaries (cross-compile)
+      run: |
+        make windows
+        echo "Windows binaries built successfully"
+    
+    - name: Verify binary architectures
+      run: |
+        make verify
+        echo "Binary architectures verified"
+    
+    - name: Run tests
+      run: |
+        make test
+        echo "Tests completed successfully"
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: art2image-binaries
+        path: bin/
+        retention-days: 7
+
+  release:
+    if: github.event_name == 'release'
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: art2image-binaries
+        path: artifacts/
+    
+    - name: Create release package
+      run: |
+        mkdir -p release
+        cp -r artifacts/* release/
+        
+        # Create simple README for release
+        cat > release/README.md << 'EOF'
+        # art2image Release
+        
+        Multi-platform ART to image converter (TGA/PNG) for Duke Nukem 3D assets.
+        
+        ## Binaries Included
+        - Linux: art2image, art_diagnostic (ELF binaries)
+        - Windows: art2image.exe, art_diagnostic.exe (PE binaries)
+        
+        ## Usage
+        ```bash
+        # Linux
+        ./art2image -f png -p PALETTE.DAT TILES000.ART
+        
+        # Windows
+        art2image.exe -f png -p PALETTE.DAT TILES000.ART
+        ```
+        
+        See project README for full documentation.
+        EOF
+        
+        # Create archive
+        tar -czf art2image-${{ github.event.release.tag_name }}.tar.gz release/
+        
+        echo "Release package created: art2image-${{ github.event.release.tag_name }}.tar.gz"
+    
+    - name: Upload release asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: art2image-${{ github.event.release.tag_name }}.tar.gz
+        asset_name: art2image-${{ github.event.release.tag_name }}.tar.gz
+        asset_content_type: application/gzip
