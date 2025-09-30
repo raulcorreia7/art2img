@@ -27,6 +27,7 @@ docker run --rm -v $(pwd)/input:/input -v $(pwd)/output:/output art2image /input
 - **Includes**: Group standard library, then project headers
 - **Error Handling**: Use exceptions for fatal errors, return bool for recoverable errors
 - **Memory**: Prefer RAII, avoid raw pointers, use std::vector for dynamic arrays
+- **Commits**: Use conventional commits, and commit things by feature/group/taxonomy when you finish your plan/task.
 
 ## Project Structure
 - `src/` - Implementation files (.cpp)
