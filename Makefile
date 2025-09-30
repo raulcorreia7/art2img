@@ -24,6 +24,10 @@ TESTDIR = tests
 MAIN_SOURCES = src/art_file.cpp src/art2image.cpp src/cli.cpp src/extractor.cpp src/palette.cpp src/png_writer.cpp src/tga_writer.cpp src/threading.cpp
 DIAG_SOURCES = src/diagnostic.cpp
 
+# Ensure test script is executable
+$(TESTDIR)/test_functionality.sh:
+	@chmod +x $(TESTDIR)/test_functionality.sh
+
 # Default target
 all: linux
 
@@ -68,10 +72,13 @@ clean:
 	@echo "Clean complete"
 
 # Test
-test: linux
+test: linux $(TESTDIR)/test_functionality.sh
 	@echo "Running functionality tests..."
-	@mkdir -p $(TESTDIR)/output
-	./$(BINDIR)/art2image -o $(TESTDIR)/output -p $(TESTDIR)/assets/PALETTE.DAT $(TESTDIR)/assets/TILES000.ART
+	./$(BINDIR)/art2image -o $(TESTDIR)/output/tga -f tga -p $(TESTDIR)/assets/PALETTE.DAT $(TESTDIR)/assets/TILES000.ART
+	./$(BINDIR)/art2image -o $(TESTDIR)/output/png -f png -p $(TESTDIR)/assets/PALETTE.DAT $(TESTDIR)/assets/TILES000.ART
+	./$(BINDIR)/art2image -o $(TESTDIR)/output/with_transparency -f png -p $(TESTDIR)/assets/PALETTE.DAT $(TESTDIR)/assets/TILES000.ART
+	./$(BINDIR)/art2image -o $(TESTDIR)/output/no_transparency -f png -p $(TESTDIR)/assets/PALETTE.DAT -N $(TESTDIR)/assets/TILES000.ART
+	@./$(TESTDIR)/test_functionality.sh
 	@echo "Tests completed successfully"
 
 # Verify binary architectures

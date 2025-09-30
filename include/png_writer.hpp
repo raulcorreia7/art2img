@@ -13,6 +13,7 @@ public:
         bool enable_alpha = true;           // Enable alpha channel support
         bool premultiply_alpha = true;      // Apply premultiplication for upscaling
         bool matte_hygiene = false;         // Apply alpha matte hygiene (erode + blur)
+        bool enable_magenta_transparency = true; // Enable magenta transparency processing
         
         Options() {}
     };
