@@ -1,0 +1,60 @@
+name: Build art2image
+
+on:
+  push:
+    paths:
+      - 'vendor/rebuild/src/arttools_optimized/**'
+  pull_request:
+    paths:
+      - 'vendor/rebuild/src/arttools_optimized/**'
+  release:
+    types: [published]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Change to art2image directory
+      working-directory: vendor/rebuild/src/arttools_optimized
+      run: pwd
+    
+    - name: Set up build environment
+      working-directory: vendor/rebuild/src/arttools_optimized
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          echo "Windows environment setup"
+        elif [ "$RUNNER_OS" == "Linux" ]; then
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          echo "macOS environment setup"
+        fi
+    
+    - name: Build art2image
+      working-directory: vendor/rebuild/src/arttools_optimized
+      run: make release
+    
+    - name: Setup Duke3D assets
+      working-directory: vendor/rebuild/src/arttools_optimized
+      run: make setup
+    
+    - name: Run tests
+      working-directory: vendor/rebuild/src/arttools_optimized
+      run: make test-all
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: art2image-${{ matrix.os }}
+        path: vendor/rebuild/src/arttools_optimized/bin/*
+        retention-days: 7

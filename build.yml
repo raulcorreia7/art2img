@@ -1,0 +1,114 @@
+name: Build art2image
+
+on:
+  push:
+    paths:
+      - 'vendor/rebuild/src/arttools_optimized/**'
+  pull_request:
+    paths:
+      - 'vendor/rebuild/src/arttools_optimized/**'
+  release:
+    types: [published]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Change to art2image directory
+      run: cd vendor/rebuild/src/arttools_optimized
+    
+    - name: Set up build environment
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          # Windows setup
+          choco install make -y
+        elif [ "$RUNNER_OS" == "Linux" ]; then
+          # Linux setup
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          # macOS setup - make should be available by default
+          brew install make || true
+        fi
+    
+    - name: Build art2image
+      run: |
+        cd vendor/rebuild/src/arttools_optimized
+        make release
+    
+    - name: Run tests
+      run: |
+        cd vendor/rebuild/src/arttools_optimized
+        make test-all
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: art2image-${{ matrix.os }}
+        path: vendor/rebuild/src/arttools_optimized/bin/*
+        retention-days: 7
+
+  release:
+    if: github.event_name == 'release'
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    
+    - name: Create release assets
+      run: |
+        mkdir -p release
+        # Copy artifacts and organize by platform
+        for artifact in artifacts/*; do
+          platform=$(basename $artifact)
+          mkdir -p release/$platform
+          cp $artifact/* release/$platform/ 2>/dev/null || true
+        done
+        
+        # Create README for release
+        cat > release/README.md << 'EOF'
+        # art2image Release
+        
+        Multi-platform ART to image converter (TGA/PNG) for Duke Nukem 3D assets.
+        
+        ## Platforms Available
+        - Linux: art2image (ELF binary)
+        - Windows: art2image.exe (PE binary)  
+        - macOS: art2image (Mach-O binary)
+        
+        ## Usage
+        ```bash
+        art2image -f png -p PALETTE.DAT TILES000.ART
+        ```
+        
+        See project README for full documentation.
+        EOF
+    
+    - name: Upload release assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: release/
+        asset_name: art2image-${{ github.event.release.tag_name }}.zip
+        asset_content_type: application/zip
