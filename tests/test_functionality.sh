@@ -22,7 +22,7 @@ VERBOSE=${VERBOSE:-true}
 rm -rf tests/output/tga tests/output/png tests/output/with_transparency tests/output/no_transparency tests/output/single_tile tests/output/directory_mode 2>/dev/null || true
 
 # Create organized output directories
-mkdir -p tests/output/tga tests/output/png tests/output/with_transparency tests/output/no_transparency tests/output/single_tile tests/output/directory_mode
+mkdir -p tests/output/tga tests/output/png tests/output/with_transparency tests/output/no_transparency tests/output/single_tile tests/output/directory_mode tests/output/merge_anim
 
 # Test 1: TGA format
 echo "Test 1: TGA format"
@@ -84,6 +84,16 @@ else
     exit 1
 fi
 
+# Test 7: Directory processing mode with merge animation flag
+echo "Test 7: Directory processing mode with merge animation flag"
+bin/art2image -o tests/output/merge_anim -p "$PALETTE_PATH" -t "$THREADS" -m "$ART_FILES_DIR"
+if [ $? -eq 0 ]; then
+    echo "[OK] Directory processing mode with merge animation flag test passed"
+else
+    echo "[FAIL] Directory processing mode with merge animation flag test failed"
+    exit 1
+fi
+
 # Validate outputs
 echo ""
 echo "Output validation:"
@@ -95,6 +105,7 @@ with_transparency_count=$(ls tests/output/with_transparency/*.png 2>/dev/null | 
 no_transparency_count=$(ls tests/output/no_transparency/*.png 2>/dev/null | wc -l)
 single_tile_count=$(ls tests/output/single_tile/*.png 2>/dev/null | wc -l)
 directory_mode_count=$(ls tests/output/directory_mode/*/*.png 2>/dev/null | wc -l)
+merge_anim_count=$(ls tests/output/merge_anim/*/*.png 2>/dev/null | wc -l)
 
 echo "TGA files: $tga_count"
 echo "PNG files: $png_count"
@@ -102,6 +113,7 @@ echo "PNG with transparency files: $with_transparency_count"
 echo "PNG without transparency files: $no_transparency_count"
 echo "Single tile processing files: $single_tile_count"
 echo "Directory mode files: $directory_mode_count"
+echo "Merge animation mode files: $merge_anim_count"
 
 # Verify all formats produced the same number of files for single ART file processing
 if [ "$tga_count" -eq "$png_count" ] && [ "$png_count" -gt 0 ]; then
@@ -148,6 +160,31 @@ if [ -f "tests/output/tga/animdata.ini" ] && [ -f "tests/output/png/animdata.ini
     echo "[OK] Animation data files created"
 else
     echo "[FAIL] Missing animation data files"
+    exit 1
+fi
+
+# Check for merged animation data
+if [ -f "tests/output/merge_anim/animdata.ini" ]; then
+    echo "[OK] Merged animation data file created"
+    # Check if the merged file contains data from multiple ART files
+    merged_lines=$(wc -l < "tests/output/merge_anim/animdata.ini")
+    if [ "$merged_lines" -gt 10 ]; then
+        echo "[OK] Merged animation data file contains sufficient data"
+    else
+        echo "[WARNING] Merged animation data file may be too small"
+    fi
+else
+    echo "[FAIL] Missing merged animation data file"
+    exit 1
+fi
+
+# Test 8: Palette functionality tests
+echo "Test 8: Palette functionality tests"
+bash tests/test_palette_functionality.sh
+if [ $? -eq 0 ]; then
+    echo "[OK] Palette functionality tests passed"
+else
+    echo "[FAIL] Palette functionality tests failed"
     exit 1
 fi
 
