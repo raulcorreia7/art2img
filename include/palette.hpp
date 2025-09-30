@@ -19,6 +19,7 @@ public:
     Palette& operator=(Palette&&) = default;
     
     bool load_from_file(const std::string& filename);
+    void load_duke3d_default();
     void load_blood_default();
     
     // Convert palette to TGA format (RGB -> BGR and scale)
@@ -34,8 +35,6 @@ public:
     uint8_t get_blue(size_t index) const;
     
 private:
-    void initialize_blood_palette();
-    
     std::vector<uint8_t> data_;
 };
 
