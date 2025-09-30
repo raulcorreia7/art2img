@@ -69,6 +69,7 @@ $(BINDIR)/art_diagnostic.exe: $(DIAG_SOURCES)
 clean:
 	@echo "Cleaning build artifacts..."
 	rm -rf $(BINDIR)
+	rm -rf $(TESTDIR)/output/*
 	@echo "Clean complete"
 
 # Test
