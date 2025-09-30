@@ -19,10 +19,10 @@ GENERATE_ANIMATION=${GENERATE_ANIMATION:-true}
 VERBOSE=${VERBOSE:-true}
 
 # Clean up previous test outputs
-rm -rf tests/output/tga tests/output/png tests/output/with_transparency tests/output/no_transparency 2>/dev/null || true
+rm -rf tests/output/tga tests/output/png tests/output/with_transparency tests/output/no_transparency tests/output/single_tile tests/output/directory_mode 2>/dev/null || true
 
 # Create organized output directories
-mkdir -p tests/output/tga tests/output/png tests/output/with_transparency tests/output/no_transparency
+mkdir -p tests/output/tga tests/output/png tests/output/with_transparency tests/output/no_transparency tests/output/single_tile tests/output/directory_mode
 
 # Test 1: TGA format
 echo "Test 1: TGA format"
@@ -64,6 +64,26 @@ else
     exit 1
 fi
 
+# Test 5: Single tile processing
+echo "Test 5: Single tile processing"
+bin/art2image -o tests/output/single_tile -f png -p "$PALETTE_PATH" -t "$THREADS" "$ART_FILES_DIR/TILES000.ART"
+if [ $? -eq 0 ]; then
+    echo "[OK] Single tile processing test passed"
+else
+    echo "[FAIL] Single tile processing test failed"
+    exit 1
+fi
+
+# Test 6: Directory processing mode
+echo "Test 6: Directory processing mode"
+bin/art2image -o tests/output/directory_mode -p "$PALETTE_PATH" -t "$THREADS" "$ART_FILES_DIR"
+if [ $? -eq 0 ]; then
+    echo "[OK] Directory processing mode test passed"
+else
+    echo "[FAIL] Directory processing mode test failed"
+    exit 1
+fi
+
 # Validate outputs
 echo ""
 echo "Output validation:"
@@ -73,17 +93,21 @@ tga_count=$(ls tests/output/tga/*.tga 2>/dev/null | wc -l)
 png_count=$(ls tests/output/png/*.png 2>/dev/null | wc -l)
 with_transparency_count=$(ls tests/output/with_transparency/*.png 2>/dev/null | wc -l)
 no_transparency_count=$(ls tests/output/no_transparency/*.png 2>/dev/null | wc -l)
+single_tile_count=$(ls tests/output/single_tile/*.png 2>/dev/null | wc -l)
+directory_mode_count=$(ls tests/output/directory_mode/*/*.png 2>/dev/null | wc -l)
 
 echo "TGA files: $tga_count"
 echo "PNG files: $png_count"
 echo "PNG with transparency files: $with_transparency_count"
 echo "PNG without transparency files: $no_transparency_count"
+echo "Single tile processing files: $single_tile_count"
+echo "Directory mode files: $directory_mode_count"
 
-# Verify all formats produced the same number of files
+# Verify all formats produced the same number of files for single ART file processing
 if [ "$tga_count" -eq "$png_count" ] && [ "$png_count" -gt 0 ]; then
-    echo "[OK] File counts match"
+    echo "[OK] File counts match for single ART file processing"
 else
-    echo "[FAIL] File count mismatch"
+    echo "[FAIL] File count mismatch for single ART file processing"
     exit 1
 fi
 
@@ -103,18 +127,7 @@ else
     echo "[WARNING] Could not find test tiles to verify transparency processing"
 fi
 
-# Check for animation data
-if [ -f "tests/output/tga/animdata.ini" ] && [ -f "tests/output/png/animdata.ini" ]; then
-    echo "[OK] Animation data files created"
-else
-    echo "[FAIL] Missing animation data files"
-    exit 1
-fi
-
 # Verify that both with_transparency and no_transparency directories have the same number of files
-with_transparency_count=$(ls tests/output/with_transparency/*.png 2>/dev/null | wc -l)
-no_transparency_count=$(ls tests/output/no_transparency/*.png 2>/dev/null | wc -l)
-
 if [ "$with_transparency_count" -eq "$no_transparency_count" ] && [ "$with_transparency_count" -gt 0 ]; then
     echo "[OK] Both with_transparency and no_transparency directories have the same number of files"
 else
@@ -127,6 +140,14 @@ if ./bin/art2image --help | grep -q "fix-transparency"; then
     echo "[OK] CLI help text includes fix-transparency options"
 else
     echo "[FAIL] CLI help text does not include fix-transparency options"
+    exit 1
+fi
+
+# Check for animation data
+if [ -f "tests/output/tga/animdata.ini" ] && [ -f "tests/output/png/animdata.ini" ]; then
+    echo "[OK] Animation data files created"
+else
+    echo "[FAIL] Missing animation data files"
     exit 1
 fi
 
