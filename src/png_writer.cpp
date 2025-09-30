@@ -16,6 +16,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cstdint>
+#include <cstring>
 
 namespace art2image
 {
@@ -51,6 +52,51 @@ namespace art2image
         if (result == 0)
         {
             std::cerr << "Error: Cannot create PNG file '" << filename << "'" << std::endl;
+            return false;
+        }
+
+        return true;
+    }
+
+    bool PngWriter::write_png_to_memory(std::vector<uint8_t>& output,
+                                       const Palette& palette,
+                                       const ArtFile::Tile& tile,
+                                       const std::vector<uint8_t>& pixel_data,
+                                       const Options& options)
+    {
+        output.clear();
+        
+        if (tile.is_empty())
+        {
+            return true; // Skip empty tiles
+        }
+
+        if (pixel_data.size() != tile.size())
+        {
+            std::cerr << "Error: Pixel data size mismatch for tile" << std::endl;
+            return false;
+        }
+
+        // Convert indexed color to RGBA
+        std::vector<uint8_t> rgba_data = convert_to_rgba(palette, tile, pixel_data, options);
+
+        // Write PNG to memory using stb_image_write
+        int result = stbi_write_png_to_func(
+            [](void* context, void* data, int size) {
+                std::vector<uint8_t>* output = static_cast<std::vector<uint8_t>*>(context);
+                uint8_t* byte_data = static_cast<uint8_t*>(data);
+                output->assign(byte_data, byte_data + size);
+            },
+            &output,
+            tile.width,
+            tile.height,
+            4, // RGBA
+            rgba_data.data(),
+            tile.width * 4); // stride = width * 4 bytes per pixel
+
+        if (result == 0)
+        {
+            std::cerr << "Error: Cannot create PNG in memory" << std::endl;
             return false;
         }
 

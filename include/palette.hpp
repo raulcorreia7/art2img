@@ -18,9 +18,13 @@ public:
     Palette(Palette&&) = default;
     Palette& operator=(Palette&&) = default;
     
+    // File-based operations
     bool load_from_file(const std::string& filename);
     void load_duke3d_default();
     void load_blood_default();
+    
+    // Memory-based operations
+    bool load_from_memory(const uint8_t* data, size_t size);
     
     // Convert palette to TGA format (RGB -> BGR and scale)
     void convert_to_tga_format();

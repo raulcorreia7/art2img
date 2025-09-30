@@ -48,27 +48,38 @@ public:
     ArtFile(ArtFile&&) = default;
     ArtFile& operator=(ArtFile&&) = default;
     
+    // File-based operations
     bool open(const std::string& filename);
     void close();
     
     bool read_header();
+    bool read_tile_metadata();
     bool read_tile_data(uint32_t index, std::vector<uint8_t>& buffer);
+    
+    // Memory-based operations
+    bool load_from_memory(const uint8_t* data, size_t size);
+    bool read_tile_data_from_memory(uint32_t index, std::vector<uint8_t>& buffer) const;
     
     // Accessors
     const Header& header() const { return header_; }
     const std::vector<Tile>& tiles() const { return tiles_; }
-    bool is_open() const { return file_.is_open(); }
+    bool is_open() const { return file_.is_open() || !data_.empty(); }
     const std::string& filename() const { return filename_; }
     
 private:
-    bool read_tile_metadata();
+    bool read_header_from_memory();
+    bool read_tile_metadata_from_memory();
     bool calculate_offsets();
     
     uint16_t read_little_endian_uint16(std::ifstream& file);
     uint32_t read_little_endian_uint32(std::ifstream& file);
     
+    uint16_t read_little_endian_uint16_from_memory(size_t& offset) const;
+    uint32_t read_little_endian_uint32_from_memory(size_t& offset) const;
+    
     std::string filename_;
     std::ifstream file_;
+    std::vector<uint8_t> data_;  // For memory-based operations
     Header header_;
     std::vector<Tile> tiles_;
 };

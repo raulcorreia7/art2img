@@ -18,11 +18,19 @@ public:
         Options() {}
     };
     
+    // File-based operations
     static bool write_png(const std::string& filename,
                          const Palette& palette,
                          const ArtFile::Tile& tile,
                          const std::vector<uint8_t>& pixel_data,
                          const Options& options = Options());
+    
+    // Memory-based operations
+    static bool write_png_to_memory(std::vector<uint8_t>& output,
+                                   const Palette& palette,
+                                   const ArtFile::Tile& tile,
+                                   const std::vector<uint8_t>& pixel_data,
+                                   const Options& options = Options());
     
     // Public for testing
     static bool is_magenta(uint8_t r, uint8_t g, uint8_t b);

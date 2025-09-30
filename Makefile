@@ -18,38 +18,68 @@ WIN_LDFLAGS = -static -pthread -lwinpthread
 # Directories
 SRCDIR = src
 BINDIR = bin
+OBJDIR = obj
+LIBDIR = lib
 TESTDIR = tests
 
 # Source files
 MAIN_SOURCES = src/art_file.cpp src/art2image.cpp src/cli.cpp src/extractor.cpp src/palette.cpp src/png_writer.cpp src/tga_writer.cpp src/threading.cpp
 DIAG_SOURCES = src/diagnostic.cpp
+LIB_SOURCES = src/art_file.cpp src/extractor.cpp src/palette.cpp src/png_writer.cpp src/tga_writer.cpp src/extractor_api.cpp src/threading.cpp
+
+# Object files
+MAIN_OBJECTS = $(MAIN_SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
+DIAG_OBJECTS = $(DIAG_SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
+LIB_OBJECTS = $(LIB_SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 
 # Ensure test script is executable
 $(TESTDIR)/test_functionality.sh:
 	@chmod +x $(TESTDIR)/test_functionality.sh
 
 # Default target
-all: linux
+all: linux library
 
 # Linux binaries
 linux: $(BINDIR)/art2image $(BINDIR)/art_diagnostic
+
+# Library targets
+library: $(LIBDIR)/libart2image.a $(LIBDIR)/libart2image.so
 
 # Windows binaries (cross-compile)
 windows: $(BINDIR)/art2image.exe $(BINDIR)/art_diagnostic.exe
 
 # Main executable (Linux)
-$(BINDIR)/art2image: $(MAIN_SOURCES)
+$(BINDIR)/art2image: $(MAIN_OBJECTS)
 	@echo "Building art2image executable..."
 	@mkdir -p $(BINDIR)
-	$(CXX) $(CXXFLAGS) -o $@ $(MAIN_SOURCES) $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 	@echo "Built: $@"
 
 # Diagnostic tool (Linux)
-$(BINDIR)/art_diagnostic: $(DIAG_SOURCES)
+$(BINDIR)/art_diagnostic: $(DIAG_OBJECTS)
 	@echo "Building diagnostic tool..."
 	@mkdir -p $(BINDIR)
-	$(CXX) $(CXXFLAGS) -o $@ $(DIAG_SOURCES) $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 	@echo "Built: $@"
+
+# Static library
+$(LIBDIR)/libart2image.a: $(LIB_OBJECTS)
+	@echo "Building static library..."
+	@mkdir -p $(LIBDIR)
+	ar rcs $@ $^
+	@echo "Built: $@"
+
+# Shared library
+$(LIBDIR)/libart2image.so: $(LIB_OBJECTS)
+	@echo "Building shared library..."
+	@mkdir -p $(LIBDIR)
+	$(CXX) -shared -fPIC $(CXXFLAGS) -o $@ $^
+	@echo "Built: $@"
+
+# Object files
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+	@mkdir -p $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 # Windows executable
 $(BINDIR)/art2image.exe: $(MAIN_SOURCES)
@@ -69,6 +99,8 @@ $(BINDIR)/art_diagnostic.exe: $(DIAG_SOURCES)
 clean:
 	@echo "Cleaning build artifacts..."
 	rm -rf $(BINDIR)
+	rm -rf $(OBJDIR)
+	rm -rf $(LIBDIR)
 	rm -rf $(TESTDIR)/output/*
 	@echo "Clean complete"
 
@@ -82,6 +114,15 @@ test: linux $(TESTDIR)/test_functionality.sh
 	@./$(TESTDIR)/test_functionality.sh
 	@echo "Tests completed successfully"
 
+# Library test
+test-library: library
+	@echo "Building library test..."
+	@mkdir -p $(TESTDIR)/output
+	$(CXX) $(CXXFLAGS) -o $(TESTDIR)/output/test_library tests/test_library_api.cpp -L$(LIBDIR) -lart2image $(LDFLAGS)
+	@echo "Running library test..."
+	$(TESTDIR)/output/test_library
+	@echo "Library test completed successfully"
+
 # Verify binary architectures
 verify: linux windows
 	@echo "Verifying binary architectures..."
@@ -90,4 +131,4 @@ verify: linux windows
 	@file $(BINDIR)/art2image.exe 2>/dev/null | grep -q "PE32+" && echo "✓ Windows art2image.exe: PE binary" || echo "✗ Windows art2image.exe: Wrong architecture"
 	@file $(BINDIR)/art_diagnostic.exe 2>/dev/null | grep -q "PE32+" && echo "✓ Windows art_diagnostic.exe: PE binary" || echo "✗ Windows art_diagnostic.exe: Wrong architecture"
 
-.PHONY: all linux windows clean test verify
+.PHONY: all linux windows clean test verify library

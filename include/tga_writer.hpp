@@ -26,10 +26,17 @@ public:
         std::vector<uint8_t> serialize() const;
     };
     
+    // File-based operations
     static bool write_tga(const std::string& filename,
                          const Palette& palette,
                          const ArtFile::Tile& tile,
                          const std::vector<uint8_t>& pixel_data);
+    
+    // Memory-based operations
+    static bool write_tga_to_memory(std::vector<uint8_t>& output,
+                                   const Palette& palette,
+                                   const ArtFile::Tile& tile,
+                                   const std::vector<uint8_t>& pixel_data);
     
     static TgaHeader create_header(uint16_t width, uint16_t height);
     

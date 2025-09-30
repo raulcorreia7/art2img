@@ -1,3 +1,72 @@
+# Library Refactoring Plan: Memory-Based C++ API
+
+Based on the current art2image implementation, this plan outlines the transformation of the file-based tool into a stable C++ library API with memory-based operations.
+
+## Current Architecture Analysis
+- **File-based operations**: All current operations use `std::ifstream` and file I/O
+- **Tight coupling**: ArtFile, Palette, and Writers are tightly coupled to file system
+- **No memory API**: Missing memory buffer support needed for Duke3D GRP integration
+
+## Phase 1: Core Memory-Based Infrastructure
+
+### ArtFile Memory API
+- Add `load_from_memory(const uint8_t* data, size_t size)` method
+- Replace `std::ifstream` with memory buffer operations
+- Maintain backward compatibility with file-based API
+
+### Palette Memory API
+- Add `load_from_memory(const uint8_t* data, size_t size)` method
+- Support both Duke3D and Blood palette formats
+- Preserve existing file-based loading
+
+## Phase 2: Memory-Based Image Writers
+
+### PNG Writer Memory API
+- Add `write_png_to_memory()` using STB Image Write callbacks
+- Support RGBA output with alpha transparency
+- Return `std::vector<uint8_t>` with PNG data
+
+### TGA Writer Memory API
+- Add `write_tga_to_memory()` method
+- Support both RGB and RGBA formats
+- Return `std::vector<uint8_t>` with TGA data
+
+## Phase 3: High-Level API Layer
+
+### ExtractorAPI Class
+- Design clean, memory-based extraction interface
+- Support single tile and batch extraction
+- Return structured `ExtractionResult` objects
+
+### ExtractionResult Structure
+- Contain tile data, animation info, and image buffers
+- Support error handling and status reporting
+- Enable Duke3D GRP pipeline integration
+
+## Phase 4: Build System & Documentation
+
+### Library Targets
+- Static library (`libart2image.a`)
+- Shared library (`libart2image.so`)
+- Update Makefile with proper flags
+
+### API Documentation
+- Comprehensive usage examples
+- Duke3D GRP integration guide
+- Memory management guidelines
+
+## Key Technical Decisions
+
+1. **Memory Ownership**: Use RAII patterns, avoid raw pointers
+2. **API Design**: Clean separation between file and memory APIs
+3. **Backward Compatibility**: Maintain existing CLI functionality
+4. **Error Handling**: Consistent exception/return value patterns
+5. **Thread Safety**: Preserve existing thread pool architecture
+
+The library refactoring will enable seamless integration with the Duke3D upscaling pipeline while maintaining all existing functionality.
+
+## Original Implementation Plan
+
 Here is a **C++-native implementation plan** that integrates cleanly into an **existing C++ application** (e.g., one that already converts ART → PNG), and produces **fully transparent, EDuke32/BuildGDX–compatible PNG32 files**.
 
 The plan is split into two phases as requested, with **Phase 2 designed to work with any upscaler—even those that ignore alpha**.

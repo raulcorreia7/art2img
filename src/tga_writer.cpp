@@ -1,6 +1,7 @@
 #include "tga_writer.hpp"
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 namespace art2image {
 
@@ -48,6 +49,47 @@ bool TgaWriter::write_tga(const std::string& filename,
                 std::cerr << "Error: Cannot write pixel data to '" << filename << "'" << std::endl;
                 return false;
             }
+        }
+    }
+    
+    return true;
+}
+
+bool TgaWriter::write_tga_to_memory(std::vector<uint8_t>& output,
+                                   const Palette& palette,
+                                   const ArtFile::Tile& tile,
+                                   const std::vector<uint8_t>& pixel_data) {
+    output.clear();
+    
+    if (tile.is_empty()) {
+        return true; // Skip empty tiles
+    }
+    
+    if (pixel_data.size() != tile.size()) {
+        std::cerr << "Error: Pixel data size mismatch for tile" << std::endl;
+        return false;
+    }
+    
+    // Create TGA header
+    TgaHeader header = create_header(tile.width, tile.height);
+    std::vector<uint8_t> header_data = header.serialize();
+    
+    // Reserve space for the output buffer
+    output.reserve(18 + 768 + tile.size()); // header + palette + pixel data
+    
+    // Write TGA header
+    output.insert(output.end(), header_data.begin(), header_data.end());
+    
+    // Write palette
+    const std::vector<uint8_t>& palette_data = palette.data();
+    output.insert(output.end(), palette_data.begin(), palette_data.end());
+    
+    // Write pixel data (ART stores by columns, TGA by rows from bottom)
+    for (int32_t y = tile.height - 1; y >= 0; --y) {
+        for (int32_t x = 0; x < tile.width; ++x) {
+            // ART format: pixels stored by columns (y + x * height)
+            uint8_t pixel = pixel_data[y + x * tile.height];
+            output.push_back(pixel);
         }
     }
     
