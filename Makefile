@@ -70,8 +70,12 @@ clean:
 # Test
 test: linux
 	@echo "Running functionality tests..."
-	@mkdir -p $(TESTDIR)/output
-	./$(BINDIR)/art2image -o $(TESTDIR)/output -p $(TESTDIR)/assets/PALETTE.DAT $(TESTDIR)/assets/TILES000.ART
+	@mkdir -p $(TESTDIR)/output/tga $(TESTDIR)/output/png $(TESTDIR)/output/with_transparency $(TESTDIR)/output/no_transparency
+	./$(BINDIR)/art2image -o $(TESTDIR)/output/tga -f tga -p $(TESTDIR)/assets/PALETTE.DAT $(TESTDIR)/assets/TILES000.ART
+	./$(BINDIR)/art2image -o $(TESTDIR)/output/png -f png -p $(TESTDIR)/assets/PALETTE.DAT $(TESTDIR)/assets/TILES000.ART
+	./$(BINDIR)/art2image -o $(TESTDIR)/output/with_transparency -f png -p $(TESTDIR)/assets/PALETTE.DAT $(TESTDIR)/assets/TILES000.ART
+	./$(BINDIR)/art2image -o $(TESTDIR)/output/no_transparency -f png -p $(TESTDIR)/assets/PALETTE.DAT -N $(TESTDIR)/assets/TILES000.ART
+	@./$(TESTDIR)/test_png.sh
 	@echo "Tests completed successfully"
 
 # Verify binary architectures

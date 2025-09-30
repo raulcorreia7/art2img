@@ -87,7 +87,7 @@ namespace art2image
 
                 // Step B: Alpha construction (magenta keying)
                 uint8_t alpha = 255;
-                if (options.enable_alpha && is_magenta(r8, g8, b8)) {
+                if (options.enable_alpha && options.enable_magenta_transparency && is_magenta(r8, g8, b8)) {
                     alpha = 0;
                 }
 

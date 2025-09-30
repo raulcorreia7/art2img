@@ -19,10 +19,10 @@ GENERATE_ANIMATION=${GENERATE_ANIMATION:-true}
 VERBOSE=${VERBOSE:-true}
 
 # Clean up previous test outputs
-rm -rf tests/output/tga tests/output/png 2>/dev/null || true
+rm -rf tests/output/tga tests/output/png tests/output/with_transparency tests/output/no_transparency 2>/dev/null || true
 
 # Create organized output directories
-mkdir -p tests/output/tga tests/output/png
+mkdir -p tests/output/tga tests/output/png tests/output/with_transparency tests/output/no_transparency
 
 # Test 1: TGA format
 echo "Test 1: TGA format"
@@ -44,6 +44,26 @@ else
     exit 1
 fi
 
+# Test 3: PNG format with magenta transparency fix (default)
+echo "Test 3: PNG format with magenta transparency fix (default)"
+bin/art2image -o tests/output/with_transparency -f png -p "$PALETTE_PATH" -t "$THREADS" "$ART_FILES_DIR/TILES000.ART"
+if [ $? -eq 0 ]; then
+    echo "[OK] PNG with transparency test passed"
+else
+    echo "[FAIL] PNG with transparency test failed"
+    exit 1
+fi
+
+# Test 4: PNG format without magenta transparency fix
+echo "Test 4: PNG format without magenta transparency fix"
+bin/art2image -o tests/output/no_transparency -f png -p "$PALETTE_PATH" -t "$THREADS" -N "$ART_FILES_DIR/TILES000.ART"
+if [ $? -eq 0 ]; then
+    echo "[OK] PNG without transparency test passed"
+else
+    echo "[FAIL] PNG without transparency test failed"
+    exit 1
+fi
+
 # Validate outputs
 echo ""
 echo "Output validation:"
@@ -51,12 +71,16 @@ echo "Output validation:"
 # Check file counts and basic properties
 tga_count=$(ls tests/output/tga/*.tga 2>/dev/null | wc -l)
 png_count=$(ls tests/output/png/*.png 2>/dev/null | wc -l)
+with_transparency_count=$(ls tests/output/with_transparency/*.png 2>/dev/null | wc -l)
+no_transparency_count=$(ls tests/output/no_transparency/*.png 2>/dev/null | wc -l)
 
 echo "TGA files: $tga_count"
 echo "PNG files: $png_count"
+echo "PNG with transparency files: $with_transparency_count"
+echo "PNG without transparency files: $no_transparency_count"
 
-# Verify both formats produced the same number of files
-if [ "$tga_count" -eq "$png_count" ] && [ "$tga_count" -gt 0 ]; then
+# Verify all formats produced the same number of files
+if [ "$tga_count" -eq "$png_count" ] && [ "$png_count" -eq "$with_transparency_count" ] && [ "$with_transparency_count" -eq "$no_transparency_count" ] && [ "$tga_count" -gt 0 ]; then
     echo "[OK] File counts match"
 else
     echo "[FAIL] File count mismatch"

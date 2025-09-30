@@ -13,6 +13,8 @@ const char* const CLI::HELP_TEXT =
     "  -t, --threads N      Number of threads (default: CPU cores)\n"
     "  -p, --palette FILE   Palette file path (default: auto-detect)\n"
      "  -f, --format FMT     Output format: tga or png (default: png)\n"
+     "  -F, --fix-transparency  Enable magenta transparency fix (default)\n"
+     "  -N, --no-fix-transparency  Disable magenta transparency fix\n"
      "  -q, --quiet          Suppress verbose output\n"
      "  -n, --no-anim        Don't generate animdata.ini\n"
      "  -m, --merge-anim     Merge animation data into single file (directory mode)\n"
@@ -38,7 +40,8 @@ CLI::Options CLI::parse_arguments(int argc, char* argv[]) {
         {"threads", required_argument, 0, 't'},
         {"palette", required_argument, 0, 'p'},
         {"format", required_argument, 0, 'f'},
-        {"magenta", no_argument, 0, 'M'},
+        {"fix-transparency", no_argument, 0, 'F'},
+        {"no-fix-transparency", no_argument, 0, 'N'},
         {"tolerance", required_argument, 0, 'c'},
         {"quiet", no_argument, 0, 'q'},
         {"no-anim", no_argument, 0, 'n'},
@@ -49,7 +52,7 @@ CLI::Options CLI::parse_arguments(int argc, char* argv[]) {
     };
     
     int opt;
-    while ((opt = getopt_long(argc, argv, "o:t:p:f:Mc:qnmhv", long_options, nullptr)) != -1) {
+    while ((opt = getopt_long(argc, argv, "o:t:p:f:FNc:qnmhv", long_options, nullptr)) != -1) {
         switch (opt) {
             case 'o':
                 options.extractor_options.output_dir = optarg;
@@ -76,8 +79,13 @@ CLI::Options CLI::parse_arguments(int argc, char* argv[]) {
                     exit(1);
                 }
                  break;
-            case 'M':
-                std::cerr << "Warning: Magenta transparency option (-M) is no longer supported" << std::endl;
+            case 'F':
+                // Enable magenta transparency fix (default behavior)
+                options.extractor_options.png_options.enable_magenta_transparency = true;
+                break;
+            case 'N':
+                // Disable magenta transparency fix
+                options.extractor_options.png_options.enable_magenta_transparency = false;
                 break;
             case 'm':
                 options.extractor_options.merge_animation_data = true;
