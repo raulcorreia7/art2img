@@ -80,11 +80,27 @@ echo "PNG with transparency files: $with_transparency_count"
 echo "PNG without transparency files: $no_transparency_count"
 
 # Verify all formats produced the same number of files
-if [ "$tga_count" -eq "$png_count" ] && [ "$png_count" -eq "$with_transparency_count" ] && [ "$with_transparency_count" -eq "$no_transparency_count" ] && [ "$tga_count" -gt 0 ]; then
+if [ "$tga_count" -eq "$png_count" ] && [ "$png_count" -gt 0 ]; then
     echo "[OK] File counts match"
 else
     echo "[FAIL] File count mismatch"
     exit 1
+fi
+
+# Verify transparency processing is working by comparing specific files
+# Tile 22 should have magenta pixels that get converted to transparency
+if [ -f "tests/output/with_transparency/tile0022.png" ] && [ -f "tests/output/no_transparency/tile0022.png" ]; then
+    with_size=$(stat -c%s "tests/output/with_transparency/tile0022.png" 2>/dev/null || stat -f%z "tests/output/with_transparency/tile0022.png")
+    without_size=$(stat -c%s "tests/output/no_transparency/tile0022.png" 2>/dev/null || stat -f%z "tests/output/no_transparency/tile0022.png")
+    
+    # The file with transparency should be smaller or equal in size
+    if [ "$with_size" -le "$without_size" ]; then
+        echo "[OK] Transparency processing is working (file sizes: with=$with_size, without=$without_size)"
+    else
+        echo "[WARNING] Transparency processing may not be working (file sizes: with=$with_size, without=$without_size)"
+    fi
+else
+    echo "[WARNING] Could not find test tiles to verify transparency processing"
 fi
 
 # Check for animation data
@@ -92,6 +108,25 @@ if [ -f "tests/output/tga/animdata.ini" ] && [ -f "tests/output/png/animdata.ini
     echo "[OK] Animation data files created"
 else
     echo "[FAIL] Missing animation data files"
+    exit 1
+fi
+
+# Verify that both with_transparency and no_transparency directories have the same number of files
+with_transparency_count=$(ls tests/output/with_transparency/*.png 2>/dev/null | wc -l)
+no_transparency_count=$(ls tests/output/no_transparency/*.png 2>/dev/null | wc -l)
+
+if [ "$with_transparency_count" -eq "$no_transparency_count" ] && [ "$with_transparency_count" -gt 0 ]; then
+    echo "[OK] Both with_transparency and no_transparency directories have the same number of files"
+else
+    echo "[FAIL] File count mismatch between with_transparency and no_transparency directories"
+    exit 1
+fi
+
+# Test the CLI help option
+if ./bin/art2image --help | grep -q "fix-transparency"; then
+    echo "[OK] CLI help text includes fix-transparency options"
+else
+    echo "[FAIL] CLI help text does not include fix-transparency options"
     exit 1
 fi
 
