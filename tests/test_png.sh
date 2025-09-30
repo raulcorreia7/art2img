@@ -10,8 +10,8 @@ if [ -f ../.env ]; then
 fi
 
 # Set default values if environment variables are not set
-PALETTE_PATH=${PALETTE_PATH:-tests/assets/duke3d/PALETTE.DAT}
-ART_FILES_DIR=${ART_FILES_DIR:-tests/assets/duke3d}
+PALETTE_PATH=${PALETTE_PATH:-tests/assets/PALETTE.DAT}
+ART_FILES_DIR=${ART_FILES_DIR:-tests/assets}
 OUTPUT_DIR=${OUTPUT_DIR:-tests/output}
 OUTPUT_FORMAT=${OUTPUT_FORMAT:-png}
 THREADS=${THREADS:-4}
