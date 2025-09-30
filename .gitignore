@@ -1,0 +1,29 @@
+# Build artifacts
+bin/
+obj/
+*.exe
+*.o
+*.a
+*.so
+*.dll
+*.lib
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Log files
+*.log
+
+# Test outputs (keep test assets but not generated outputs)
+tests/output/
