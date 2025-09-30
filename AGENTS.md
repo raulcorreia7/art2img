@@ -1,5 +1,7 @@
 # AGENTS.md - art2image C++ Project
 
+Authoritative agent guidelines for the art2image project.
+
 ## Build Commands (Container-Optimized)
 - `make` - Build Linux binaries (art2image + art_diagnostic)
 - `make clean` - Remove build artifacts

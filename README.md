@@ -2,6 +2,10 @@
 
 ART file extractor for Duke Nukem 3D assets. Extracts ART files to PNG or TGA images with proper alpha channel support. Optimized for containerized pipeline execution.
 
+## Overview
+
+art2image is a C++ tool for extracting images from Duke Nukem 3D ART files. It provides multi-threaded extraction with support for modern image formats and professional alpha channel handling.
+
 ## Features
 
 - Multi-threaded ART file extraction
