@@ -1,16 +1,20 @@
 # AGENTS.md - art2image C++ Project
 
-## Build Commands (Simplified)
-- `make linux` - Build Linux binaries (art2image + art_diagnostic)
-- `make windows` - Build Windows binaries (cross-compile from Linux)
-- `make all-platforms` - Build for Linux + Windows
+## Build Commands (Container-Optimized)
+- `make` - Build Linux binaries (art2image + art_diagnostic)
 - `make clean` - Remove build artifacts
-- `make test` - Test Linux binaries
+- `make test` - Run functionality tests
 
-## Docker Build
+## Docker Pipeline
 ```bash
+# Build and test in container
 docker build -t art2image .
-docker run --rm -v $(pwd)/bin:/build/bin art2image
+
+# Run the tool
+docker run --rm art2image
+
+# Mount volumes for file processing
+docker run --rm -v $(pwd)/input:/input -v $(pwd)/output:/output art2image /input/tiles.art -o /output
 ```
 
 ## Code Style Guidelines
@@ -51,17 +55,16 @@ docker run --rm -v $(pwd)/bin:/build/bin art2image
 - **Configuration**: Use `PngWriter::Options` to control alpha behavior
 
 ## Development Best Practices
-- **Code Review**: Always run `make test-all` before committing changes
+- **Code Review**: Always run `make test` before committing changes
 - **Documentation**: Update README.md when adding features or changing behavior
-- **Testing**: Add new tests for new functionality in `tests/test_png.sh`
+- **Testing**: Test with real ART files from `tests/assets/`
 - **Error Handling**: Validate all inputs, provide clear error messages
 - **Memory Safety**: Use RAII patterns, avoid manual memory management
-- **Cross-Platform**: Test on both Windows (MSYS2) and Linux environments
-- **Performance**: Profile with `make debug` before optimizing critical paths
+- **Container-First**: Design for containerized pipeline execution
 
 ## Agent Guidelines
-- **Before Changes**: Run `make clean && make test-all` to ensure clean state
-- **After Changes**: Verify with `make test` and check for memory leaks
-- **Documentation**: Update AGENTS.md when discovering new patterns, conventions. Keep documentation always up to date.
+- **Before Changes**: Run `make clean && make test` to ensure clean state
+- **After Changes**: Verify with `make test` in container environment
+- **Documentation**: Update AGENTS.md when discovering new patterns
 - **Testing**: Always test with real ART files from `tests/assets/`
-- **Error Cases**: Test edge cases (empty files, invalid palettes, corrupt data)
+- **Container Focus**: Optimize for Linux container execution
