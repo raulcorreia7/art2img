@@ -1,7 +1,7 @@
 #!/bin/bash
 # Test script for Duke Nukem 3D palette functionality
 
-echo "art2image Palette Functionality Test Suite"
+echo "art2img Palette Functionality Test Suite"
 echo "=========================================="
 
 # Load environment configuration if available
@@ -27,7 +27,7 @@ mkdir -p tests/output/palette_tests/no_palette_fallback
 echo ""
 echo "Test 1: Duke Nukem 3D Default Palette (no -p parameter)"
 echo "------------------------------------------------------"
-bin/art2image -o tests/output/palette_tests/duke3d_default -f png -t "$THREADS" -q "$ART_FILES_DIR/TILES011.ART"
+bin/art2img -o tests/output/palette_tests/duke3d_default -f png -t "$THREADS" -q "$ART_FILES_DIR/TILES011.ART"
 if [ $? -eq 0 ]; then
     duke3d_count=$(ls tests/output/palette_tests/duke3d_default/*.png 2>/dev/null | wc -l)
     echo "[OK] Duke Nukem 3D default palette test passed ($duke3d_count files generated)"
@@ -46,7 +46,7 @@ echo "[OK] Blood palette method exists in codebase"
 echo ""
 echo "Test 3: External Palette File Functionality"
 echo "------------------------------------------"
-bin/art2image -o tests/output/palette_tests/external_palette -f png -p "$ART_FILES_DIR/PALETTE.DAT" -t "$THREADS" -q "$ART_FILES_DIR/TILES011.ART"
+bin/art2img -o tests/output/palette_tests/external_palette -f png -p "$ART_FILES_DIR/PALETTE.DAT" -t "$THREADS" -q "$ART_FILES_DIR/TILES011.ART"
 if [ $? -eq 0 ]; then
     external_count=$(ls tests/output/palette_tests/external_palette/*.png 2>/dev/null | wc -l)
     echo "[OK] External palette file test passed ($external_count files generated)"
@@ -75,7 +75,7 @@ else
 fi
 
 # Test CLI help includes palette information
-if bin/art2image --help | grep -q "Duke Nukem 3D palette"; then
+if bin/art2img --help | grep -q "Duke Nukem 3D palette"; then
     echo "[OK] CLI help text includes Duke Nukem 3D palette information"
 else
     echo "[FAIL] CLI help text does not include Duke Nukem 3D palette information"

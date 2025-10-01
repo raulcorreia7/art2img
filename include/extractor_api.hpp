@@ -8,7 +8,7 @@
 #include <string>
 #include <memory>
 
-namespace art2image {
+namespace art2img {
 
 struct ExtractionResult {
     bool success;
@@ -62,4 +62,4 @@ private:
     std::unique_ptr<Palette> palette_;
 };
 
-} // namespace art2image
+} // namespace art2img

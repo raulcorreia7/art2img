@@ -3,7 +3,7 @@
 #include <iostream>
 #include <sstream>
 
-namespace art2image {
+namespace art2img {
 
 bool TgaWriter::write_tga(const std::string& filename,
                          const Palette& palette,
@@ -142,4 +142,4 @@ void TgaWriter::write_little_endian_uint16(uint16_t value, std::vector<uint8_t>&
     buffer[offset + 1] = static_cast<uint8_t>((value >> 8) & 0xFF);
 }
 
-} // namespace art2image
+} // namespace art2img

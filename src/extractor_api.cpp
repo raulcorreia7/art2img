@@ -1,7 +1,7 @@
 #include "extractor_api.hpp"
 #include <iostream>
 
-namespace art2image {
+namespace art2img {
 
 ExtractorAPI::ExtractorAPI() {
     // Initialize with default palette
@@ -198,4 +198,4 @@ std::vector<ExtractionResult> ExtractorAPI::extract_all_tiles_tga() {
     return results;
 }
 
-} // namespace art2image
+} // namespace art2img

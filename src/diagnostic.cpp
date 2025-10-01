@@ -5,7 +5,7 @@
 #include <filesystem>
 #include <string>
 
-namespace art2image {
+namespace art2img {
 
 uint32_t read_little_endian_uint32(std::ifstream& file) {
     uint32_t value = 0;
@@ -114,11 +114,11 @@ void show_usage(const std::string& program_name) {
     std::cout << "  " << program_name << " -c -d my_assets" << std::endl;
 }
 
-} // namespace art2image
+} // namespace art2img
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        art2image::show_usage(argv[0]);
+        art2img::show_usage(argv[0]);
         return 1;
     }
     
@@ -147,7 +147,7 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
         } else if (arg == "-h" || arg == "--help") {
-            art2image::show_usage(argv[0]);
+            art2img::show_usage(argv[0]);
             return 0;
         } else {
             // Assume it's a filename for backward compatibility
@@ -157,11 +157,11 @@ int main(int argc, char* argv[]) {
     }
     
     if (mode == "analyze") {
-        art2image::analyze_art_file(filename);
+        art2img::analyze_art_file(filename);
     } else if (mode == "check-all") {
-        art2image::check_all_headers(directory);
+        art2img::check_all_headers(directory);
     } else {
-        art2image::show_usage(argv[0]);
+        art2img::show_usage(argv[0]);
         return 1;
     }
     

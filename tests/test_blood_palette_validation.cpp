@@ -7,7 +7,7 @@ int main() {
     std::cout << "============================" << std::endl;
     
     // Test that Blood palette method exists and works
-    art2image::Palette blood_palette;
+    art2img::Palette blood_palette;
     blood_palette.load_blood_default();
     
     std::cout << "✓ Blood palette method exists and can be called" << std::endl;

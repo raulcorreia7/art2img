@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 
-namespace art2image {
+namespace art2img {
 
 class Palette {
 public:
@@ -42,4 +42,4 @@ private:
     std::vector<uint8_t> data_;
 };
 
-} // namespace art2image
+} // namespace art2img

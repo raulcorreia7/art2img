@@ -1,6 +1,6 @@
 #include "threading.hpp"
 
-namespace art2image {
+namespace art2img {
 
 ThreadPool::ThreadPool(size_t num_threads) {
     if (num_threads == 0) {
@@ -75,4 +75,4 @@ size_t ThreadPool::pending_tasks() const {
     return tasks_.size() + active_tasks_;
 }
 
-} // namespace art2image
+} // namespace art2img

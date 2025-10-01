@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cstring>
 
-namespace art2image {
+namespace art2img {
 
 ArtFile::ArtFile(const std::string& filename) {
     if (!open(filename)) {
@@ -309,4 +309,4 @@ uint32_t ArtFile::read_little_endian_uint32_from_memory(size_t& offset) const {
     return result;
 }
 
-} // namespace art2image
+} // namespace art2img

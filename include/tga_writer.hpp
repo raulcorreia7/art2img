@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-namespace art2image {
+namespace art2img {
 
 class TgaWriter {
 public:
@@ -44,4 +44,4 @@ private:
     static void write_little_endian_uint16(uint16_t value, std::vector<uint8_t>& buffer, size_t offset);
 };
 
-} // namespace art2image
+} // namespace art2img

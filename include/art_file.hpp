@@ -6,7 +6,7 @@
 #include <fstream>
 #include <memory>
 
-namespace art2image {
+namespace art2img {
 
 class ArtFile {
 public:
@@ -84,4 +84,4 @@ private:
     std::vector<Tile> tiles_;
 };
 
-} // namespace art2image
+} // namespace art2img

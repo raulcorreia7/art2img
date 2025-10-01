@@ -1,10 +1,10 @@
-# art2image
+# art2img
 
 ART file extractor for Duke Nukem 3D assets. Extracts ART files to PNG or TGA images with proper alpha channel support. Optimized for containerized pipeline execution.
 
 ## Overview
 
-art2image is a C++ tool for extracting images from Duke Nukem 3D ART files. It provides multi-threaded extraction with support for modern image formats and professional alpha channel handling.
+art2img is a C++ tool for extracting images from Duke Nukem 3D ART files. It provides multi-threaded extraction with support for modern image formats and professional alpha channel handling.
 
 ## Features
 
@@ -21,13 +21,13 @@ art2image is a C++ tool for extracting images from Duke Nukem 3D ART files. It p
 
 ```bash
 # Build and test in container
-docker build -t art2image .
+docker build -t art2img .
 
 # Extract ART files
-docker run --rm -v $(pwd)/input:/input -v $(pwd)/output:/output art2image /input/tiles.art -o /output
+docker run --rm -v $(pwd)/input:/input -v $(pwd)/output:/output art2img /input/tiles.art -o /output
 
 # Process directory of ART files
-docker run --rm -v $(pwd)/assets:/assets -v $(pwd)/output:/output art2image -m /assets -o /output
+docker run --rm -v $(pwd)/assets:/assets -v $(pwd)/output:/output art2img -m /assets -o /output
 ```
 
 ### Local Build
@@ -43,13 +43,13 @@ make test
 make clean
 
 # Extract ART files
-./bin/art2image tests/assets/TILES000.art -o ./output
+./bin/art2img tests/assets/TILES000.art -o ./output
 ```
 
 ## Command Line Options
 
 ```
-Usage: art2image [OPTIONS] <ART_FILE|ART_DIRECTORY>
+Usage: art2img [OPTIONS] <ART_FILE|ART_DIRECTORY>
 
 Options:
   -o, --output DIR     Output directory (default: current)

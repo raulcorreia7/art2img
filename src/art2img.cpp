@@ -46,7 +46,7 @@ std::string resolve_palette_path(const std::string& user_path, const std::string
 } // anonymous namespace
 
 // Function to append animation data to merged file (for directory mode with merge enabled)
-bool append_animation_data_to_merged_file(const art2image::ArtFile& art_file, const std::string& output_dir) {
+bool append_animation_data_to_merged_file(const art2img::ArtFile& art_file, const std::string& output_dir) {
     const char* animation_types[] = {"none", "oscillation", "forward", "backward"};
     
     std::string filename = output_dir + "/animdata.ini";
@@ -58,7 +58,7 @@ bool append_animation_data_to_merged_file(const art2image::ArtFile& art_file, co
     
     // Write header for this ART file
     file << "; Animation data from \"" << art_file.filename() << "\"\n"
-                               << "; Extracted by art2image\n"
+<< "; Extracted by art2img\n"
          << "\n";
     
     const auto& tiles = art_file.tiles();
@@ -92,17 +92,17 @@ bool append_animation_data_to_merged_file(const art2image::ArtFile& art_file, co
 }
 
 // Function to process a single ART file
-bool process_single_file(const art2image::CLI::Options& options, const std::string& art_file_path, const std::string& output_subdir = "", bool is_directory_mode = false) {
+bool process_single_file(const art2img::CLI::Options& options, const std::string& art_file_path, const std::string& output_subdir = "", bool is_directory_mode = false) {
     try {
         if (options.extractor_options.verbose) {
             std::cout << "Processing ART file: " << art_file_path << std::endl;
         }
         
         // Load ART file
-        art2image::ArtFile art_file(art_file_path);
+        art2img::ArtFile art_file(art_file_path);
         
         // Load palette with dynamic path resolution
-        art2image::Palette palette;
+        art2img::Palette palette;
         std::string palette_path = resolve_palette_path(options.palette_file, art_file_path);
         
         if (!palette_path.empty() && palette.load_from_file(palette_path)) {
@@ -121,7 +121,7 @@ bool process_single_file(const art2image::CLI::Options& options, const std::stri
         }
         
         // Create extractor with modified output directory for directory processing
-        art2image::ArtExtractor::Options extractor_options = options.extractor_options;
+        art2img::ArtExtractor::Options extractor_options = options.extractor_options;
         if (!output_subdir.empty()) {
             extractor_options.output_dir = (std::filesystem::path(extractor_options.output_dir) / output_subdir).string();
         }
@@ -132,7 +132,7 @@ bool process_single_file(const art2image::CLI::Options& options, const std::stri
         }
         
         // Create extractor and perform extraction
-        art2image::ArtExtractor extractor(art_file, palette);
+        art2img::ArtExtractor extractor(art_file, palette);
         bool extraction_success = extractor.extract(extractor_options);
         
         // If in directory mode with merge enabled, append animation data to merged file
@@ -156,14 +156,14 @@ bool process_single_file(const art2image::CLI::Options& options, const std::stri
 int main(int argc, char* argv[]) {
     try {
         // Parse command line arguments
-        auto options = art2image::CLI::parse_arguments(argc, argv);
+        auto options = art2img::CLI::parse_arguments(argc, argv);
         
         if (options.show_help) {
             return 0;
         }
         
         if (options.extractor_options.verbose) {
-            std::cout << "art2image - Multi-threaded ART to image converter (TGA/PNG)" << std::endl;
+            std::cout << "art2img - Multi-threaded ART to image converter (TGA/PNG)" << std::endl;
             std::cout << "==========================================================" << std::endl;
             std::cout << std::endl;
         }
@@ -182,7 +182,7 @@ int main(int argc, char* argv[]) {
                 std::ofstream merged_file(merged_ini_path);
                 if (merged_file.is_open()) {
                     merged_file << "; Merged animation data from all ART files\n"
-         << "; Extracted by art2image\n"
+         << "; Extracted by art2img\n"
                                << "; Generated: " << __DATE__ << " " << __TIME__ << "\n"
                                << "\n";
                     if (options.extractor_options.verbose) {

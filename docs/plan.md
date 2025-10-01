@@ -1,6 +1,6 @@
 # Library Refactoring Plan: Memory-Based C++ API
 
-Based on the current art2image implementation, this plan outlines the transformation of the file-based tool into a stable C++ library API with memory-based operations.
+Based on the current art2img implementation, this plan outlines the transformation of the file-based tool into a stable C++ library API with memory-based operations.
 
 ## Current Architecture Analysis
 - **File-based operations**: All current operations use `std::ifstream` and file I/O
@@ -46,8 +46,8 @@ Based on the current art2image implementation, this plan outlines the transforma
 ## Phase 4: Build System & Documentation
 
 ### Library Targets
-- Static library (`libart2image.a`)
-- Shared library (`libart2image.so`)
+- Static library (`libart2img.a`)
+- Shared library (`libart2img.so`)
 - Update Makefile with proper flags
 
 ### API Documentation

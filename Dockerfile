@@ -12,10 +12,10 @@ WORKDIR /build
 COPY . .
 
 # Build the project
-RUN echo "Building art2image..." && make
+RUN echo "Building art2img..." && make
 
 # Test the build
 RUN echo "Running tests..." && make test
 
 # Default command runs the tool
-CMD ["./bin/art2image", "--help"]
+CMD ["./bin/art2img", "--help"]

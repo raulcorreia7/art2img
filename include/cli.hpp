@@ -3,7 +3,7 @@
 #include "extractor.hpp"
 #include <string>
 
-namespace art2image {
+namespace art2img {
 
 class CLI {
 public:
@@ -29,4 +29,4 @@ private:
     static const char* const VERSION_TEXT;
 };
 
-} // namespace art2image
+} // namespace art2img

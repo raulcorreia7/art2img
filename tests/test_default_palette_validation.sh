@@ -18,7 +18,7 @@ echo "--------------------------------------------------------------------------
 for art_file in tests/assets/TILES*.ART; do
     filename=$(basename "$art_file" .ART)
     echo "Processing $filename.ART with default palette..."
-    bin/art2image -o "tests/output/default_palette_validation/default/$filename" -f png -t 4 -q "$art_file"
+    bin/art2img -o "tests/output/default_palette_validation/default/$filename" -f png -t 4 -q "$art_file"
 done
 
 echo ""
@@ -29,7 +29,7 @@ echo "------------------------------------------------------"
 for art_file in tests/assets/TILES*.ART; do
     filename=$(basename "$art_file" .ART)
     echo "Processing $filename.ART with external palette..."
-    bin/art2image -o "tests/output/default_palette_validation/external/$filename" -f png -p tests/assets/PALETTE.DAT -t 4 -q "$art_file"
+    bin/art2img -o "tests/output/default_palette_validation/external/$filename" -f png -p tests/assets/PALETTE.DAT -t 4 -q "$art_file"
 done
 
 echo ""

@@ -4,7 +4,7 @@
 #include <sstream>
 #include <filesystem>
 
-namespace art2image {
+namespace art2img {
 
 ArtExtractor::ArtExtractor(ArtFile& art_file, Palette& palette)
     : art_file_(art_file), palette_(palette) {
@@ -191,4 +191,4 @@ void ArtExtractor::update_progress() {
               << " (" << (processed * 100 / total) << "%)" << std::flush;
 }
 
-} // namespace art2image
+} // namespace art2img

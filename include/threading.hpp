@@ -8,7 +8,7 @@
 #include <condition_variable>
 #include <atomic>
 
-namespace art2image {
+namespace art2img {
 
 class ThreadPool {
 public:
@@ -52,4 +52,4 @@ void ThreadPool::enqueue(F&& task) {
     condition_.notify_one();
 }
 
-} // namespace art2image
+} // namespace art2img

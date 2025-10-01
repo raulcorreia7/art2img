@@ -3,11 +3,11 @@
 #include <getopt.h>
 #include <filesystem>
 
-namespace art2image
+namespace art2img
 {
 
     const char *const CLI::HELP_TEXT =
-        "Usage: art2image [OPTIONS] <ART_FILE|ART_DIRECTORY>\n\n"
+        "Usage: art2img [OPTIONS] <ART_FILE|ART_DIRECTORY>\n\n"
         "Extract pictures from ART files to TGA or PNG format\n\n"
         "Options:\n"
         "  -o, --output DIR     Output directory (default: current)\n"
@@ -25,13 +25,13 @@ namespace art2image
         "  Default: Duke Nukem 3D palette (can be overridden with -p)\n"
         "  Fallback: Blood palette (if Duke Nukem 3D is not available)\n\n"
         "Examples:\n"
-        "  art2image -o ./output -t 4 tiles000.art\n"
-        "  art2image -p palette.dat tiles000.art\n"
-        "  art2image -f tga tiles000.art        # TGA format\n"
-        "  art2image assets/                    # Process all ART files in assets/\n";
+        "  art2img -o ./output -t 4 tiles000.art\n"
+        "  art2img -p palette.dat tiles000.art\n"
+        "  art2img -f tga tiles000.art        # TGA format\n"
+        "  art2img assets/                    # Process all ART files in assets/\n";
 
     const char *const CLI::VERSION_TEXT =
-        "art2image 1.0\n"
+        "art2img 1.0\n"
         "Multi-threaded ART to image converter (TGA/PNG)\n"
         "Based on original art2tga by Mathieu Olivier\n"
         "Rewriten by Raúl Correia\n";
@@ -188,4 +188,4 @@ namespace art2image
         std::cout << VERSION_TEXT;
     }
 
-} // namespace art2image
+} // namespace art2img

@@ -9,7 +9,7 @@
 #include <atomic>
 #include <mutex>
 
-namespace art2image {
+namespace art2img {
 
 class ArtExtractor {
 public:
@@ -65,4 +65,4 @@ private:
     std::mutex file_mutex_; // For thread-safe file access
 };
 
-} // namespace art2image
+} // namespace art2img

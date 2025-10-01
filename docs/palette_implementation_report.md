@@ -1,7 +1,7 @@
 # Duke Nukem 3D Palette Implementation Report
 
 ## Overview
-This report documents the successful implementation of Duke Nukem 3D as the default palette for the art2image tool, replacing the previous Blood palette default. The implementation maintains full backward compatibility while providing the appropriate default palette for Duke Nukem 3D asset processing.
+This report documents the successful implementation of Duke Nukem 3D as the default palette for the art2img tool, replacing the previous Blood palette default. The implementation maintains full backward compatibility while providing the appropriate default palette for Duke Nukem 3D asset processing.
 
 ## Implementation Details
 
@@ -20,7 +20,7 @@ This report documents the successful implementation of Duke Nukem 3D as the defa
 - **File**: `include/palette.hpp`
   - Added declaration for `load_duke3d_default()` method
 
-- **File**: `src/art2image.cpp`
+- **File**: `src/art2img.cpp`
   - Updated fallback behavior to use Duke Nukem 3D palette instead of Blood
   - Modified verbose output to reflect new default palette
 

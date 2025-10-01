@@ -18,7 +18,7 @@
 #include <cstdint>
 #include <cstring>
 
-namespace art2image
+namespace art2img
 {
 
     bool PngWriter::write_png(const std::string &filename,
@@ -246,4 +246,4 @@ namespace art2image
         }
     }
 
-} // namespace art2image
+} // namespace art2img

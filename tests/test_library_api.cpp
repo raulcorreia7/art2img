@@ -4,10 +4,10 @@
 #include <vector>
 
 int main() {
-    std::cout << "Testing art2image library API..." << std::endl;
+    std::cout << "Testing art2img library API..." << std::endl;
     
     // Create extractor API instance
-    art2image::ExtractorAPI extractor;
+    art2img::ExtractorAPI extractor;
     
     // Load ART file from memory
     std::ifstream art_file("../tests/assets/TILES000.ART", std::ios::binary);
@@ -58,7 +58,7 @@ int main() {
     std::cout << "Loaded palette from memory" << std::endl;
     
     // Extract a single tile to PNG
-    art2image::ExtractionResult result = extractor.extract_tile(0);
+    art2img::ExtractionResult result = extractor.extract_tile(0);
     if (!result.success) {
         std::cerr << "Error: Failed to extract tile: " << result.error_message << std::endl;
         return 1;
@@ -80,7 +80,7 @@ int main() {
     std::cout << "Saved tile0000.png to output directory" << std::endl;
     
     // Test batch extraction
-    std::vector<art2image::ExtractionResult> results = extractor.extract_all_tiles();
+    std::vector<art2img::ExtractionResult> results = extractor.extract_all_tiles();
     std::cout << "Extracted " << results.size() << " tiles in batch" << std::endl;
     
     // Count successful extractions

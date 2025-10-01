@@ -1,22 +1,22 @@
-# AGENTS.md - art2image C++ Project
+# AGENTS.md - art2img C++ Project
 
-Authoritative agent guidelines for the art2image project.
+Authoritative agent guidelines for the art2img project.
 
 ## Build Commands (Container-Optimized)
-- `make` - Build Linux binaries (art2image + art_diagnostic)
+- `make` - Build Linux binaries (art2img + art_diagnostic)
 - `make clean` - Remove build artifacts
 - `make test` - Run functionality tests
 
 ## Docker Pipeline
 ```bash
 # Build and test in container
-docker build -t art2image .
+docker build -t art2img .
 
 # Run the tool
-docker run --rm art2image
+docker run --rm art2img
 
 # Mount volumes for file processing
-docker run --rm -v $(pwd)/input:/input -v $(pwd)/output:/output art2image /input/tiles.art -o /output
+docker run --rm -v $(pwd)/input:/input -v $(pwd)/output:/output art2img /input/tiles.art -o /output
 ```
 
 ## Code Style Guidelines
@@ -38,7 +38,7 @@ docker run --rm -v $(pwd)/input:/input -v $(pwd)/output:/output art2image /input
 - `vendor/` - Third-party dependencies (stb_image_write)
 
 ## Key Conventions
-- Use namespaces (`art2image`)
+- Use namespaces (`art2img`)
 - Classes are non-copyable, movable by default
 - Header files contain declarations only
 - Implementation files include corresponding headers first

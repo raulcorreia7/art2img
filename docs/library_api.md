@@ -1,6 +1,6 @@
-# art2image Library API
+# art2img Library API
 
-The art2image library provides a C++ API for extracting Duke Nukem 3D and Blood ART files to PNG/TGA images with full alpha channel support.
+The art2img library provides a C++ API for extracting Duke Nukem 3D and Blood ART files to PNG/TGA images with full alpha channel support.
 
 ## Building the Library
 
@@ -9,8 +9,8 @@ The art2image library provides a C++ API for extracting Duke Nukem 3D and Blood 
 make library
 
 # This will create:
-# lib/libart2image.a (static library)
-# lib/libart2image.so (shared library)
+# lib/libart2img.a (static library)
+# lib/libart2img.so (shared library)
 ```
 
 ## API Usage
@@ -21,7 +21,7 @@ make library
 #include "extractor_api.hpp"
 
 // Create extractor instance
-art2image::ExtractorAPI extractor;
+art2img::ExtractorAPI extractor;
 
 // Load ART file from memory
 std::vector<uint8_t> art_data = load_file_data("TILES000.ART");
@@ -32,7 +32,7 @@ std::vector<uint8_t> palette_data = load_file_data("PALETTE.DAT");
 extractor.load_palette_from_memory(palette_data.data(), palette_data.size());
 
 // Extract a single tile
-art2image::ExtractionResult result = extractor.extract_tile(0);
+art2img::ExtractionResult result = extractor.extract_tile(0);
 
 if (result.success) {
     // Save PNG data to file
@@ -118,14 +118,14 @@ struct PngWriter::Options {
 #include <fstream>
 
 int main() {
-    art2image::ExtractorAPI extractor;
+    art2img::ExtractorAPI extractor;
     
     // Load files
     extractor.load_art_file("TILES000.ART");
     extractor.load_palette_file("PALETTE.DAT");
     
     // Extract tile 0
-    art2image::ExtractionResult result = extractor.extract_tile(0);
+    art2img::ExtractionResult result = extractor.extract_tile(0);
     
     if (result.success) {
         std::ofstream file("tile0000.png", std::ios::binary);
@@ -144,7 +144,7 @@ int main() {
 
 ```cpp
 // Extract all tiles
-std::vector<art2image::ExtractionResult> results = extractor.extract_all_tiles();
+std::vector<art2img::ExtractionResult> results = extractor.extract_all_tiles();
 
 for (const auto& result : results) {
     if (result.success) {
@@ -161,13 +161,13 @@ for (const auto& result : results) {
 ### Using the Static Library
 
 ```bash
-g++ -std=c++17 -Iinclude -Ivendor your_code.cpp -Llib -lart2image -lpthread -o your_program
+g++ -std=c++17 -Iinclude -Ivendor your_code.cpp -Llib -lart2img -lpthread -o your_program
 ```
 
 ### Using the Shared Library
 
 ```bash
-g++ -std=c++17 -Iinclude -Ivendor your_code.cpp -Llib -lart2image -lpthread -o your_program
+g++ -std=c++17 -Iinclude -Ivendor your_code.cpp -Llib -lart2img -lpthread -o your_program
 LD_LIBRARY_PATH=lib ./your_program
 ```
 

@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cstring>
 
-namespace art2image {
+namespace art2img {
 
 Palette::Palette() {
     load_duke3d_default();
@@ -203,4 +203,4 @@ uint8_t Palette::get_blue(size_t index) const {
     return data_[index * 3] >> 2;
 }
 
-} // namespace art2image
+} // namespace art2img

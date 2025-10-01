@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-namespace art2image {
+namespace art2img {
 
 class PngWriter {
 public:
@@ -45,4 +45,4 @@ private:
     static void apply_matte_hygiene(std::vector<uint8_t>& rgba_data, int width, int height);
 };
 
-} // namespace art2image
+} // namespace art2img

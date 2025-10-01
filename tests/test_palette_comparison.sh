@@ -1,7 +1,7 @@
 #!/bin/bash
 # Test script for palette comparison and validation
 
-echo "art2image Palette Comparison Test"
+echo "art2img Palette Comparison Test"
 echo "================================="
 
 # Clean up previous comparison test outputs
@@ -12,10 +12,10 @@ mkdir -p tests/output/palette_comparison/duke3d_default
 mkdir -p tests/output/palette_comparison/external_palette
 
 echo "Generating images with Duke Nukem 3D default palette..."
-bin/art2image -o tests/output/palette_comparison/duke3d_default -f png -t 4 -q tests/assets/TILES011.ART
+bin/art2img -o tests/output/palette_comparison/duke3d_default -f png -t 4 -q tests/assets/TILES011.ART
 
 echo "Generating images with external PALETTE.DAT file..."
-bin/art2image -o tests/output/palette_comparison/external_palette -f png -p tests/assets/PALETTE.DAT -t 4 -q tests/assets/TILES011.ART
+bin/art2img -o tests/output/palette_comparison/external_palette -f png -p tests/assets/PALETTE.DAT -t 4 -q tests/assets/TILES011.ART
 
 echo ""
 echo "Comparison Results:"
