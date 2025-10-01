@@ -6,6 +6,11 @@ Authoritative agent guidelines for the art2img project.
 - `make` - Build Linux binaries (art2img + art_diagnostic)
 - `make clean` - Remove build artifacts
 - `make test` - Run functionality tests
+- `make build-all` - Build all platform binaries
+- `make verify-all` - Verify all binary architectures
+- `make windows` - Build Windows x86_64 binaries (requires MinGW)
+- `make linux-arm64` - Build Linux ARM64 binaries (requires aarch64 cross-compiler)
+- `make windows-arm64` - Build Windows ARM64 binaries (requires MinGW ARM64)
 
 ## Docker Pipeline
 ```bash
@@ -65,9 +70,19 @@ docker run --rm -v $(pwd)/input:/input -v $(pwd)/output:/output art2img /input/t
 - **Memory Safety**: Use RAII patterns, avoid manual memory management
 - **Container-First**: Design for containerized pipeline execution
 
+## Cross-Platform Support
+- **Linux x86_64**: Native compilation with g++
+- **Linux ARM64**: Cross-compilation with aarch64-linux-gnu-g++
+- **Windows x86_64**: Cross-compilation with x86_64-w64-mingw32-g++
+- **Windows ARM64**: Cross-compilation with aarch64-w64-mingw32-g++
+- **Static Linking**: All binaries are statically linked for dependency-free deployment
+- **CI/CD Pipeline**: GitHub Actions builds all platforms automatically on releases
+
 ## Agent Guidelines
 - **Before Changes**: Run `make clean && make test` to ensure clean state
 - **After Changes**: Verify with `make test` in container environment
+- **Cross-Platform**: Test cross-compilation targets when making core changes
 - **Documentation**: Update AGENTS.md when discovering new patterns
 - **Testing**: Always test with real ART files from `tests/assets/`
 - **Container Focus**: Optimize for Linux container execution
+- **Release Process**: Use GitHub releases for automated multi-platform binary distribution
