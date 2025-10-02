@@ -1,13 +1,13 @@
 # Delivery Plan — Oct 2025 refresh
 
 ## Goals
-- Make the build/test cycle fully offline by vendoring third-party headers (doctest).
+- Make the build/test cycle reproducible with CMake-managed third-party dependencies (FetchContent).
 - Ensure palette handling matches Duke Nukem 3D assets byte-for-byte while keeping zero-copy behaviour.
 - Replace brittle shell integration tests with fast C++ coverage.
 
 ## Scope
 - `src/palette.cpp`, `include/palette.hpp`, `src/art_file.cpp`, `include/extractor_api.hpp` — raw palette storage, scaling, zero-copy caching.
-- `CMakeLists.txt`, `tests/CMakeLists.txt`, `third_party/doctest/` — vendored doctest integration, asset sync.
+- `CMakeLists.txt`, `tests/CMakeLists.txt`, dependency FetchContent blocks — doctest integration, asset sync.
 - `tests/test_functionality.cpp` plus supporting helpers — new doctest coverage for CLI parity, palette comparison, and extraction.
 
 ## Out of Scope
@@ -16,7 +16,7 @@
 - Modifying CLI option surface beyond palette-help text.
 
 ## Workstreams
-- **T01 – Vendor doctest**: Add `third_party/doctest/doctest.h`, update root CMake to expose `doctest::doctest_with_main` locally.
+- **T01 – Fetch doctest**: Manage doctest via FetchContent and expose `doctest::doctest_with_main` locally.
 - **T02 – Palette/ART refactor**: Store raw 6-bit palette data, regenerate Build-style BGR, cache ART files for zero-copy extraction.
 - **T03 – Test suite refresh**: Port shell scripts to C++ doctests (`tests/test_functionality.cpp`), extend helpers, prune legacy scripts.
 
@@ -26,12 +26,12 @@
 - Manual extraction for sanity: `build/bin/art2img -o tests/output/tmp -f png -p tests/assets/PALETTE.DAT tests/assets/TILES000.ART`.
 
 ## Risks & Mitigations
-- **Header drift**: vendored doctest could lag upstream → documented in plan/memory bank.
+- **Dependency drift**: pinned FetchContent revisions could lag upstream → documented in plan/memory bank.
 - **Palette mismatch**: raw pointer comparisons ensure palette bytes remain aligned; tests guard regressions.
 - **CLI parity**: doctest covers key CLI behaviours; fallback CLI invocation documented above.
 
 ## Rollback Strategy
-- Remove `third_party/doctest`, reinstate FetchContent block if networked builds become acceptable.
+- Revert FetchContent dependency block and restore local headers if offline builds become required again.
 - Revert palette/raw caching commits (see CC list below) if legacy behaviour required.
 
 ---
