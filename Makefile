@@ -1,6 +1,13 @@
 # art2img build orchestration -------------------------------------------------
-# Keep the project buildable with the stock toolchain while remaining friendly
-# to people who override flags or compilers via the environment.
+# DEPRECATED: This Makefile is deprecated. Please use CMake instead.
+# ------------------------------------------------------------------------------
+#
+# This Makefile will be removed in a future version. To build the project:
+#   1. Use the provided build.sh script
+#   2. Or manually: mkdir build && cd build && cmake .. && cmake --build .
+#
+# The new CMake build system provides proper library separation and installation.
+# ------------------------------------------------------------------------------
 
 PROJECT        := art2img
 VERSION        := 1.0.0
@@ -109,9 +116,29 @@ $(WIN_PROGRAM_DIAG): $(WIN_PROGRAM_DIAG_OBJECT) | $(BINDIR) check-win-toolchain
 	$(WIN_CXX) $(WIN_CXXFLAGS) -o $@ $^ $(WIN_LDFLAGS)
 
 # Platform aggregates ------------------------------------------------------------
-all: linux
+all: deprecation-warning linux
 
-linux: $(LINUX_BINS)
+deprecation-warning:
+	@echo "==========================================================================="
+	@echo "⚠  WARNING: This Makefile is deprecated!"
+	@echo "==========================================================================="
+	@echo ""
+	@echo "This project has migrated to CMake. The Makefile will be removed in the future."
+	@echo ""
+	@echo "To build with CMake:"
+	@echo "   • Use the provided build.sh script (recommended)"
+	@echo "   • Or: mkdir build && cd build && cmake .. && cmake --build ."
+	@echo ""
+	@echo "The new CMake build provides:"
+	@echo "   • Proper library/CLI separation"
+	@echo "   • Cross-platform compatibility"
+	@echo "   • Standardized installation (make install)"
+	@echo "   • Better IDE and package manager integration"
+	@echo ""
+	@echo "Continuing with Makefile build (this is temporary support)..."
+	@echo "==========================================================================="
+
+linux: deprecation-warning $(LINUX_BINS)
 	@echo "Linux binaries ready: $(LINUX_BINS)"
 
 check-win-toolchain:
@@ -122,7 +149,7 @@ check-win-toolchain:
 
 windows-build: check-win-toolchain $(WINDOWS_BINS)
 
-windows: check-win-toolchain windows-build
+windows: deprecation-warning check-win-toolchain windows-build
 	@echo "Windows binaries ready: $(WINDOWS_BINS)"
 
 # Convenience -------------------------------------------------------------------
