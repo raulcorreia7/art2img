@@ -7,7 +7,7 @@
 #endif
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../vendor/stb/stb_image_write.h"
+#include <stb_image_write.h>
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop

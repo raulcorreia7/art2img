@@ -27,7 +27,13 @@ mkdir -p tests/output/ci_no_transparency
 # Verify output files exist
 echo "5. Testing PNG memory regression..."
 mkdir -p build-tests
-g++ -std=c++17 -Wall -Wextra -O2 -pthread -Iinclude -Ivendor \
+STB_INCLUDE_DIR="${STB_INCLUDE_DIR:-build/_deps/stb-src}"
+if [ ! -d "$STB_INCLUDE_DIR" ]; then
+    echo "stb headers not found in $STB_INCLUDE_DIR. Run the CMake build first." >&2
+    exit 1
+fi
+
+g++ -std=c++17 -Wall -Wextra -O2 -pthread -Iinclude -I"$STB_INCLUDE_DIR" \
     tests/png_memory_regression.cpp src/png_writer.cpp src/palette.cpp \
     -o build-tests/png_memory_regression
 ./build-tests/png_memory_regression tests/output/png_memory_regression_ci.png

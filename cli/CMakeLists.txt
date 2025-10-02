@@ -18,7 +18,6 @@ set_target_properties(art2img
 target_include_directories(art2img
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../vendor
     ${CMAKE_CURRENT_SOURCE_DIR}/../src
     ${CMAKE_BINARY_DIR}/../include
 )
@@ -27,6 +26,7 @@ target_include_directories(art2img
 target_link_libraries(art2img
     PRIVATE
     art2img_extractor
+    CLI11::CLI11
 )
 
 # Add pthread flags if needed
