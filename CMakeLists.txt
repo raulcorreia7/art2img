@@ -159,20 +159,23 @@ endif()
 
 # Add doctest testing framework
 if(BUILD_TESTS)
-    # Download doctest if not found
     find_package(doctest QUIET)
-    if(NOT doctest_FOUND)
-        message(STATUS "Downloading doctest...")
-        include(FetchContent)
-        FetchContent_Declare(
-            doctest
-            GIT_REPOSITORY https://github.com/doctest/doctest.git
-            GIT_TAG v2.4.11
-        )
-        FetchContent_MakeAvailable(doctest)
-        message(STATUS "doctest downloaded and configured")
-    else()
+
+    if(TARGET doctest::doctest_with_main)
         message(STATUS "Found doctest: ${doctest_VERSION}")
+    else()
+        add_library(doctest INTERFACE)
+        target_include_directories(doctest INTERFACE ${CMAKE_SOURCE_DIR}/third_party)
+
+        add_library(doctest::doctest_with_main INTERFACE IMPORTED)
+        target_link_libraries(doctest::doctest_with_main INTERFACE doctest)
+
+        if(NOT TARGET doctest::doctest)
+            add_library(doctest::doctest INTERFACE IMPORTED)
+            target_link_libraries(doctest::doctest INTERFACE doctest)
+        endif()
+
+        message(STATUS "Using vendored doctest header")
     endif()
 
     add_subdirectory(tests)
@@ -182,11 +185,6 @@ endif()
 if (BUILD_TESTS)
     # Set test working directory so tests can find assets
     set(TEST_WORKING_DIR ${CMAKE_BINARY_DIR})
-
-    # Add copy assets target to main level if needed
-    if(TARGET copy_assets)
-        add_dependencies(test_all copy_assets)
-    endif()
 endif()
 
 # Installation targets

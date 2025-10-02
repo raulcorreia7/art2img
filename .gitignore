@@ -31,3 +31,4 @@ tests/tests/output/
 build-tests/
 
 build/
+cmake-build*/
