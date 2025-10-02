@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../lib/libdoctest_with_main.a CMakeFiles/doctest_with_main.dir/doctest/parts/doctest.cpp.o
-/usr/bin/ranlib ../../lib/libdoctest_with_main.a
