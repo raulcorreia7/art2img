@@ -29,3 +29,5 @@ Thumbs.db
 tests/output/
 tests/tests/output/
 build-tests/
+
+build/
