@@ -4,6 +4,7 @@
 #include "palette.hpp"
 #include "png_writer.hpp"
 #include "tga_writer.hpp"
+#include "exceptions.hpp"
 #include <vector>
 #include <string>
 #include <memory>

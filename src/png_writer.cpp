@@ -21,22 +21,21 @@
 namespace art2img
 {
 
-    bool PngWriter::write_png(const std::string &filename,
-                              const Palette &palette,
-                              const ArtFile::Tile &tile,
-                              const std::vector<uint8_t> &pixel_data,
-                              const Options &options)
+bool PngWriter::write_png(const std::string &filename,
+                          const Palette &palette,
+                          const ArtFile::Tile &tile,
+                          const std::vector<uint8_t> &pixel_data,
+                          const Options &options)
+{
+    if (tile.is_empty())
     {
-        if (tile.is_empty())
-        {
-            return true; // Skip empty tiles
-        }
+        return true; // Skip empty tiles
+    }
 
-        if (pixel_data.size() != tile.size())
-        {
-            std::cerr << "Error: Pixel data size mismatch for tile " << filename << std::endl;
-            return false;
-        }
+    if (pixel_data.size() != tile.size())
+    {
+        throw ArtException("Pixel data size mismatch for tile: " + filename);
+    }
 
         // Convert indexed color to RGBA
         std::vector<uint8_t> rgba_data = convert_to_rgba(palette, tile, pixel_data, options);

@@ -12,8 +12,7 @@ Palette::Palette() {
 bool Palette::load_from_file(const std::string& filename) {
     std::ifstream file(filename, std::ios::binary);
     if (!file.is_open()) {
-        std::cerr << "Warning: Cannot open palette file '" << filename << "'" << std::endl;
-        return false;
+        throw PaletteException("Cannot open palette file: " + filename);
     }
     
     data_.resize(SIZE);

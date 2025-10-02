@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include <string>
+#include "exceptions.hpp"
 
 namespace art2img {
 

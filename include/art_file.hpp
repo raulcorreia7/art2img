@@ -5,6 +5,7 @@
 #include <vector>
 #include <fstream>
 #include <memory>
+#include "exceptions.hpp"
 
 namespace art2img {
 

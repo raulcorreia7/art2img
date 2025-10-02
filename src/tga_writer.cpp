@@ -14,8 +14,7 @@ bool TgaWriter::write_tga(const std::string& filename,
     }
     
     if (pixel_data.size() != tile.size()) {
-        std::cerr << "Error: Pixel data size mismatch for tile " << filename << std::endl;
-        return false;
+        throw ArtException("Pixel data size mismatch for tile: " + filename);
     }
     
     std::ofstream file(filename, std::ios::binary);

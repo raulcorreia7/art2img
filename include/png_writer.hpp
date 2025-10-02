@@ -2,6 +2,7 @@
 
 #include "art_file.hpp"
 #include "palette.hpp"
+#include "exceptions.hpp"
 #include <vector>
 #include <string>
 

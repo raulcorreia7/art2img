@@ -9,19 +9,24 @@ ExtractorAPI::ExtractorAPI() {
 }
 
 bool ExtractorAPI::load_art_file(const std::string& filename) {
-    art_file_ = std::make_unique<ArtFile>();
-    if (!art_file_->open(filename)) {
+    try {
+        art_file_ = std::make_unique<ArtFile>(filename);
+        return true;
+    } catch (const ArtException& e) {
         art_file_.reset();
-        return false;
+        throw;
     }
-    return true;
 }
 
 bool ExtractorAPI::load_palette_file(const std::string& filename) {
     if (!palette_) {
         palette_ = std::make_unique<Palette>();
     }
-    return palette_->load_from_file(filename);
+    try {
+        return palette_->load_from_file(filename);
+    } catch (const ArtException& e) {
+        throw;
+    }
 }
 
 bool ExtractorAPI::load_art_from_memory(const uint8_t* data, size_t size) {
@@ -96,8 +101,13 @@ ExtractionResult ExtractorAPI::extract_tile(uint32_t tile_index, PngWriter::Opti
     }
     
     // Extract to PNG in memory
-    if (!PngWriter::write_png_to_memory(result.image_data, *palette_, tile, pixel_data, options)) {
-        result.error_message = "Failed to write PNG to memory";
+    try {
+        if (!PngWriter::write_png_to_memory(result.image_data, *palette_, tile, pixel_data, options)) {
+            result.error_message = "Failed to write PNG to memory";
+            return result;
+        }
+    } catch (const ArtException& e) {
+        result.error_message = "Failed to write PNG to memory: " + std::string(e.what());
         return result;
     }
     
@@ -147,8 +157,13 @@ ExtractionResult ExtractorAPI::extract_tile_tga(uint32_t tile_index) {
     }
     
     // Extract to TGA in memory
-    if (!TgaWriter::write_tga_to_memory(result.image_data, *palette_, tile, pixel_data)) {
-        result.error_message = "Failed to write TGA to memory";
+    try {
+        if (!TgaWriter::write_tga_to_memory(result.image_data, *palette_, tile, pixel_data)) {
+            result.error_message = "Failed to write TGA to memory";
+            return result;
+        }
+    } catch (const ArtException& e) {
+        result.error_message = "Failed to write TGA to memory: " + std::string(e.what());
         return result;
     }
     
