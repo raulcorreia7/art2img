@@ -38,6 +38,7 @@ SRCDIR         := src
 BINDIR         := bin
 OBJDIR         := obj
 WIN_OBJDIR     := obj-win
+INCLUDEDIR     := include
 TESTDIR        := tests
 OUTPUT_DIR     := $(TESTDIR)/output
 OUTPUT_VARIANTS := tga png with_transparency no_transparency
@@ -49,6 +50,9 @@ PALETTE_ASSET  := $(ASSET_DIR)/PALETTE.DAT
 # Source inventory (diagnostic builds from a single file, everything else is main)
 DIAG_SOURCE    := $(SRCDIR)/diagnostic.cpp
 COMMON_SOURCES := $(filter-out $(DIAG_SOURCE) $(wildcard $(SRCDIR)/test_%.cpp),                     $(wildcard $(SRCDIR)/*.cpp))
+
+# Version header dependency
+VERSION_HEADER := $(INCLUDEDIR)/version.hpp
 
 # Linux artefacts ----------------------------------------------------------------
 PROGRAM        := $(BINDIR)/$(PROJECT)
@@ -77,8 +81,15 @@ WINDOWS_DEPS   := $(WIN_PROGRAM_OBJECTS:.o=.d) $(WIN_PROGRAM_DIAG_OBJECT:.o=.d)
 $(BINDIR) $(OBJDIR) $(WIN_OBJDIR):
 	@mkdir -p $@
 
+# Version header generation ------------------------------------------------------
+$(INCLUDEDIR)/version.hpp: Makefile
+	@echo "Generating version header..."
+	@mkdir -p $(INCLUDEDIR)
+	@echo "#pragma once" > $@
+	@echo "#define ART2IMG_VERSION \"$(VERSION)\"" >> $@
+
 # Compilation rules --------------------------------------------------------------
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp | $(OBJDIR)
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp $(VERSION_HEADER) | $(OBJDIR)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEPFLAGS) -c -o $@ $<
 
 $(WIN_OBJDIR)/%.o: $(SRCDIR)/%.cpp | $(WIN_OBJDIR)
@@ -141,6 +152,7 @@ help:
 	@printf "  %-20s%s\\n" "windows" "Build Windows binaries (if toolchain present)"
 	@printf "  %-20s%s\\n" "test" "Run smoke tests"
 	@printf "  %-20s%s\\n" "verify" "Check binary formats"
+	@printf "  %-20s%s\\n" "verify-version" "Check version consistency"
 	@printf "  %-20s%s\\n" "clean" "Remove build artefacts"
 
 # Verification ------------------------------------------------------------------
@@ -179,8 +191,22 @@ verify-windows:
 		echo "⚠ $(WIN_CXX) not available, skipping Windows verification"; \
 	fi
 
+# Version validation -----------------------------------------------------------
+verify-version:
+	@echo "Verifying version consistency..."
+	@if [ ! -f "$(VERSION_HEADER)" ]; then \
+		echo "✗ Version header missing, run make first"; \
+		exit 1; \
+	fi
+	@HEADER_VERSION=$$(grep "ART2IMG_VERSION" $(VERSION_HEADER) | cut -d'"' -f2); \
+	if [ "$$HEADER_VERSION" != "$(VERSION)" ]; then \
+		echo "✗ Version mismatch: Makefile=$(VERSION), Header=$$HEADER_VERSION"; \
+		exit 1; \
+	fi
+	@echo "✓ Version consistency verified: $(VERSION)"
+
 # Dependency includes -----------------------------------------------------------
 -include $(LINUX_DEPS) $(WINDOWS_DEPS)
 
 # Phony rules -------------------------------------------------------------------
-.PHONY: all linux windows windows-build clean test verify verify-linux verify-windows procs check-win-toolchain help
+.PHONY: all linux windows windows-build clean test verify verify-linux verify-windows procs check-win-toolchain verify-version help

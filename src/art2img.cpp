@@ -2,6 +2,8 @@
 #include "palette.hpp"
 #include "extractor.hpp"
 #include "exceptions.hpp"
+#include "version.hpp"
+#include "version.hpp"
 #include <CLI11/CLI11.hpp>
 #include <iostream>
 #include <filesystem>
@@ -249,7 +251,7 @@ int main(int argc, char* argv[]) {
         std::string input_path;
         
         CLI::App app{"Extract pictures from ART files to TGA or PNG format"};
-        app.set_version_flag("-v,--version", "art2img 1.0.0");
+        app.set_version_flag("-v,--version", "art2img " ART2IMG_VERSION);
         
         // Positional argument
         app.add_option("ART_FILE|ART_DIRECTORY", input_path, "Input ART file or directory")
