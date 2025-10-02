@@ -1,32 +1,71 @@
 cmake_minimum_required(VERSION 3.14)
-project(art2img VERSION 1.0.0)
+project(art2img VERSION 1.0.0 LANGUAGES CXX)
 
 # CMake options
 option(BUILD_CLI "Build the command line interface tool" ON)
 option(BUILD_TESTS "Build the test suite" ON)
+option(BUILD_DIAGNOSTIC "Build the diagnostic tool" OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" ON)
+
+# Enable testing at the top level
+enable_testing()
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Compiler-specific flags
-if (MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
-else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
-endif()
-
-# Set the output directory for the library files
+# Set output directories
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+# Set default install directories
+if(NOT DEFINED CMAKE_INSTALL_LIBDIR)
+    set(CMAKE_INSTALL_LIBDIR lib)
+endif()
+if(NOT DEFINED CMAKE_INSTALL_BINDIR)
+    set(CMAKE_INSTALL_BINDIR bin)
+endif()
+if(NOT DEFINED CMAKE_INSTALL_INCLUDEDIR)
+    set(CMAKE_INSTALL_INCLUDEDIR include)
+endif()
+
+# Set up build type specific flags
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
+# Compiler-specific flags
+if(MSVC)
+    string(APPEND CMAKE_CXX_FLAGS " /W4")
+else()
+    string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -pedantic -pthread")
+endif()
+
+# Optimization flags for Release build
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    if(MSVC)
+        string(APPEND CMAKE_CXX_FLAGS_RELEASE " /O2")
+    else()
+        string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
+    endif()
+endif()
+
+# Generate version header
+configure_file(
+    ${CMAKE_SOURCE_DIR}/cmake/version.hpp.in
+    ${CMAKE_BINARY_DIR}/include/version.hpp
+)
+
+# Ensure include directories exist
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include)
+
 # Add vendor directory
 include_directories(vendor)
 
-# Include the source directory
+# Include the source and generated header directories
 include_directories(include)
+include_directories(${CMAKE_BINARY_DIR}/include)
 
 # Create the extractor library
 add_library(art2img_extractor
@@ -39,7 +78,27 @@ add_library(art2img_extractor
     src/exceptions.cpp
 )
 
-# Add header-only files
+# Set up library properties and include directories
+set_target_properties(art2img_extractor
+    PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR}
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+)
+
+# Define public interface - only expose API-relevant headers
+target_include_directories(art2img_extractor
+    PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor
+)
+
+# Add header files as dependencies
 target_sources(art2img_extractor
     PRIVATE
     include/extractor_api.hpp
@@ -49,25 +108,14 @@ target_sources(art2img_extractor
     include/png_writer.hpp
     include/tga_writer.hpp
     include/exceptions.hpp
-    include/version.hpp
     vendor/stb/stb_image_write.h
+    ${CMAKE_BINARY_DIR}/include/version.hpp
 )
 
-# Add the library to the build if it is successful
+# Set public headers for installation
 set_target_properties(art2img_extractor
     PROPERTIES
-    PUBLIC_HEADER "include/extractor_api.hpp;include/extractor.hpp;include/art_file.hpp;include/palette.hpp;include/png_writer.hpp;include/tga_writer.hpp;include/exceptions.hpp;include/version.hpp"
-    VERSION ${PROJECT_VERSION}
-    SOVERSION ${PROJECT_VERSION_MAJOR}
-)
-
-# Include the extract directories
-target_include_directories(art2img_extractor
-    PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor
-    PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    PUBLIC_HEADER "include/extractor_api.hpp;include/art_file.hpp;include/palette.hpp;include/exceptions.hpp"
 )
 
 # Include the cli tool
@@ -75,7 +123,68 @@ if (BUILD_CLI)
     add_subdirectory(cli)
 endif()
 
+# Build diagnostic tool if requested
+if (BUILD_DIAGNOSTIC)
+    add_executable(art2img_diagnostic
+        src/diagnostic.cpp
+    )
+
+    target_include_directories(art2img_diagnostic
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/vendor
+        ${CMAKE_BINARY_DIR}/include
+    )
+
+    set_target_properties(art2img_diagnostic
+        PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        CXX_STANDARD 17
+        CXX_STANDARD_REQUIRED ON
+    )
+endif()
+
 # Add the tests
 if (BUILD_TESTS)
     add_subdirectory(tests)
+endif()
+
+# Include tests from subdirectory in the main test suite
+if (BUILD_TESTS)
+    # Set test working directory so tests can find assets
+    set(TEST_WORKING_DIR ${CMAKE_BINARY_DIR})
+
+    # Add copy assets target to main level if needed
+    if(TARGET copy_assets)
+        add_dependencies(test_all copy_assets)
+    endif()
+endif()
+
+# Installation targets
+install(TARGETS art2img_extractor
+    EXPORT art2img-extractor-targets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+# Install the primary API header separately for easy inclusion
+install(FILES include/extractor_api.hpp
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+# Generate and install pkg-config file if available
+find_package(PkgConfig QUIET)
+if(PKG_CONFIG_FOUND)
+    configure_file(
+        ${CMAKE_SOURCE_DIR}/cmake/art2img-extractor.pc.in
+        ${CMAKE_BINARY_DIR}/art2img-extractor.pc
+        @ONLY
+    )
+
+    install(FILES ${CMAKE_BINARY_DIR}/art2img-extractor.pc
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+    )
 endif()
