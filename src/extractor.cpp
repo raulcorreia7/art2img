@@ -12,18 +12,15 @@ ArtExtractor::ArtExtractor(ArtFile& art_file, Palette& palette)
 
 bool ArtExtractor::extract(const Options& options) {
     if (!options.is_valid()) {
-        std::cerr << "Error: Invalid extraction options" << std::endl;
-        return false;
+        throw ExtractionException("Invalid extraction options");
     }
     
     if (!art_file_.is_open()) {
-        std::cerr << "Error: ART file is not open" << std::endl;
-        return false;
+        throw ExtractionException("ART file is not open");
     }
     
     if (!palette_.is_loaded()) {
-        std::cerr << "Error: Palette is not loaded" << std::endl;
-        return false;
+        throw ExtractionException("Palette is not loaded");
     }
     
     options_ = options;
@@ -48,12 +45,12 @@ bool ArtExtractor::extract(const Options& options) {
     }
     
     // Create thread pool
-    ThreadPool pool(options_.num_threads);
+    BS::thread_pool pool(options_.num_threads);
     
     // Enqueue all tile extraction tasks
     const auto& tiles = art_file_.tiles();
     for (uint32_t i = 0; i < tiles.size(); ++i) {
-        pool.enqueue([this, i]() {
+        pool.detach_task([this, i]() {
             if (this->extract_tile(i, this->options_.output_dir)) {
                 ++stats_.tiles_successful;
             } else {
@@ -68,7 +65,7 @@ bool ArtExtractor::extract(const Options& options) {
     }
     
     // Wait for all tasks to complete
-    pool.wait_all();
+    pool.wait();
     
     if (options_.verbose) {
         update_progress();

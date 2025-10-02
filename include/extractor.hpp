@@ -4,7 +4,8 @@
 #include "palette.hpp"
 #include "tga_writer.hpp"
 #include "png_writer.hpp"
-#include "threading.hpp"
+#include "exceptions.hpp"
+#include <BS_thread_pool/BS_thread_pool.hpp>
 #include <string>
 #include <atomic>
 #include <mutex>
