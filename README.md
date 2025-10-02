@@ -22,9 +22,7 @@ art2img is a C++ tool for extracting images from Duke Nukem 3D ART files. It pro
 [![Latest Release](https://img.shields.io/github/release/raulcorreia7/art2img.svg)](https://github.com/raulcorreia7/art2img/releases/latest)
 
 - **Linux x86_64**: `art2img-linux-x86_64-*.tar.gz`
-- **Linux ARM64**: `art2img-linux-arm64-*.tar.gz`
 - **Windows x86_64**: `art2img-windows-x86_64-*.zip`
-- **Windows ARM64**: `art2img-windows-arm64-*.zip`
 
 ### Docker Pipeline (Recommended)
 
@@ -64,14 +62,8 @@ make clean
 # Build Windows binaries (requires MinGW)
 make windows
 
-# Build Linux ARM64 binaries (requires aarch64 cross-compiler)
-make linux-arm64
-
-# Build Windows ARM64 binaries (requires MinGW ARM64)
-make windows-arm64
-
 # Verify all binaries
-make verify-all
+make verify
 ```
 
 ## Command Line Options
@@ -116,8 +108,7 @@ tests/         - Test assets and scripts
 - Docker (for containerized execution)
 
 ### Cross-Compilation (Optional)
-- **Windows**: `g++-mingw-w64-x86-64`, `g++-mingw-w64-aarch64`
-- **Linux ARM64**: `gcc-aarch64-linux-gnu`, `g++-aarch64-linux-gnu`
+- **Windows**: `g++-mingw-w64-x86-64`
 
 ### For Running
 - **Linux**: No additional dependencies (static binaries)
@@ -129,8 +120,6 @@ tests/         - Test assets and scripts
 | Platform | Architecture | Build Status |
 |----------|-------------|--------------|
 | Linux | x86_64 | ✅ |
-| Linux | ARM64 | ✅ |
 | Windows | x86_64 | ✅ |
-| Windows | ARM64 | ✅ |
 
 All binaries are statically linked and require no additional runtime dependencies.
