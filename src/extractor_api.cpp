@@ -93,16 +93,34 @@ ExtractionResult ExtractorAPI::extract_tile(uint32_t tile_index, PngWriter::Opti
         return result;
     }
     
-    // Read tile data
-    std::vector<uint8_t> pixel_data;
-    if (!art_file_->read_tile_data_from_memory(tile_index, pixel_data)) {
-        result.error_message = "Failed to read tile data";
-        return result;
+    // Get direct pointer to tile data (zero-copy)
+    const uint8_t* pixel_data = nullptr;
+    size_t pixel_data_size = 0;
+
+    if (!tile.is_empty()) {
+        if (!art_file_->has_data()) {
+            result.error_message = "ART data not loaded in memory";
+            return result;
+        }
+
+        if (tile.offset + tile.size() > art_file_->data_size()) {
+            result.error_message = "Tile data extends beyond buffer size";
+            return result;
+        }
+
+        pixel_data = art_file_->data() + tile.offset;
+        pixel_data_size = tile.size();
     }
-    
+
     // Extract to PNG in memory
     try {
-        if (!PngWriter::write_png_to_memory(result.image_data, *palette_, tile, pixel_data, options)) {
+        if (tile.is_empty()) {
+            // Empty tile - no image data
+            result.success = true;
+            return result;
+        }
+
+        if (!PngWriter::write_png_to_memory(result.image_data, *palette_, tile, pixel_data, pixel_data_size, options)) {
             result.error_message = "Failed to write PNG to memory";
             return result;
         }
@@ -149,16 +167,34 @@ ExtractionResult ExtractorAPI::extract_tile_tga(uint32_t tile_index) {
         return result;
     }
     
-    // Read tile data
-    std::vector<uint8_t> pixel_data;
-    if (!art_file_->read_tile_data_from_memory(tile_index, pixel_data)) {
-        result.error_message = "Failed to read tile data";
-        return result;
+    // Get direct pointer to tile data (zero-copy)
+    const uint8_t* pixel_data = nullptr;
+    size_t pixel_data_size = 0;
+
+    if (!tile.is_empty()) {
+        if (!art_file_->has_data()) {
+            result.error_message = "ART data not loaded in memory";
+            return result;
+        }
+
+        if (tile.offset + tile.size() > art_file_->data_size()) {
+            result.error_message = "Tile data extends beyond buffer size";
+            return result;
+        }
+
+        pixel_data = art_file_->data() + tile.offset;
+        pixel_data_size = tile.size();
     }
-    
+
     // Extract to TGA in memory
     try {
-        if (!TgaWriter::write_tga_to_memory(result.image_data, *palette_, tile, pixel_data)) {
+        if (tile.is_empty()) {
+            // Empty tile - no image data
+            result.success = true;
+            return result;
+        }
+
+        if (!TgaWriter::write_tga_to_memory(result.image_data, *palette_, tile, pixel_data, pixel_data_size)) {
             result.error_message = "Failed to write TGA to memory";
             return result;
         }
@@ -211,6 +247,98 @@ std::vector<ExtractionResult> ExtractorAPI::extract_all_tiles_tga() {
     }
     
     return results;
+}
+
+ArtView ExtractorAPI::get_art_view() const {
+    ArtView view;
+
+    if (!art_file_ || !palette_) {
+        throw ArtException("ART file or palette not loaded");
+    }
+
+    // Set art data pointer and size
+    if (art_file_->is_open() && !art_file_->has_data()) {
+        // File-based mode, we need to read the entire file into memory
+        throw ArtException("get_art_view() requires memory-based loading, not file-based");
+    }
+
+    view.art_data = art_file_->data();
+    view.art_size = art_file_->data_size();
+    view.palette = palette_.get();
+    view.header = art_file_->header();
+    view.tiles = art_file_->tiles(); // Copy the tiles vector (metadata only)
+
+    return view;
+}
+
+// ImageView method implementations
+bool ImageView::save_to_png(const std::string& path, PngWriter::Options options) const {
+    if (!parent || !parent->palette) {
+        throw ArtException("Invalid ImageView state: parent or palette is null");
+    }
+
+    const uint8_t* pixels = pixel_data();
+    if (!pixels) {
+        // Empty tile - create an empty file or skip?
+        // For now, skip empty tiles
+        return true;
+    }
+
+    ArtFile::Tile tile = parent->get_tile(tile_index);
+    return PngWriter::write_png(path, *parent->palette, tile, pixels, size(), options);
+}
+
+std::vector<uint8_t> ImageView::extract_to_png(PngWriter::Options options) const {
+    if (!parent || !parent->palette) {
+        throw ArtException("Invalid ImageView state: parent or palette is null");
+    }
+
+    const uint8_t* pixels = pixel_data();
+    if (!pixels) {
+        // Empty tile - return empty vector
+        return {};
+    }
+
+    ArtFile::Tile tile = parent->get_tile(tile_index);
+    std::vector<uint8_t> result;
+    if (!PngWriter::write_png_to_memory(result, *parent->palette, tile, pixels, size(), options)) {
+        throw ArtException("Failed to extract PNG to memory");
+    }
+    return result;
+}
+
+bool ImageView::save_to_tga(const std::string& path) const {
+    if (!parent || !parent->palette) {
+        throw ArtException("Invalid ImageView state: parent or palette is null");
+    }
+
+    const uint8_t* pixels = pixel_data();
+    if (!pixels) {
+        // Empty tile - skip
+        return true;
+    }
+
+    ArtFile::Tile tile = parent->get_tile(tile_index);
+    return TgaWriter::write_tga(path, *parent->palette, tile, pixels, size());
+}
+
+std::vector<uint8_t> ImageView::extract_to_tga() const {
+    if (!parent || !parent->palette) {
+        throw ArtException("Invalid ImageView state: parent or palette is null");
+    }
+
+    const uint8_t* pixels = pixel_data();
+    if (!pixels) {
+        // Empty tile - return empty vector
+        return {};
+    }
+
+    ArtFile::Tile tile = parent->get_tile(tile_index);
+    std::vector<uint8_t> result;
+    if (!TgaWriter::write_tga_to_memory(result, *parent->palette, tile, pixels, size())) {
+        throw ArtException("Failed to extract TGA to memory");
+    }
+    return result;
 }
 
 } // namespace art2img
