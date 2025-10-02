@@ -5,6 +5,7 @@
 #include "exceptions.hpp"
 #include <vector>
 #include <string>
+#include <filesystem>
 
 namespace art2img {
 
@@ -28,13 +29,13 @@ public:
     };
     
     // File-based operations (vector version)
-    static bool write_tga(const std::string& filename,
+    static bool write_tga(const std::filesystem::path& filename,
                          const Palette& palette,
                          const ArtFile::Tile& tile,
                          const std::vector<uint8_t>& pixel_data);
 
     // File-based operations (raw pointer version)
-    static bool write_tga(const std::string& filename,
+    static bool write_tga(const std::filesystem::path& filename,
                          const Palette& palette,
                          const ArtFile::Tile& tile,
                          const uint8_t* pixel_data,

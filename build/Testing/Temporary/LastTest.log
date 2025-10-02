@@ -1,0 +1,274 @@
+Start testing: Oct 02 10:01 CEST
+----------------------------------------------------------
+1/5 Testing: doctest_tests
+1/5 Test: doctest_tests
+Command: "/mnt/d/projects/art2img/build/bin/art2img_tests"
+Directory: /mnt/d/projects/art2img/build
+"doctest_tests" start time: Oct 02 10:01 CEST
+Output:
+----------------------------------------------------------
+[doctest] doctest version is "2.4.11"
+[doctest] run with "--help" for options
+===============================================================================
+/mnt/d/projects/art2img/tests/test_art_file.cpp:9:
+TEST CASE:  ArtFile basic functionality
+  File construction
+
+/mnt/d/projects/art2img/tests/test_art_file.cpp:9: ERROR: test case THREW exception: exception thrown in subcase - will translate later when the whole test case has been exited (cannot translate while there is an active exception)
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_art_file.cpp:9:
+TEST CASE:  ArtFile basic functionality
+
+DEEPEST SUBCASE STACK REACHED (DIFFERENT FROM THE CURRENT ONE):
+  File construction
+
+/mnt/d/projects/art2img/tests/test_art_file.cpp:9: ERROR: test case THREW exception: Cannot open file: tests/assets/TILES000.ART
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_art_file.cpp:39:
+TEST CASE:  ArtFile header validation
+
+/mnt/d/projects/art2img/tests/test_art_file.cpp:39: ERROR: test case THREW exception: Cannot open test asset: TILES000.ART
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_art_file.cpp:52:
+TEST CASE:  ArtFile tile metadata
+
+/mnt/d/projects/art2img/tests/test_art_file.cpp:52: ERROR: test case THREW exception: Cannot open test asset: TILES000.ART
+
+Error: Invalid data or insufficient size
+Error: Invalid ART data - bad version number (255) or tile range
+===============================================================================
+/mnt/d/projects/art2img/tests/test_art_file.cpp:117:
+TEST CASE:  ArtFile data reading
+
+/mnt/d/projects/art2img/tests/test_art_file.cpp:117: ERROR: test case THREW exception: Cannot open test asset: TILES000.ART
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_extractor_api.cpp:29:
+TEST CASE:  ExtractorAPI ART file loading
+
+/mnt/d/projects/art2img/tests/test_extractor_api.cpp:31: MESSAGE: TILES000.ART not found, skipping ART loading tests
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_extractor_api.cpp:68:
+TEST CASE:  ExtractorAPI palette loading
+
+/mnt/d/projects/art2img/tests/test_extractor_api.cpp:70: MESSAGE: PALETTE.DAT not found, skipping palette loading tests
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_extractor_api.cpp:112:
+TEST CASE:  ExtractorAPI tile extraction
+
+/mnt/d/projects/art2img/tests/test_extractor_api.cpp:115: MESSAGE: Required assets not found, skipping extraction tests
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_extractor_api.cpp:170:
+TEST CASE:  ExtractorAPI batch extraction
+
+/mnt/d/projects/art2img/tests/test_extractor_api.cpp:173: MESSAGE: Required assets not found, skipping batch extraction tests
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_extractor_api.cpp:222:
+TEST CASE:  ExtractorAPI ArtView access
+
+/mnt/d/projects/art2img/tests/test_extractor_api.cpp:225: MESSAGE: Required assets not found, skipping ArtView tests
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_image_view.cpp:35:
+TEST CASE:  ImageView construction
+
+/mnt/d/projects/art2img/tests/test_image_view.cpp:38: MESSAGE: Required assets not found, skipping ImageView tests
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_image_view.cpp:76:
+TEST CASE:  ImageView pixel data access
+
+/mnt/d/projects/art2img/tests/test_image_view.cpp:79: MESSAGE: Required assets not found, skipping pixel data tests
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_image_view.cpp:130:
+TEST CASE:  ImageView animation data access
+
+/mnt/d/projects/art2img/tests/test_image_view.cpp:133: MESSAGE: Required assets not found, skipping animation data tests
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_image_view.cpp:159:
+TEST CASE:  ImageView image saving
+
+/mnt/d/projects/art2img/tests/test_image_view.cpp:162: MESSAGE: Required assets not found, skipping image saving tests
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_image_view.cpp:253:
+TEST CASE:  ImageView error handling
+
+/mnt/d/projects/art2img/tests/test_image_view.cpp:256: MESSAGE: Required assets not found, skipping error handling tests
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_integration.cpp:10:
+TEST CASE:  Integration tests - Full pipeline
+
+/mnt/d/projects/art2img/tests/test_integration.cpp:13: MESSAGE: Required assets not found, skipping integration tests
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_integration.cpp:169:
+TEST CASE:  Integration tests - Error handling
+
+/mnt/d/projects/art2img/tests/test_integration.cpp:171: MESSAGE: TILES000.ART not found, skipping error handling tests
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_integration.cpp:203:
+TEST CASE:  Integration tests - Performance and limits
+
+/mnt/d/projects/art2img/tests/test_integration.cpp:205: MESSAGE: TILES000.ART not found, skipping performance tests
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_integration.cpp:249:
+TEST CASE:  Integration tests - Animation data
+
+/mnt/d/projects/art2img/tests/test_integration.cpp:252: MESSAGE: Required assets not found, skipping animation tests
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_palette.cpp:25:
+TEST CASE:  Palette file loading
+
+/mnt/d/projects/art2img/tests/test_palette.cpp:27: MESSAGE: PALETTE.DAT not found, skipping file loading tests
+
+===============================================================================
+/mnt/d/projects/art2img/tests/test_palette.cpp:49:
+TEST CASE:  Palette memory loading
+
+/mnt/d/projects/art2img/tests/test_palette.cpp:51: MESSAGE: PALETTE.DAT not found, skipping memory loading tests
+
+===============================================================================
+[doctest] test cases:  27 |  23 passed | 4 failed | 0 skipped
+[doctest] assertions: 817 | 817 passed | 0 failed |
+[doctest] Status: FAILURE!
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Failed.
+"doctest_tests" end time: Oct 02 10:01 CEST
+"doctest_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/5 Testing: functionality_tests
+2/5 Test: functionality_tests
+Command: "/mnt/d/projects/art2img/tests/test_functionality.sh"
+Directory: /mnt/d/projects/art2img/build
+"functionality_tests" start time: Oct 02 10:01 CEST
+Output:
+----------------------------------------------------------
+art2img Test Suite
+Loading environment configuration...
+Test 1: TGA format
+/mnt/d/projects/art2img/tests/test_functionality.sh: line 34: ../bin/art2img: No such file or directory
+[FAIL] TGA test failed
+<end of output>
+Test time =   0.03 sec
+----------------------------------------------------------
+Test Failed.
+"functionality_tests" end time: Oct 02 10:01 CEST
+"functionality_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/5 Testing: palette_comparison_tests
+3/5 Test: palette_comparison_tests
+Command: "/mnt/d/projects/art2img/tests/test_palette_comparison.sh"
+Directory: /mnt/d/projects/art2img/build
+"palette_comparison_tests" start time: Oct 02 10:01 CEST
+Output:
+----------------------------------------------------------
+art2img Palette Comparison Test
+=================================
+Generating images with Duke Nukem 3D default palette...
+Error processing tests/assets/TILES011.ART: Cannot open file: tests/assets/TILES011.ART
+Generating images with external PALETTE.DAT file...
+Error processing tests/assets/TILES011.ART: Cannot open file: tests/assets/TILES011.ART
+
+Comparison Results:
+------------------
+Files generated with Duke Nukem 3D default palette: 0
+Files generated with external PALETTE.DAT: 0
+✓ File counts match
+⚠ Could not find sample tiles for comparison
+⚠ Missing animation data files
+
+Test Summary:
+------------
+✓ Duke Nukem 3D palette is functioning as default
+✓ External palette file functionality preserved
+✓ Both palette methods generate valid output
+✓ Animation data generation works with both methods
+
+[SUCCESS] Palette comparison test completed!
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"palette_comparison_tests" end time: Oct 02 10:01 CEST
+"palette_comparison_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/5 Testing: palette_functionality_tests
+4/5 Test: palette_functionality_tests
+Command: "/mnt/d/projects/art2img/tests/test_palette_functionality.sh"
+Directory: /mnt/d/projects/art2img/build
+"palette_functionality_tests" start time: Oct 02 10:01 CEST
+Output:
+----------------------------------------------------------
+art2img Palette Functionality Test Suite
+==========================================
+Loading environment configuration...
+
+Test 1: Duke Nukem 3D Default Palette (no -p parameter)
+------------------------------------------------------
+Error processing assets/TILES011.ART: Cannot open file: assets/TILES011.ART
+[FAIL] Duke Nukem 3D default palette test failed
+<end of output>
+Test time =   0.04 sec
+----------------------------------------------------------
+Test Failed.
+"palette_functionality_tests" end time: Oct 02 10:01 CEST
+"palette_functionality_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/5 Testing: default_palette_validation_tests
+5/5 Test: default_palette_validation_tests
+Command: "/mnt/d/projects/art2img/tests/test_default_palette_validation.sh"
+Directory: /mnt/d/projects/art2img/build
+"default_palette_validation_tests" start time: Oct 02 10:01 CEST
+Output:
+----------------------------------------------------------
+Duke Nukem 3D Default Palette Validation Test
+============================================
+Testing ALL ART files with Duke Nukem 3D default palette (no -p parameter)...
+-------------------------------------------------------------------------------
+Processing TILES*.ART with default palette...
+Error processing tests/assets/TILES*.ART: Cannot open file: tests/assets/TILES*.ART
+
+Testing ALL ART files with external PALETTE.DAT file...
+------------------------------------------------------
+Processing TILES*.ART with external palette...
+Error processing tests/assets/TILES*.ART: Cannot open file: tests/assets/TILES*.ART
+
+Validation Results:
+==================
+✗ TILES*: Output directories not found
+
+Summary:
+=======
+Total ART files processed: 1
+Files with matching output: 0
+⚠ Some files produced different output
+[WARNING] Duke Nukem 3D default palette validation requires review
+<end of output>
+Test time =   0.05 sec
+----------------------------------------------------------
+Test Failed.
+"default_palette_validation_tests" end time: Oct 02 10:01 CEST
+"default_palette_validation_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Oct 02 10:01 CEST

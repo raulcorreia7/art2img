@@ -1,47 +1,52 @@
 cmake_minimum_required(VERSION 3.14)
-project(art2img_tests)
 
-# Initialize test dependencies list
-set(TEST_DEPENDENCIES)
+# Create unified doctest test executable
+add_executable(art2img_tests)
 
-# Add separate test executables (each test file has its own main())
-foreach(test_file IN ITEMS test_library_api simple_test test_blood_palette_validation png_memory_regression)
-    add_executable(${test_file}
-        ${test_file}.cpp
-    )
+# Add doctest source files
+target_sources(art2img_tests
+    PRIVATE
+    doctest_tests.cpp
+    test_art_file.cpp
+    test_palette.cpp
+    test_extractor_api.cpp
+    test_image_view.cpp
+    test_integration.cpp
+)
 
-    set_target_properties(${test_file}
-        PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-        CXX_STANDARD 17
-        CXX_STANDARD_REQUIRED ON
-    )
+# Set test executable properties
+set_target_properties(art2img_tests
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+)
 
-    target_link_libraries(${test_file}
-        PRIVATE
-        art2img_extractor
-    )
+# Link libraries
+target_link_libraries(art2img_tests
+    PRIVATE
+    art2img_extractor
+    doctest::doctest_with_main
+)
 
-    target_include_directories(${test_file}
-        PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/../include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../vendor
-        ${CMAKE_CURRENT_SOURCE_DIR}/../src
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_BINARY_DIR}/../include
-    )
+target_include_directories(art2img_tests
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../vendor
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src
+    ${CMAKE_BINARY_DIR}/../include
+)
 
-    if(NOT MSVC)
-        target_link_options(${test_file} PRIVATE -pthread)
-    endif()
+if(NOT MSVC)
+    target_link_options(art2img_tests PRIVATE -pthread)
+endif()
 
-    # Add to CTest
-    add_test(NAME ${test_file} COMMAND ${test_file})
-    set_tests_properties(${test_file} PROPERTIES WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-
-    # Add to test dependencies list
-    list(APPEND TEST_DEPENDENCIES ${test_file})
-endforeach()
+# Add to CTest
+add_test(NAME doctest_tests COMMAND art2img_tests)
+set_tests_properties(doctest_tests
+    PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
 
 # Create custom target to copy test assets
 add_custom_target(copy_assets
@@ -51,13 +56,12 @@ add_custom_target(copy_assets
     COMMENT "Copying test assets"
 )
 
-# Add functionality test via shell script
+# Add functionality test via shell script (keep existing shell tests)
 if(EXISTS ${CMAKE_SOURCE_DIR}/tests/test_functionality.sh)
     add_test(NAME functionality_tests
         COMMAND ${CMAKE_SOURCE_DIR}/tests/test_functionality.sh
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     )
-
 endif()
 
 # Add palette comparison test
@@ -66,7 +70,6 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/tests/test_palette_comparison.sh)
         COMMAND ${CMAKE_SOURCE_DIR}/tests/test_palette_comparison.sh
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     )
-
 endif()
 
 # Add palette functionality test
@@ -75,7 +78,6 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/tests/test_palette_functionality.sh)
         COMMAND ${CMAKE_SOURCE_DIR}/tests/test_palette_functionality.sh
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     )
-
 endif()
 
 # Add default palette validation test
@@ -88,7 +90,7 @@ endif()
 
 # Create a comprehensive test target that handles dependencies
 add_custom_target(run_all_tests
-    DEPENDS art2img ${TEST_DEPENDENCIES} copy_assets
+    DEPENDS art2img art2img_tests copy_assets
     COMMENT "Building test dependencies"
 )
 

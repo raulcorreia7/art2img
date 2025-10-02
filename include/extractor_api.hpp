@@ -8,8 +8,14 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <filesystem>
+#include <iterator>
 
 namespace art2img {
+
+// Forward declarations
+struct ArtView;
+struct ImageView;
 
 struct ExtractionResult {
     bool success;
@@ -28,6 +34,7 @@ struct ExtractionResult {
     uint32_t anim_speed;
     uint32_t other_flags;
 };
+
 
 // Zero-copy view structures for parallel processing
 struct ArtView {
@@ -79,24 +86,25 @@ struct ImageView {
     uint32_t other_flags() const { return parent ? parent->tiles[tile_index].other_flags() : 0; }
 
     // PNG saving (conversion + write happens here)
-    bool save_to_png(const std::string& path, PngWriter::Options options = PngWriter::Options()) const;
-    bool save_to_png(const std::string& path) const { return save_to_png(path, PngWriter::Options()); }
+    bool save_to_png(const std::filesystem::path& path, PngWriter::Options options = PngWriter::Options()) const;
+    bool save_to_png(const std::filesystem::path& path) const { return save_to_png(path, PngWriter::Options()); }
 
     std::vector<uint8_t> extract_to_png(PngWriter::Options options = PngWriter::Options()) const;
     std::vector<uint8_t> extract_to_png() const { return extract_to_png(PngWriter::Options()); }
 
     // TGA saving
-    bool save_to_tga(const std::string& path) const;
+    bool save_to_tga(const std::filesystem::path& path) const;
     std::vector<uint8_t> extract_to_tga() const;
 };
+
 
 class ExtractorAPI {
 public:
     ExtractorAPI();
     
     // File-based operations
-    bool load_art_file(const std::string& filename);
-    bool load_palette_file(const std::string& filename);
+    bool load_art_file(const std::filesystem::path& filename);
+    bool load_palette_file(const std::filesystem::path& filename);
     
     // Memory-based operations
     bool load_art_from_memory(const uint8_t* data, size_t size);

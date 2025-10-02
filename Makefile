@@ -1,239 +1,109 @@
-# art2img build orchestration -------------------------------------------------
-# DEPRECATED: This Makefile is deprecated. Please use CMake instead.
+# art2img Makefile - CMake Wrapper ------------------------------------------------
 # ------------------------------------------------------------------------------
-#
-# This Makefile will be removed in a future version. To build the project:
-#   1. Use the provided build.sh script
-#   2. Or manually: mkdir build && cd build && cmake .. && cmake --build .
-#
-# The new CMake build system provides proper library separation and installation.
+# This Makefile is a convenience wrapper around the CMake build system.
+# For advanced configuration, use CMake directly.
 # ------------------------------------------------------------------------------
 
-PROJECT        := art2img
-VERSION        := 1.0.0
-
-SHELL          := /bin/bash
-MAKEFLAGS      += --warn-undefined-variables
-MAKEFLAGS      += --no-builtin-rules
+PROJECT := art2img
+SHELL := /bin/bash
+MAKEFLAGS += --warn-undefined-variables
+MAKEFLAGS += --no-builtin-rules
 
 # Detect number of processors for parallel compilation
-NPROCS         := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1)
+NPROCS := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1)
+BUILDDIR := build
 
-.SUFFIXES:
+# Default goal
+.DEFAULT_GOAL := all
 
-# ---- Toolchain -----------------------------------------------------------------
-CXX            ?= g++
-CPPFLAGS       ?=
-CPPFLAGS       += -Ivendor -Iinclude
-CXXFLAGS       ?= -std=c++17 -Wall -Wextra -O2 -pthread -pipe
-LDFLAGS        ?= -pthread
-DEPFLAGS       := -MMD -MP
-
-# Use all available processors for parallel compilation
-MAKEFLAGS      += -j$(NPROCS)
-
-WIN_CXX        ?= x86_64-w64-mingw32-g++
-WIN_CPPFLAGS   ?= $(CPPFLAGS)
-WIN_CXXFLAGS   ?= -std=c++17 -Wall -Wextra -O2 -static -pthread -pipe
-WIN_LDFLAGS    ?= -static -pthread -lwinpthread
-
-RM             ?= rm -f
-RMDIR          ?= rm -rf
-
-# ---- Layout --------------------------------------------------------------------
-SRCDIR         := src
-BINDIR         := bin
-OBJDIR         := obj
-WIN_OBJDIR     := obj-win
-INCLUDEDIR     := include
-TESTDIR        := tests
-OUTPUT_DIR     := $(TESTDIR)/output
-OUTPUT_VARIANTS := tga png with_transparency no_transparency
-ASSET_DIR      := $(TESTDIR)/assets
-
-ART_ASSET      := $(ASSET_DIR)/TILES000.ART
-PALETTE_ASSET  := $(ASSET_DIR)/PALETTE.DAT
-
-# Source inventory (diagnostic builds from a single file, everything else is main)
-DIAG_SOURCE    := $(SRCDIR)/diagnostic.cpp
-COMMON_SOURCES := $(filter-out $(DIAG_SOURCE) $(wildcard $(SRCDIR)/test_%.cpp),                     $(wildcard $(SRCDIR)/*.cpp))
-
-# Version header dependency
-VERSION_HEADER := $(INCLUDEDIR)/version.hpp
-
-# Linux artefacts ----------------------------------------------------------------
-PROGRAM        := $(BINDIR)/$(PROJECT)
-PROGRAM_DIAG   := $(BINDIR)/$(PROJECT)_diagnostic
-LINUX_BINS     := $(PROGRAM) $(PROGRAM_DIAG)
-
-PROGRAM_OBJECTS      := $(COMMON_SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
-PROGRAM_DIAG_OBJECT  := $(DIAG_SOURCE:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
-
-# Windows artefacts --------------------------------------------------------------
-WIN_PROGRAM          := $(PROGRAM).exe
-WIN_PROGRAM_DIAG     := $(PROGRAM_DIAG).exe
-WINDOWS_BINS         := $(WIN_PROGRAM) $(WIN_PROGRAM_DIAG)
-
-WIN_PROGRAM_OBJECTS      := $(COMMON_SOURCES:$(SRCDIR)/%.cpp=$(WIN_OBJDIR)/%.o)
-WIN_PROGRAM_DIAG_OBJECT  := $(DIAG_SOURCE:$(SRCDIR)/%.cpp=$(WIN_OBJDIR)/%.o)
-
-# Dependency files generated via -MMD/-MP
-LINUX_DEPS     := $(PROGRAM_OBJECTS:.o=.d) $(PROGRAM_DIAG_OBJECT:.o=.d)
-WINDOWS_DEPS   := $(WIN_PROGRAM_OBJECTS:.o=.d) $(WIN_PROGRAM_DIAG_OBJECT:.o=.d)
-
-# Default goal -------------------------------------------------------------------
-.DEFAULT_GOAL := linux
-
-# Directory helpers --------------------------------------------------------------
-$(BINDIR) $(OBJDIR) $(WIN_OBJDIR):
-	@mkdir -p $@
-
-# Version header generation ------------------------------------------------------
-$(INCLUDEDIR)/version.hpp: Makefile
-	@echo "Generating version header..."
-	@mkdir -p $(INCLUDEDIR)
-	@echo "#pragma once" > $@
-	@echo "#define ART2IMG_VERSION \"$(VERSION)\"" >> $@
-
-# Compilation rules --------------------------------------------------------------
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp $(VERSION_HEADER) | $(OBJDIR)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEPFLAGS) -c -o $@ $<
-
-$(WIN_OBJDIR)/%.o: $(SRCDIR)/%.cpp | $(WIN_OBJDIR)
-	$(WIN_CXX) $(WIN_CPPFLAGS) $(WIN_CXXFLAGS) $(DEPFLAGS) -c -o $@ $<
-
-# Linking rules ------------------------------------------------------------------
-$(PROGRAM): $(PROGRAM_OBJECTS) | $(BINDIR)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
-
-$(PROGRAM_DIAG): $(PROGRAM_DIAG_OBJECT) | $(BINDIR)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
-
-$(WIN_PROGRAM): $(WIN_PROGRAM_OBJECTS) | $(BINDIR) check-win-toolchain
-	$(WIN_CXX) $(WIN_CXXFLAGS) -o $@ $^ $(WIN_LDFLAGS)
-
-$(WIN_PROGRAM_DIAG): $(WIN_PROGRAM_DIAG_OBJECT) | $(BINDIR) check-win-toolchain
-	$(WIN_CXX) $(WIN_CXXFLAGS) -o $@ $^ $(WIN_LDFLAGS)
-
-# Platform aggregates ------------------------------------------------------------
-all: deprecation-warning linux
-
-deprecation-warning:
-	@echo "==========================================================================="
-	@echo "⚠  WARNING: This Makefile is deprecated!"
-	@echo "==========================================================================="
+# Help target
+.PHONY: help
+help:
+	@echo "$(PROJECT) build system"
+	@echo "======================="
 	@echo ""
-	@echo "This project has migrated to CMake. The Makefile will be removed in the future."
+	@echo "This is a wrapper Makefile around CMake. For direct CMake usage:"
+	@echo "  mkdir build && cd build && cmake .. && cmake --build ."
 	@echo ""
-	@echo "To build with CMake:"
-	@echo "   • Use the provided build.sh script (recommended)"
-	@echo "   • Or: mkdir build && cd build && cmake .. && cmake --build ."
+	@echo "Available targets:"
+	@printf "  %-20s%s\\n" "all" "Build all targets (default)"
+	@printf "  %-20s%s\\n" "clean" "Clean build directory"
+	@printf "  %-20s%s\\n" "test" "Run tests"
+	@printf "  %-20s%s\\n" "install" "Install to system"
+	@printf "  %-20s%s\\n" "help" "Show this help"
 	@echo ""
-	@echo "The new CMake build provides:"
-	@echo "   • Proper library/CLI separation"
-	@echo "   • Cross-platform compatibility"
-	@echo "   • Standardized installation (make install)"
-	@echo "   • Better IDE and package manager integration"
+	@echo "Advanced targets:"
+	@printf "  %-20s%s\\n" "debug" "Build with debug configuration"
+	@printf "  %-20s%s\\n" "release" "Build with release configuration"
+	@printf "  %-20s%s\\n" "verbose" "Build with verbose output"
 	@echo ""
-	@echo "Continuing with Makefile build (this is temporary support)..."
-	@echo "==========================================================================="
 
-linux: deprecation-warning $(LINUX_BINS)
-	@echo "Linux binaries ready: $(LINUX_BINS)"
+# Ensure build directory exists
+$(BUILDDIR):
+	@mkdir -p $(BUILDDIR)
 
-check-win-toolchain:
-	@command -v $(WIN_CXX) >/dev/null 2>&1 || { \
-		echo "✗ $(WIN_CXX) not available"; \
-		exit 1; \
-	}
+# Configure CMake if not already configured
+$(BUILDDIR)/Makefile: $(BUILDDIR)
+	@cd $(BUILDDIR) && cmake ..
 
-windows-build: check-win-toolchain $(WINDOWS_BINS)
+# Main targets
+.PHONY: all
+all: $(BUILDDIR)/Makefile
+	@echo "Building $(PROJECT) with CMake..."
+	@cd $(BUILDDIR) && cmake --build . -- -j$(NPROCS)
+	@echo "Build complete!"
 
-windows: deprecation-warning check-win-toolchain windows-build
-	@echo "Windows binaries ready: $(WINDOWS_BINS)"
+.PHONY: debug
+debug: $(BUILDDIR)
+	@echo "Configuring debug build..."
+	@cd $(BUILDDIR) && cmake -DCMAKE_BUILD_TYPE=Debug ..
+	@$(MAKE) all
 
-# Convenience -------------------------------------------------------------------
+.PHONY: release
+release: $(BUILDDIR)
+	@echo "Configuring release build..."
+	@cd $(BUILDDIR) && cmake -DCMAKE_BUILD_TYPE=Release ..
+	@$(MAKE) all
+
+.PHONY: verbose
+verbose: $(BUILDDIR)
+	@echo "Building with verbose output..."
+	@cd $(BUILDDIR) && cmake --build . --verbose
+
+.PHONY: clean
 clean:
 	@echo "Cleaning build artifacts..."
-	-$(RMDIR) $(BINDIR) $(OBJDIR) $(WIN_OBJDIR)
-	-$(RMDIR) $(OUTPUT_DIR)
+	@rm -rf $(BUILDDIR)
 	@echo "Clean complete"
 
+.PHONY: test
+test: all
+	@echo "Running tests..."
+	@cd $(BUILDDIR) && ctest --output-on-failure
+	@echo "Tests completed"
+
+.PHONY: install
+install: all
+	@echo "Installing $(PROJECT)..."
+	@cd $(BUILDDIR) && cmake --install .
+	@echo "Installation complete"
+
+# Legacy compatibility targets
+.PHONY: linux windows windows-build verify verify-version procs
+linux: all
+windows: all
+windows-build: all
+verify: test
+verify-version: all
 procs:
-	@echo "Detected $$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1) processors"
+	@echo "Detected $(NPROCS) processors"
 
-# Tests -------------------------------------------------------------------------
-test: $(PROGRAM)
-	@echo "Running functionality tests..."
-	@mkdir -p $(addprefix $(OUTPUT_DIR)/,$(OUTPUT_VARIANTS))
-	$(PROGRAM) -o $(OUTPUT_DIR)/tga -f tga -p $(PALETTE_ASSET) $(ART_ASSET)
-	$(PROGRAM) -o $(OUTPUT_DIR)/png -f png -p $(PALETTE_ASSET) $(ART_ASSET)
-	$(PROGRAM) -o $(OUTPUT_DIR)/with_transparency -f png -p $(PALETTE_ASSET) $(ART_ASSET)
-	$(PROGRAM) -o $(OUTPUT_DIR)/no_transparency -f png -p $(PALETTE_ASSET) -N $(ART_ASSET)
-	@cd $(TESTDIR) && ./test_functionality.sh
-	@echo "Tests completed successfully"
+# Convenience shortcuts
+.PHONY: check
+check: test
 
-help:
-	@echo "Available targets:"
-	@printf "  %-20s%s\\n" "linux" "Build Linux binaries"
-	@printf "  %-20s%s\\n" "windows" "Build Windows binaries (if toolchain present)"
-	@printf "  %-20s%s\\n" "test" "Run smoke tests"
-	@printf "  %-20s%s\\n" "verify" "Check binary formats"
-	@printf "  %-20s%s\\n" "verify-version" "Check version consistency"
-	@printf "  %-20s%s\\n" "clean" "Remove build artefacts"
+.PHONY: build
+build: all
 
-# Verification ------------------------------------------------------------------
-verify: linux
-	@echo "Verifying binary architectures..."
-	@$(MAKE) --no-print-directory verify-linux
-	@$(MAKE) --no-print-directory verify-windows
-	@echo "Verification complete."
-
-verify-linux:
-	@echo "- Linux binaries"
-	@for bin in $(LINUX_BINS); do \
-		label=$$(basename $$bin); \
-		if [ ! -f $$bin ]; then \
-			echo "  ✗ $$label: Missing binary"; \
-		elif file $$bin 2>/dev/null | grep -q "ELF"; then \
-			echo "  ✓ $$label: ELF binary"; \
-		else \
-			echo "  ✗ $$label: Wrong architecture"; \
-		fi; \
-	done
-
-verify-windows:
-	@if command -v $(WIN_CXX) >/dev/null 2>&1; then \
-		$(MAKE) --no-print-directory windows-build; \
-		echo "- Windows binaries"; \
-		for bin in $(WINDOWS_BINS); do \
-			label=$$(basename $$bin); \
-			if file $$bin 2>/dev/null | grep -q "PE32+"; then \
-				echo "  ✓ $$label: PE binary"; \
-			else \
-				echo "  ✗ $$label: Wrong architecture"; \
-			fi; \
-			done; \
-	else \
-		echo "⚠ $(WIN_CXX) not available, skipping Windows verification"; \
-	fi
-
-# Version validation -----------------------------------------------------------
-verify-version:
-	@echo "Verifying version consistency..."
-	@if [ ! -f "$(VERSION_HEADER)" ]; then \
-		echo "✗ Version header missing, run make first"; \
-		exit 1; \
-	fi
-	@HEADER_VERSION=$$(grep "ART2IMG_VERSION" $(VERSION_HEADER) | cut -d'"' -f2); \
-	if [ "$$HEADER_VERSION" != "$(VERSION)" ]; then \
-		echo "✗ Version mismatch: Makefile=$(VERSION), Header=$$HEADER_VERSION"; \
-		exit 1; \
-	fi
-	@echo "✓ Version consistency verified: $(VERSION)"
-
-# Dependency includes -----------------------------------------------------------
--include $(LINUX_DEPS) $(WINDOWS_DEPS)
-
-# Phony rules -------------------------------------------------------------------
-.PHONY: all linux windows windows-build clean test verify verify-linux verify-windows procs check-win-toolchain verify-version help
+# Prevent creation of files from these targets
+.PHONY: all debug release clean test install help linux windows windows-build verify verify-version procs check build verbose

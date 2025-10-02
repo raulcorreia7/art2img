@@ -9,19 +9,24 @@ Palette::Palette() {
     load_duke3d_default();
 }
 
-bool Palette::load_from_file(const std::string& filename) {
+bool Palette::load_from_file(const std::filesystem::path& filename) {
     std::ifstream file(filename, std::ios::binary);
     if (!file.is_open()) {
-        throw PaletteException("Cannot open palette file: " + filename);
+        throw ArtException("Cannot open palette file: " + filename.string());
     }
-    
+
     data_.resize(SIZE);
     if (!file.read(reinterpret_cast<char*>(data_.data()), SIZE)) {
-        std::cerr << "Warning: Cannot read palette from '" << filename << "'" << std::endl;
+        std::cerr << "Warning: Cannot read palette from '" << filename.string() << "'" << std::endl;
         data_.clear();
         return false;
     }
-    
+
+    // PALETTE.DAT values are in 0-255 range, convert to 0-63 range for internal use
+    for (size_t i = 0; i < SIZE; i++) {
+        data_[i] = data_[i] >> 2;  // Convert 0-255 to 0-63 range
+    }
+
     convert_to_tga_format();
     return true;
 }
@@ -31,8 +36,14 @@ bool Palette::load_from_memory(const uint8_t* data, size_t size) {
         std::cerr << "Warning: Invalid data or insufficient size for palette" << std::endl;
         return false;
     }
-    
+
     data_.assign(data, data + SIZE);
+
+    // PALETTE.DAT values are in 0-255 range, convert to 0-63 range for internal use
+    for (size_t i = 0; i < SIZE; i++) {
+        data_[i] = data_[i] >> 2;  // Convert 0-255 to 0-63 range
+    }
+
     convert_to_tga_format();
     return true;
 }
@@ -83,7 +94,27 @@ void Palette::load_duke3d_default() {
         252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
         252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
         252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
-        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252,
+        63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63
     };
     
     data_.assign(duke3d_palette, duke3d_palette + SIZE);
@@ -167,13 +198,13 @@ void Palette::convert_to_tga_format() {
     if (data_.size() != SIZE) {
         return;
     }
-    
+
     // Convert from RGB to BGR and scale values
     for (size_t i = 0; i < SIZE; i += 3) {
         uint8_t red = data_[i];
         uint8_t green = data_[i + 1];
         uint8_t blue = data_[i + 2];
-        
+
         // Scale and swap for TGA format
         data_[i] = static_cast<uint8_t>(blue << 2);     // Blue component
         data_[i + 1] = static_cast<uint8_t>(green << 2); // Green component
@@ -192,14 +223,14 @@ uint8_t Palette::get_green(size_t index) const {
     if (index >= 256 || data_.size() != SIZE) {
         return 0;
     }
-    return data_[index * 3 + 1] >> 2;
+    return data_[index * 3 + 1] >> 2; // Reverse TGA conversion
 }
 
 uint8_t Palette::get_blue(size_t index) const {
     if (index >= 256 || data_.size() != SIZE) {
         return 0;
     }
-    return data_[index * 3] >> 2;
+    return data_[index * 3] >> 2; // Reverse TGA conversion
 }
 
 } // namespace art2img

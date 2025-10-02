@@ -4,7 +4,6 @@ project(art2img VERSION 1.0.0 LANGUAGES CXX)
 # CMake options
 option(BUILD_CLI "Build the command line interface tool" ON)
 option(BUILD_TESTS "Build the test suite" ON)
-option(BUILD_DIAGNOSTIC "Build the diagnostic tool" OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" ON)
 
 # Enable testing at the top level
@@ -63,6 +62,22 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include)
 # Add vendor directory
 include_directories(vendor)
 
+# Find or download fmtlib
+find_package(fmt QUIET)
+if(NOT fmt_FOUND)
+    # Try to find system fmt library
+    find_library(FMT_LIB fmt)
+    if(FMT_LIB)
+        message(STATUS "Found system fmt library: ${FMT_LIB}")
+        set(fmt_LIBRARIES ${FMT_LIB})
+        set(fmt_FOUND TRUE)
+    else()
+        # Use the bundled fmt.hpp header
+        message(STATUS "Using bundled fmt.hpp header")
+        set(fmt_FOUND TRUE)
+    endif()
+endif()
+
 # Include the source and generated header directories
 include_directories(include)
 include_directories(${CMAKE_BINARY_DIR}/include)
@@ -70,7 +85,6 @@ include_directories(${CMAKE_BINARY_DIR}/include)
 # Create the extractor library
 add_library(art2img_extractor
     src/extractor_api.cpp
-    src/extractor.cpp
     src/art_file.cpp
     src/palette.cpp
     src/png_writer.cpp
@@ -102,7 +116,6 @@ target_include_directories(art2img_extractor
 target_sources(art2img_extractor
     PRIVATE
     include/extractor_api.hpp
-    include/extractor.hpp
     include/art_file.hpp
     include/palette.hpp
     include/png_writer.hpp
@@ -144,8 +157,24 @@ if (BUILD_DIAGNOSTIC)
     )
 endif()
 
-# Add the tests
-if (BUILD_TESTS)
+# Add doctest testing framework
+if(BUILD_TESTS)
+    # Download doctest if not found
+    find_package(doctest QUIET)
+    if(NOT doctest_FOUND)
+        message(STATUS "Downloading doctest...")
+        include(FetchContent)
+        FetchContent_Declare(
+            doctest
+            GIT_REPOSITORY https://github.com/doctest/doctest.git
+            GIT_TAG v2.4.11
+        )
+        FetchContent_MakeAvailable(doctest)
+        message(STATUS "doctest downloaded and configured")
+    else()
+        message(STATUS "Found doctest: ${doctest_VERSION}")
+    endif()
+
     add_subdirectory(tests)
 endif()
 

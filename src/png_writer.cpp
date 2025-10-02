@@ -21,11 +21,11 @@
 namespace art2img
 {
 
-bool PngWriter::write_png(const std::string &filename,
-                          const Palette &palette,
-                          const ArtFile::Tile &tile,
-                          const std::vector<uint8_t> &pixel_data,
-                          const Options &options)
+bool PngWriter::write_png(const std::filesystem::path& filename,
+                          const Palette& palette,
+                          const ArtFile::Tile& tile,
+                          const std::vector<uint8_t>& pixel_data,
+                          const Options& options)
 {
     if (tile.is_empty())
     {
@@ -34,14 +34,14 @@ bool PngWriter::write_png(const std::string &filename,
 
     if (pixel_data.size() != tile.size())
     {
-        throw ArtException("Pixel data size mismatch for tile: " + filename);
+        throw ArtException("Pixel data size mismatch for tile: " + filename.string());
     }
 
         // Convert indexed color to RGBA
         std::vector<uint8_t> rgba_data = convert_to_rgba(palette, tile, pixel_data, options);
 
         // Write PNG file using stb_image_write
-        int result = stbi_write_png(filename.c_str(),
+        int result = stbi_write_png(filename.string().c_str(),
                                     tile.width,
                                     tile.height,
                                     4, // RGBA
@@ -57,7 +57,7 @@ bool PngWriter::write_png(const std::string &filename,
         return true;
     }
 
-    bool PngWriter::write_png(const std::string& filename,
+    bool PngWriter::write_png(const std::filesystem::path& filename,
                              const Palette& palette,
                              const ArtFile::Tile& tile,
                              const uint8_t* pixel_data,
@@ -71,14 +71,14 @@ bool PngWriter::write_png(const std::string &filename,
 
         if (pixel_data_size != tile.size())
         {
-            throw ArtException("Pixel data size mismatch for tile: " + filename);
+            throw ArtException("Pixel data size mismatch for tile: " + filename.string());
         }
 
         // Convert indexed color to RGBA
         std::vector<uint8_t> rgba_data = convert_to_rgba(palette, tile, pixel_data, pixel_data_size, options);
 
         // Write PNG file using stb_image_write
-        int result = stbi_write_png(filename.c_str(),
+        int result = stbi_write_png(filename.string().c_str(),
                                     tile.width,
                                     tile.height,
                                     4, // RGBA
@@ -226,11 +226,7 @@ bool PngWriter::write_png(const std::string &filename,
         return rgba_data;
     }
 
-    bool PngWriter::is_magenta(uint8_t r, uint8_t g, uint8_t b) {
-        // Magenta detection: r8≥250, b8≥250, g8≤5
-        return (r >= 250) && (b >= 250) && (g <= 5);
-    }
-
+    
     void PngWriter::apply_premultiplication(std::vector<uint8_t>& rgba_data) {
         // Step C: Enforce no hidden color + premultiply edges
         for (size_t i = 0; i < rgba_data.size(); i += 4) {

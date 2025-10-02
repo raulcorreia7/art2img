@@ -5,18 +5,18 @@
 
 namespace art2img {
 
-ArtFile::ArtFile(const std::string& filename) {
+ArtFile::ArtFile(const std::filesystem::path& filename) {
     if (!open(filename)) {
-        throw ArtFileException("Failed to open ART file: " + filename);
+        throw ArtException("Failed to open ART file: " + filename.string());
     }
 }
 
-bool ArtFile::open(const std::string& filename) {
+bool ArtFile::open(const std::filesystem::path& filename) {
     close();
-    
+
     file_.open(filename, std::ios::binary);
     if (!file_.is_open()) {
-        throw ArtFileException("Cannot open file: " + filename);
+        throw ArtException("Cannot open file: " + filename.string());
     }
     
     filename_ = filename;

@@ -5,6 +5,7 @@
 #include "exceptions.hpp"
 #include <vector>
 #include <string>
+#include <filesystem>
 
 namespace art2img {
 
@@ -20,14 +21,14 @@ public:
     };
     
     // File-based operations (vector version)
-    static bool write_png(const std::string& filename,
+    static bool write_png(const std::filesystem::path& filename,
                          const Palette& palette,
                          const ArtFile::Tile& tile,
                          const std::vector<uint8_t>& pixel_data,
                          const Options& options = Options());
 
     // File-based operations (raw pointer version)
-    static bool write_png(const std::string& filename,
+    static bool write_png(const std::filesystem::path& filename,
                          const Palette& palette,
                          const ArtFile::Tile& tile,
                          const uint8_t* pixel_data,
@@ -50,7 +51,10 @@ public:
                                    const Options& options = Options());
     
     // Public for testing
-    static bool is_magenta(uint8_t r, uint8_t g, uint8_t b);
+    static constexpr bool is_magenta(uint8_t r, uint8_t g, uint8_t b) {
+        // Magenta detection: r8≥250, b8≥250, g8≤5
+        return (r >= 250) && (b >= 250) && (g <= 5);
+    }
     
 private:
     // Vector version

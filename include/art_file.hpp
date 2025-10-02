@@ -5,6 +5,7 @@
 #include <vector>
 #include <fstream>
 #include <memory>
+#include <filesystem>
 #include "exceptions.hpp"
 
 namespace art2img {
@@ -17,7 +18,7 @@ public:
         uint32_t end_tile;
         uint32_t num_tiles;
         
-        bool is_valid() const {
+        constexpr bool is_valid() const {
             return version == 1 && end_tile >= start_tile;
         }
     };
@@ -28,29 +29,29 @@ public:
         uint32_t anim_data;
         uint32_t offset;
         
-        uint32_t size() const { return static_cast<uint32_t>(width) * height; }
-        bool is_empty() const { return size() == 0; }
-        
+        constexpr uint32_t size() const { return static_cast<uint32_t>(width) * height; }
+        constexpr bool is_empty() const { return size() == 0; }
+
         // Animation data accessors
-        uint32_t anim_frames() const { return anim_data & 0x3F; }
-        uint32_t anim_type() const { return (anim_data >> 6) & 0x03; }
-        int8_t x_offset() const { return static_cast<int8_t>((anim_data >> 8) & 0xFF); }
-        int8_t y_offset() const { return static_cast<int8_t>((anim_data >> 16) & 0xFF); }
-        uint32_t anim_speed() const { return (anim_data >> 24) & 0x0F; }
-        uint32_t other_flags() const { return anim_data >> 28; }
+        constexpr uint32_t anim_frames() const { return anim_data & 0x3F; }
+        constexpr uint32_t anim_type() const { return (anim_data >> 6) & 0x03; }
+        constexpr int8_t x_offset() const { return static_cast<int8_t>((anim_data >> 8) & 0xFF); }
+        constexpr int8_t y_offset() const { return static_cast<int8_t>((anim_data >> 16) & 0xFF); }
+        constexpr uint32_t anim_speed() const { return (anim_data >> 24) & 0x0F; }
+        constexpr uint32_t other_flags() const { return anim_data >> 28; }
     };
     
-    ArtFile() = default;
-    explicit ArtFile(const std::string& filename);
-    
+    ArtFile() : header_{} {}
+    explicit ArtFile(const std::filesystem::path& filename);
+
     // Non-copyable, movable
     ArtFile(const ArtFile&) = delete;
     ArtFile& operator=(const ArtFile&) = delete;
     ArtFile(ArtFile&&) = default;
     ArtFile& operator=(ArtFile&&) = default;
-    
+
     // File-based operations
-    bool open(const std::string& filename);
+    bool open(const std::filesystem::path& filename);
     void close();
     
     bool read_header();
@@ -65,7 +66,7 @@ public:
     const Header& header() const { return header_; }
     const std::vector<Tile>& tiles() const { return tiles_; }
     bool is_open() const { return file_.is_open() || !data_.empty(); }
-    const std::string& filename() const { return filename_; }
+    const std::filesystem::path& filename() const { return filename_; }
 
     // Memory data access for zero-copy operations
     const uint8_t* data() const { return data_.data(); }
@@ -83,7 +84,7 @@ private:
     uint16_t read_little_endian_uint16_from_memory(size_t& offset) const;
     uint32_t read_little_endian_uint32_from_memory(size_t& offset) const;
     
-    std::string filename_;
+    std::filesystem::path filename_;
     std::ifstream file_;
     std::vector<uint8_t> data_;  // For memory-based operations
     Header header_;

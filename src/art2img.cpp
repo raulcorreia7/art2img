@@ -1,9 +1,9 @@
 #include "art_file.hpp"
 #include "palette.hpp"
-#include "extractor.hpp"
+#include "extractor_api.hpp"
 #include "exceptions.hpp"
 #include "version.hpp"
-#include "version.hpp"
+#include <BS_thread_pool/BS_thread_pool.hpp>
 #include <CLI11/CLI11.hpp>
 #include <iostream>
 #include <filesystem>
@@ -126,14 +126,20 @@ bool append_animation_data_to_merged_file(const art2img::ArtFile& art_file, cons
 // Options structure for process_single_file
 struct ProcessOptions {
     std::string palette_file;
-    art2img::ArtExtractor::Options extractor_options;
+    std::string output_dir;
+    unsigned num_threads = 0;
+    std::string format = "png";
+    bool enable_magenta_transparency = true;
+    bool verbose = false;
+    bool dump_animation = true;
+    bool merge_animation_data = false;
     mutable bool palette_warning_emitted = false;
 };
 
 // Function to process a single ART file
 bool process_single_file(const ProcessOptions& options, const std::string& art_file_path, const std::string& output_subdir = "", bool is_directory_mode = false) {
     try {
-        if (options.extractor_options.verbose) {
+        if (options.verbose) {
             std::cout << "Processing ART file: " << art_file_path << std::endl;
         }
         
@@ -149,19 +155,19 @@ bool process_single_file(const ProcessOptions& options, const std::string& art_f
         if (!palette_path.empty()) {
             try {
                 palette_loaded = palette.load_from_file(palette_path);
-            } catch (const art2img::PaletteException& e) {
-                if (options.extractor_options.verbose) {
+            } catch (const art2img::ArtException& e) {
+                if (options.verbose) {
                     std::cout << "Warning: " << e.what() << std::endl;
                 }
             }
         }
 
         if (palette_loaded) {
-            if (options.extractor_options.verbose) {
+            if (options.verbose) {
                 std::cout << "Using palette file: " << palette_path << std::endl;
             }
         } else {
-            if (options.extractor_options.verbose) {
+            if (options.verbose) {
                 if (!palette_path.empty()) {
                     std::cout << "Warning: Cannot open palette file '" << palette_path << "'" << std::endl;
                 } else if (palette_resolution.user_hint_missing && !options.palette_file.empty()) {
@@ -201,25 +207,79 @@ bool process_single_file(const ProcessOptions& options, const std::string& art_f
             palette.load_duke3d_default();
         }
 
-        // Create extractor with modified output directory for directory processing
-        art2img::ArtExtractor::Options extractor_options = options.extractor_options;
+        // Create output directory path for directory processing
+        std::string final_output_dir = options.output_dir;
         if (!output_subdir.empty()) {
-            extractor_options.output_dir = (std::filesystem::path(extractor_options.output_dir) / output_subdir).string();
+            final_output_dir = (std::filesystem::path(final_output_dir) / output_subdir).string();
         }
-        
-        // In directory mode with merge enabled, don't create individual animdata.ini files
-        if (is_directory_mode && options.extractor_options.merge_animation_data) {
-            extractor_options.dump_animation = false;
+
+        // Load ArtFile for animation data processing
+        art2img::ArtFile art_file_obj(art_file_path);
+        if (!art_file_obj.is_open()) {
+            std::cerr << "Error: Failed to open ART file: " << art_file_path << std::endl;
+            return false;
         }
-        
-        // Create extractor and perform extraction
-        art2img::ArtExtractor extractor(art_file, palette);
-        bool extraction_success = extractor.extract(extractor_options);
-        
-        // If in directory mode with merge enabled, append animation data to merged file
-        if (is_directory_mode && options.extractor_options.merge_animation_data && extraction_success) {
-            if (!append_animation_data_to_merged_file(art_file, options.extractor_options.output_dir)) {
-                std::cerr << "Warning: Failed to append animation data from " << art_file_path << " to merged file" << std::endl;
+
+        // Read ART file into memory for zero-copy processing
+        std::ifstream art_file_stream(art_file_path, std::ios::binary | std::ios::ate);
+        if (!art_file_stream.is_open()) {
+            std::cerr << "Error: Cannot open ART file: " << art_file_path << std::endl;
+            return false;
+        }
+
+        std::streamsize art_file_size = art_file_stream.tellg();
+        art_file_stream.seekg(0, std::ios::beg);
+
+        std::vector<uint8_t> art_data(art_file_size);
+        if (!art_file_stream.read(reinterpret_cast<char*>(art_data.data()), art_file_size)) {
+            std::cerr << "Error: Cannot read ART file data: " << art_file_path << std::endl;
+            return false;
+        }
+
+        // Create ExtractorAPI and load everything from memory
+        art2img::ExtractorAPI extractor;
+        extractor.load_art_from_memory(art_data.data(), art_data.size());
+        extractor.load_palette_from_memory(palette.data().data(), palette.data().size());
+        art2img::ArtView art_view = extractor.get_art_view();
+
+        // Process tiles sequentially for ordered CLI output
+        bool extraction_success = true;
+
+        for (uint32_t i = 0; i < art_view.image_count(); ++i) {
+            try {
+                art2img::ImageView image_view{&art_view, i};
+                if (image_view.pixel_data() == nullptr || image_view.width() == 0 || image_view.height() == 0) {
+                    continue; // Skip empty tiles
+                }
+
+                // Write the tile to disk
+                std::string tile_filename = final_output_dir + "/tile" + std::to_string(i + art_view.header.start_tile) + "." + options.format;
+
+                bool success = false;
+                if (options.format == "tga") {
+                    success = image_view.save_to_tga(tile_filename);
+                } else {
+                    art2img::PngWriter::Options png_options;
+                    png_options.enable_magenta_transparency = options.enable_magenta_transparency;
+                    success = image_view.save_to_png(tile_filename, png_options);
+                }
+
+                if (!success) {
+                    extraction_success = false;
+                    std::cerr << "Warning: Failed to write tile " << i + art_view.header.start_tile << std::endl;
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "Error processing tile " << i + art_view.header.start_tile << ": " << e.what() << std::endl;
+                extraction_success = false;
+            }
+        }
+
+        // Handle animation data output
+        if ((options.dump_animation && !is_directory_mode) || (options.merge_animation_data && is_directory_mode)) {
+            if (!append_animation_data_to_merged_file(art_file_obj, options.output_dir)) {
+                if (!is_directory_mode) {
+                    std::cerr << "Warning: Failed to write animation data for " << art_file_path << std::endl;
+                }
             }
         }
         
@@ -283,25 +343,10 @@ int main(int argc, char* argv[]) {
             num_threads = static_cast<int>(std::thread::hardware_concurrency());
         }
         if (num_threads <= 0) {
-            num_threads = static_cast<int>(art2img::ArtExtractor::Options::default_num_threads());
+            num_threads = static_cast<int>(std::thread::hardware_concurrency());
         }
         
-        // Convert CLI11 options to extractor options
-        art2img::ArtExtractor::Options extractor_options;
-        extractor_options.output_dir = output_dir;
-        extractor_options.num_threads = static_cast<unsigned>(num_threads);
-        extractor_options.verbose = !quiet;
-        extractor_options.dump_animation = !no_anim;
-        extractor_options.merge_animation_data = merge_anim;
-        extractor_options.format = (format == "tga") ? 
-            art2img::ArtExtractor::OutputFormat::TGA : 
-            art2img::ArtExtractor::OutputFormat::PNG;
-        extractor_options.png_options.enable_magenta_transparency = fix_transparency;
-        if (no_fix_flag->count() > 0) {
-            extractor_options.png_options.enable_magenta_transparency = false;
-        }
-        
-        if (extractor_options.verbose) {
+        if (!quiet) {
             std::cout << "art2img - Multi-threaded ART to image converter (TGA/PNG)" << std::endl;
             std::cout << "==========================================================" << std::endl;
             std::cout << std::endl;
@@ -312,34 +357,40 @@ int main(int argc, char* argv[]) {
         
         if (process_directory) {
             // Process all ART files in directory
-            if (extractor_options.verbose) {
+            if (!quiet) {
                 std::cout << "Processing ART files in directory: " << input_path << std::endl;
             }
-            
+
             // If merge animation data is enabled, create/clear the merged file first
-            if (extractor_options.merge_animation_data) {
-                std::string merged_ini_path = (std::filesystem::path(extractor_options.output_dir) / "animdata.ini").string();
+            if (merge_anim) {
+                std::string merged_ini_path = (std::filesystem::path(output_dir) / "animdata.ini").string();
                 std::ofstream merged_file(merged_ini_path);
                 if (merged_file.is_open()) {
                     merged_file << "; Merged animation data from all ART files\n"
          << "; Extracted by art2img\n"
                                << "; Generated: " << __DATE__ << " " << __TIME__ << "\n"
                                << "\n";
-                    if (extractor_options.verbose) {
+                    if (!quiet) {
                         std::cout << "Created merged animation data file: " << merged_ini_path << std::endl;
                     }
                 } else {
                     std::cerr << "Warning: Failed to create merged animation data file" << std::endl;
                 }
             }
-            
+
             int processed_files = 0;
             int successful_files = 0;
-            
+
             // Create options structure for process_single_file
             ProcessOptions options;
             options.palette_file = palette_file;
-            options.extractor_options = extractor_options;
+            options.output_dir = output_dir;
+            options.num_threads = static_cast<unsigned>(num_threads);
+            options.format = format;
+            options.enable_magenta_transparency = fix_transparency && (no_fix_flag->count() == 0);
+            options.verbose = !quiet;
+            options.dump_animation = !no_anim;
+            options.merge_animation_data = merge_anim;
             
             for (const auto& entry : std::filesystem::directory_iterator(input_path)) {
                 if (entry.is_regular_file()) {
@@ -357,17 +408,23 @@ int main(int argc, char* argv[]) {
                 }
             }
             
-            if (extractor_options.verbose) {
-                std::cout << "Directory processing complete: " << successful_files 
+            if (!quiet) {
+                std::cout << "Directory processing complete: " << successful_files
                           << "/" << processed_files << " files successful" << std::endl;
             }
-            
+
         } else {
             // Process single file
             ProcessOptions single_options;
             single_options.palette_file = palette_file;
-            single_options.extractor_options = extractor_options;
-            
+            single_options.output_dir = output_dir;
+            single_options.num_threads = static_cast<unsigned>(num_threads);
+            single_options.format = format;
+            single_options.enable_magenta_transparency = fix_transparency && (no_fix_flag->count() == 0);
+            single_options.verbose = !quiet;
+            single_options.dump_animation = !no_anim;
+            single_options.merge_animation_data = merge_anim;
+
             success = process_single_file(single_options, input_path, "", false);
         }
         

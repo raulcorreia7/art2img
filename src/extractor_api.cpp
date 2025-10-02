@@ -8,7 +8,7 @@ ExtractorAPI::ExtractorAPI() {
     palette_ = std::make_unique<Palette>();
 }
 
-bool ExtractorAPI::load_art_file(const std::string& filename) {
+bool ExtractorAPI::load_art_file(const std::filesystem::path& filename) {
     try {
         art_file_ = std::make_unique<ArtFile>(filename);
         return true;
@@ -18,7 +18,7 @@ bool ExtractorAPI::load_art_file(const std::string& filename) {
     }
 }
 
-bool ExtractorAPI::load_palette_file(const std::string& filename) {
+bool ExtractorAPI::load_palette_file(const std::filesystem::path& filename) {
     if (!palette_) {
         palette_ = std::make_unique<Palette>();
     }
@@ -272,7 +272,7 @@ ArtView ExtractorAPI::get_art_view() const {
 }
 
 // ImageView method implementations
-bool ImageView::save_to_png(const std::string& path, PngWriter::Options options) const {
+bool ImageView::save_to_png(const std::filesystem::path& path, PngWriter::Options options) const {
     if (!parent || !parent->palette) {
         throw ArtException("Invalid ImageView state: parent or palette is null");
     }
@@ -307,7 +307,7 @@ std::vector<uint8_t> ImageView::extract_to_png(PngWriter::Options options) const
     return result;
 }
 
-bool ImageView::save_to_tga(const std::string& path) const {
+bool ImageView::save_to_tga(const std::filesystem::path& path) const {
     if (!parent || !parent->palette) {
         throw ArtException("Invalid ImageView state: parent or palette is null");
     }

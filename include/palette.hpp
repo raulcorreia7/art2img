@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include <string>
+#include <filesystem>
 #include "exceptions.hpp"
 
 namespace art2img {
@@ -20,7 +21,7 @@ public:
     Palette& operator=(Palette&&) = default;
     
     // File-based operations
-    bool load_from_file(const std::string& filename);
+    bool load_from_file(const std::filesystem::path& filename);
     void load_duke3d_default();
     void load_blood_default();
     

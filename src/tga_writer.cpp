@@ -5,21 +5,21 @@
 
 namespace art2img {
 
-bool TgaWriter::write_tga(const std::string& filename,
+bool TgaWriter::write_tga(const std::filesystem::path& filename,
                          const Palette& palette,
                          const ArtFile::Tile& tile,
                          const std::vector<uint8_t>& pixel_data) {
     if (tile.is_empty()) {
         return true; // Skip empty tiles
     }
-    
+
     if (pixel_data.size() != tile.size()) {
-        throw ArtException("Pixel data size mismatch for tile: " + filename);
+        throw ArtException("Pixel data size mismatch for tile: " + filename.string());
     }
-    
+
     std::ofstream file(filename, std::ios::binary);
     if (!file.is_open()) {
-        std::cerr << "Error: Cannot create file '" << filename << "'" << std::endl;
+        std::cerr << "Error: Cannot create file '" << filename.string() << "'" << std::endl;
         return false;
     }
     
@@ -107,7 +107,7 @@ void TgaWriter::write_little_endian_uint16(uint16_t value, std::vector<uint8_t>&
     buffer[offset + 1] = static_cast<uint8_t>((value >> 8) & 0xFF);
 }
 
-bool TgaWriter::write_tga(const std::string& filename,
+bool TgaWriter::write_tga(const std::filesystem::path& filename,
                          const Palette& palette,
                          const ArtFile::Tile& tile,
                          const uint8_t* pixel_data,
@@ -117,12 +117,12 @@ bool TgaWriter::write_tga(const std::string& filename,
     }
 
     if (pixel_data_size != tile.size()) {
-        throw ArtException("Pixel data size mismatch for tile: " + filename);
+        throw ArtException("Pixel data size mismatch for tile: " + filename.string());
     }
 
     std::ofstream file(filename, std::ios::binary);
     if (!file.is_open()) {
-        std::cerr << "Error: Cannot create file '" << filename << "'" << std::endl;
+        std::cerr << "Error: Cannot create file '" << filename.string() << "'" << std::endl;
         return false;
     }
 

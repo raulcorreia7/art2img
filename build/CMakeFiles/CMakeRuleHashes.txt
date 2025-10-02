@@ -1,0 +1,4 @@
+# Hashes of file build rules.
+e34bd2ce8f836d68ea6e9e80e630ecd0 tests/CMakeFiles/copy_assets
+8ce1f4313f8db9c36481863a34e455b7 tests/CMakeFiles/run_all_tests
+8ce1f4313f8db9c36481863a34e455b7 tests/CMakeFiles/test_all
