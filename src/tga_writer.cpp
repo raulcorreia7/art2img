@@ -58,41 +58,7 @@ bool TgaWriter::write_tga_to_memory(std::vector<uint8_t>& output,
                                    const Palette& palette,
                                    const ArtFile::Tile& tile,
                                    const std::vector<uint8_t>& pixel_data) {
-    output.clear();
-    
-    if (tile.is_empty()) {
-        return true; // Skip empty tiles
-    }
-    
-    if (pixel_data.size() != tile.size()) {
-        std::cerr << "Error: Pixel data size mismatch for tile" << std::endl;
-        return false;
-    }
-    
-    // Create TGA header
-    TgaHeader header = create_header(tile.width, tile.height);
-    std::vector<uint8_t> header_data = header.serialize();
-    
-    // Reserve space for the output buffer
-    output.reserve(18 + 768 + tile.size()); // header + palette + pixel data
-    
-    // Write TGA header
-    output.insert(output.end(), header_data.begin(), header_data.end());
-    
-    // Write palette
-    const std::vector<uint8_t>& palette_data = palette.data();
-    output.insert(output.end(), palette_data.begin(), palette_data.end());
-    
-    // Write pixel data (ART stores by columns, TGA by rows from bottom)
-    for (int32_t y = tile.height - 1; y >= 0; --y) {
-        for (int32_t x = 0; x < tile.width; ++x) {
-            // ART format: pixels stored by columns (y + x * height)
-            uint8_t pixel = pixel_data[y + x * tile.height];
-            output.push_back(pixel);
-        }
-    }
-    
-    return true;
+    return write_tga_to_memory(output, palette, tile, pixel_data.data(), pixel_data.size());
 }
 
 TgaWriter::TgaHeader TgaWriter::create_header(uint16_t width, uint16_t height) {
@@ -139,6 +105,98 @@ std::vector<uint8_t> TgaWriter::TgaHeader::serialize() const {
 void TgaWriter::write_little_endian_uint16(uint16_t value, std::vector<uint8_t>& buffer, size_t offset) {
     buffer[offset] = static_cast<uint8_t>(value & 0xFF);
     buffer[offset + 1] = static_cast<uint8_t>((value >> 8) & 0xFF);
+}
+
+bool TgaWriter::write_tga(const std::string& filename,
+                         const Palette& palette,
+                         const ArtFile::Tile& tile,
+                         const uint8_t* pixel_data,
+                         size_t pixel_data_size) {
+    if (tile.is_empty()) {
+        return true; // Skip empty tiles
+    }
+
+    if (pixel_data_size != tile.size()) {
+        throw ArtException("Pixel data size mismatch for tile: " + filename);
+    }
+
+    std::ofstream file(filename, std::ios::binary);
+    if (!file.is_open()) {
+        std::cerr << "Error: Cannot create file '" << filename << "'" << std::endl;
+        return false;
+    }
+
+    // Create and write TGA header
+    TgaHeader header = create_header(tile.width, tile.height);
+    std::vector<uint8_t> header_data = header.serialize();
+
+    if (!file.write(reinterpret_cast<const char*>(header_data.data()), header_data.size())) {
+        std::cerr << "Error: Cannot write TGA header to '" << filename << "'" << std::endl;
+        return false;
+    }
+
+    // Write palette
+    const std::vector<uint8_t>& palette_data = palette.data();
+    if (!file.write(reinterpret_cast<const char*>(palette_data.data()), palette_data.size())) {
+        std::cerr << "Error: Cannot write palette to '" << filename << "'" << std::endl;
+        return false;
+    }
+
+    // Write pixel data (ART stores by columns, TGA by rows from bottom)
+    for (int32_t y = tile.height - 1; y >= 0; --y) {
+        for (int32_t x = 0; x < tile.width; ++x) {
+            // ART format: pixels stored by columns (y + x * height)
+            uint8_t pixel = pixel_data[y + x * tile.height];
+            if (!file.write(reinterpret_cast<const char*>(&pixel), 1)) {
+                std::cerr << "Error: Cannot write pixel data to '" << filename << "'" << std::endl;
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool TgaWriter::write_tga_to_memory(std::vector<uint8_t>& output,
+                                   const Palette& palette,
+                                   const ArtFile::Tile& tile,
+                                   const uint8_t* pixel_data,
+                                   size_t pixel_data_size) {
+    output.clear();
+
+    if (tile.is_empty()) {
+        return true; // Skip empty tiles
+    }
+
+    if (pixel_data_size != tile.size()) {
+        std::cerr << "Error: Pixel data size mismatch for tile" << std::endl;
+        return false;
+    }
+
+    // Create TGA header
+    TgaHeader header = create_header(tile.width, tile.height);
+    std::vector<uint8_t> header_data = header.serialize();
+
+    // Reserve space for the output buffer
+    output.reserve(18 + 768 + tile.size()); // header + palette + pixel data
+
+    // Write TGA header
+    output.insert(output.end(), header_data.begin(), header_data.end());
+
+    // Write palette
+    const std::vector<uint8_t>& palette_data = palette.data();
+    output.insert(output.end(), palette_data.begin(), palette_data.end());
+
+    // Write pixel data (ART stores by columns, TGA by rows from bottom)
+    for (int32_t y = tile.height - 1; y >= 0; --y) {
+        for (int32_t x = 0; x < tile.width; ++x) {
+            // ART format: pixels stored by columns (y + x * height)
+            uint8_t pixel = pixel_data[y + x * tile.height];
+            output.push_back(pixel);
+        }
+    }
+
+    return true;
 }
 
 } // namespace art2img

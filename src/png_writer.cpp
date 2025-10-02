@@ -57,27 +57,74 @@ bool PngWriter::write_png(const std::string &filename,
         return true;
     }
 
+    bool PngWriter::write_png(const std::string& filename,
+                             const Palette& palette,
+                             const ArtFile::Tile& tile,
+                             const uint8_t* pixel_data,
+                             size_t pixel_data_size,
+                             const Options& options)
+    {
+        if (tile.is_empty())
+        {
+            return true; // Skip empty tiles
+        }
+
+        if (pixel_data_size != tile.size())
+        {
+            throw ArtException("Pixel data size mismatch for tile: " + filename);
+        }
+
+        // Convert indexed color to RGBA
+        std::vector<uint8_t> rgba_data = convert_to_rgba(palette, tile, pixel_data, pixel_data_size, options);
+
+        // Write PNG file using stb_image_write
+        int result = stbi_write_png(filename.c_str(),
+                                    tile.width,
+                                    tile.height,
+                                    4, // RGBA
+                                    rgba_data.data(),
+                                    tile.width * 4); // stride = width * 4 bytes per pixel
+
+        if (result == 0)
+        {
+            std::cerr << "Error: Cannot create PNG file '" << filename << "'" << std::endl;
+            return false;
+        }
+
+        return true;
+    }
+
     bool PngWriter::write_png_to_memory(std::vector<uint8_t>& output,
                                        const Palette& palette,
                                        const ArtFile::Tile& tile,
                                        const std::vector<uint8_t>& pixel_data,
                                        const Options& options)
     {
+        return write_png_to_memory(output, palette, tile, pixel_data.data(), pixel_data.size(), options);
+    }
+
+    bool PngWriter::write_png_to_memory(std::vector<uint8_t>& output,
+                                       const Palette& palette,
+                                       const ArtFile::Tile& tile,
+                                       const uint8_t* pixel_data,
+                                       size_t pixel_data_size,
+                                       const Options& options)
+    {
         output.clear();
-        
+
         if (tile.is_empty())
         {
             return true; // Skip empty tiles
         }
 
-        if (pixel_data.size() != tile.size())
+        if (pixel_data_size != tile.size())
         {
             std::cerr << "Error: Pixel data size mismatch for tile" << std::endl;
             return false;
         }
 
         // Convert indexed color to RGBA
-        std::vector<uint8_t> rgba_data = convert_to_rgba(palette, tile, pixel_data, options);
+        std::vector<uint8_t> rgba_data = convert_to_rgba(palette, tile, pixel_data, pixel_data_size, options);
 
         // Pre-size buffer to minimize reallocations during callbacks
         if (rgba_data.size() > output.capacity()) {
@@ -112,6 +159,19 @@ bool PngWriter::write_png(const std::string &filename,
                                                     const std::vector<uint8_t> &pixel_data,
                                                     const Options &options)
     {
+        return convert_to_rgba(palette, tile, pixel_data.data(), pixel_data.size(), options);
+    }
+
+    std::vector<uint8_t> PngWriter::convert_to_rgba(const Palette &palette,
+                                                    const ArtFile::Tile &tile,
+                                                    const uint8_t* pixel_data,
+                                                    size_t pixel_data_size,
+                                                    const Options &options)
+    {
+        if (pixel_data_size != tile.size()) {
+            throw ArtException("Pixel data size mismatch for tile");
+        }
+
         std::vector<uint8_t> rgba_data(static_cast<size_t>(tile.width) * tile.height * 4);
 
         const std::vector<uint8_t> &palette_data = palette.data();

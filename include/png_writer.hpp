@@ -19,27 +19,51 @@ public:
         Options() {}
     };
     
-    // File-based operations
+    // File-based operations (vector version)
     static bool write_png(const std::string& filename,
                          const Palette& palette,
                          const ArtFile::Tile& tile,
                          const std::vector<uint8_t>& pixel_data,
                          const Options& options = Options());
-    
-    // Memory-based operations
+
+    // File-based operations (raw pointer version)
+    static bool write_png(const std::string& filename,
+                         const Palette& palette,
+                         const ArtFile::Tile& tile,
+                         const uint8_t* pixel_data,
+                         size_t pixel_data_size,
+                         const Options& options = Options());
+
+    // Memory-based operations (vector version)
     static bool write_png_to_memory(std::vector<uint8_t>& output,
                                    const Palette& palette,
                                    const ArtFile::Tile& tile,
                                    const std::vector<uint8_t>& pixel_data,
+                                   const Options& options = Options());
+
+    // Memory-based operations (raw pointer version)
+    static bool write_png_to_memory(std::vector<uint8_t>& output,
+                                   const Palette& palette,
+                                   const ArtFile::Tile& tile,
+                                   const uint8_t* pixel_data,
+                                   size_t pixel_data_size,
                                    const Options& options = Options());
     
     // Public for testing
     static bool is_magenta(uint8_t r, uint8_t g, uint8_t b);
     
 private:
+    // Vector version
     static std::vector<uint8_t> convert_to_rgba(const Palette& palette,
                                                const ArtFile::Tile& tile,
                                                const std::vector<uint8_t>& pixel_data,
+                                               const Options& options);
+
+    // Raw pointer version
+    static std::vector<uint8_t> convert_to_rgba(const Palette& palette,
+                                               const ArtFile::Tile& tile,
+                                               const uint8_t* pixel_data,
+                                               size_t pixel_data_size,
                                                const Options& options);
     
     static void apply_premultiplication(std::vector<uint8_t>& rgba_data);

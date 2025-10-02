@@ -27,17 +27,31 @@ public:
         std::vector<uint8_t> serialize() const;
     };
     
-    // File-based operations
+    // File-based operations (vector version)
     static bool write_tga(const std::string& filename,
                          const Palette& palette,
                          const ArtFile::Tile& tile,
                          const std::vector<uint8_t>& pixel_data);
-    
-    // Memory-based operations
+
+    // File-based operations (raw pointer version)
+    static bool write_tga(const std::string& filename,
+                         const Palette& palette,
+                         const ArtFile::Tile& tile,
+                         const uint8_t* pixel_data,
+                         size_t pixel_data_size);
+
+    // Memory-based operations (vector version)
     static bool write_tga_to_memory(std::vector<uint8_t>& output,
                                    const Palette& palette,
                                    const ArtFile::Tile& tile,
                                    const std::vector<uint8_t>& pixel_data);
+
+    // Memory-based operations (raw pointer version)
+    static bool write_tga_to_memory(std::vector<uint8_t>& output,
+                                   const Palette& palette,
+                                   const ArtFile::Tile& tile,
+                                   const uint8_t* pixel_data,
+                                   size_t pixel_data_size);
     
     static TgaHeader create_header(uint16_t width, uint16_t height);
     
