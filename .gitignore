@@ -32,3 +32,4 @@ build-tests/
 
 build/
 cmake-build*/
+_fetch/

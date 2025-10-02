@@ -33,7 +33,6 @@ target_link_libraries(art2img_tests
 target_include_directories(art2img_tests
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../vendor
     ${CMAKE_CURRENT_SOURCE_DIR}/../src
     ${CMAKE_BINARY_DIR}/../include
 )

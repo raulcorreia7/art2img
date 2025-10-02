@@ -3,7 +3,7 @@
 #include "extractor_api.hpp"
 #include "exceptions.hpp"
 #include "version.hpp"
-#include <CLI11/CLI11.hpp>
+#include <CLI/CLI.hpp>
 #include <iostream>
 #include <filesystem>
 #include <iomanip>

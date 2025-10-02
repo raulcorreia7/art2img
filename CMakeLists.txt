@@ -9,6 +9,56 @@ option(BUILD_SHARED_LIBS "Build shared libraries instead of static" ON)
 # Enable testing at the top level
 enable_testing()
 
+include(FetchContent)
+
+set(ART2IMG_CLI11_TAG v2.5.0 CACHE STRING "CLI11 version to fetch")
+set(ART2IMG_DOCTEST_TAG v2.4.12 CACHE STRING "doctest version to fetch")
+set(ART2IMG_STB_TAG master CACHE STRING "stb branch to fetch")
+
+FetchContent_Declare(cli11
+    GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
+    GIT_TAG ${ART2IMG_CLI11_TAG}
+)
+
+FetchContent_Declare(doctest
+    GIT_REPOSITORY https://github.com/doctest/doctest.git
+    GIT_TAG ${ART2IMG_DOCTEST_TAG}
+)
+
+FetchContent_Declare(stb
+    GIT_REPOSITORY https://github.com/nothings/stb.git
+    GIT_TAG ${ART2IMG_STB_TAG}
+)
+
+if(BUILD_CLI)
+    FetchContent_MakeAvailable(cli11)
+endif()
+
+if(BUILD_TESTS)
+    FetchContent_GetProperties(doctest)
+    if(NOT doctest_POPULATED)
+        FetchContent_Populate(doctest)
+        add_library(doctest INTERFACE)
+        target_include_directories(doctest INTERFACE ${doctest_SOURCE_DIR})
+
+        add_library(doctest::doctest_with_main INTERFACE IMPORTED)
+        target_link_libraries(doctest::doctest_with_main INTERFACE doctest)
+
+        if(NOT TARGET doctest::doctest)
+            add_library(doctest::doctest INTERFACE IMPORTED)
+            target_link_libraries(doctest::doctest INTERFACE doctest)
+        endif()
+    endif()
+endif()
+
+FetchContent_GetProperties(stb)
+if(NOT stb_POPULATED)
+    FetchContent_Populate(stb)
+    add_library(stb_headers INTERFACE)
+    target_include_directories(stb_headers INTERFACE ${stb_SOURCE_DIR})
+    add_library(stb::headers ALIAS stb_headers)
+endif()
+
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -59,25 +109,6 @@ configure_file(
 # Ensure include directories exist
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include)
 
-# Add vendor directory
-include_directories(vendor)
-
-# Find or download fmtlib
-find_package(fmt QUIET)
-if(NOT fmt_FOUND)
-    # Try to find system fmt library
-    find_library(FMT_LIB fmt)
-    if(FMT_LIB)
-        message(STATUS "Found system fmt library: ${FMT_LIB}")
-        set(fmt_LIBRARIES ${FMT_LIB})
-        set(fmt_FOUND TRUE)
-    else()
-        # Use the bundled fmt.hpp header
-        message(STATUS "Using bundled fmt.hpp header")
-        set(fmt_FOUND TRUE)
-    endif()
-endif()
-
 # Include the source and generated header directories
 include_directories(include)
 include_directories(${CMAKE_BINARY_DIR}/include)
@@ -109,7 +140,6 @@ target_include_directories(art2img_extractor
     $<INSTALL_INTERFACE:include>
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor
 )
 
 # Add header files as dependencies
@@ -121,8 +151,12 @@ target_sources(art2img_extractor
     include/png_writer.hpp
     include/tga_writer.hpp
     include/exceptions.hpp
-    vendor/stb/stb_image_write.h
     ${CMAKE_BINARY_DIR}/include/version.hpp
+)
+
+target_link_libraries(art2img_extractor
+    PRIVATE
+        stb::headers
 )
 
 # Set public headers for installation
@@ -145,7 +179,6 @@ if (BUILD_DIAGNOSTIC)
     target_include_directories(art2img_diagnostic
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/vendor
         ${CMAKE_BINARY_DIR}/include
     )
 
@@ -157,27 +190,7 @@ if (BUILD_DIAGNOSTIC)
     )
 endif()
 
-# Add doctest testing framework
 if(BUILD_TESTS)
-    find_package(doctest QUIET)
-
-    if(TARGET doctest::doctest_with_main)
-        message(STATUS "Found doctest: ${doctest_VERSION}")
-    else()
-        add_library(doctest INTERFACE)
-        target_include_directories(doctest INTERFACE ${CMAKE_SOURCE_DIR}/third_party)
-
-        add_library(doctest::doctest_with_main INTERFACE IMPORTED)
-        target_link_libraries(doctest::doctest_with_main INTERFACE doctest)
-
-        if(NOT TARGET doctest::doctest)
-            add_library(doctest::doctest INTERFACE IMPORTED)
-            target_link_libraries(doctest::doctest INTERFACE doctest)
-        endif()
-
-        message(STATUS "Using vendored doctest header")
-    endif()
-
     add_subdirectory(tests)
 endif()
 
