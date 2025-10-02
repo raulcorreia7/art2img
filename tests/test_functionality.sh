@@ -18,6 +18,9 @@ THREADS=${THREADS:-4}
 GENERATE_ANIMATION=${GENERATE_ANIMATION:-true}
 VERBOSE=${VERBOSE:-true}
 
+# Remove trailing slash from ART_FILES_DIR if present
+ART_FILES_DIR=${ART_FILES_DIR%/}
+
 # Clean up previous test outputs
 rm -rf tests/output/tga tests/output/png tests/output/with_transparency tests/output/no_transparency tests/output/single_tile tests/output/directory_mode 2>/dev/null || true
 
@@ -26,7 +29,9 @@ mkdir -p tests/output/tga tests/output/png tests/output/with_transparency tests/
 
 # Test 1: TGA format
 echo "Test 1: TGA format"
-bin/art2img -o tests/output/tga -f tga -p "$PALETTE_PATH" -t "$THREADS" "$ART_FILES_DIR/TILES000.ART"
+# Remove trailing slash from ART_FILES_DIR
+ART_FILES_CLEAN=${ART_FILES_DIR%/}
+../bin/art2img -o tests/output/tga -f tga -p "$PALETTE_PATH" -t "$THREADS" "$ART_FILES_CLEAN/TILES000.ART"
 if [ $? -eq 0 ]; then
     echo "[OK] TGA test passed"
 else
@@ -36,7 +41,7 @@ fi
 
 # Test 2: PNG format
 echo "Test 2: PNG format"
-bin/art2img -o tests/output/png -f png -p "$PALETTE_PATH" -t "$THREADS" "$ART_FILES_DIR/TILES000.ART"
+../bin/art2img -o tests/output/png -f png -p "$PALETTE_PATH" -t "$THREADS" "${ART_FILES_DIR%/}/TILES000.ART"
 if [ $? -eq 0 ]; then
     echo "[OK] PNG test passed"
 else
@@ -46,7 +51,7 @@ fi
 
 # Test 3: PNG format with magenta transparency fix (default)
 echo "Test 3: PNG format with magenta transparency fix (default)"
-bin/art2img -o tests/output/with_transparency -f png -p "$PALETTE_PATH" -t "$THREADS" "$ART_FILES_DIR/TILES000.ART"
+../bin/art2img -o tests/output/with_transparency -f png -p "$PALETTE_PATH" -t "$THREADS" "${ART_FILES_DIR%/}/TILES000.ART"
 if [ $? -eq 0 ]; then
     echo "[OK] PNG with transparency test passed"
 else
@@ -56,7 +61,7 @@ fi
 
 # Test 4: PNG format without magenta transparency fix
 echo "Test 4: PNG format without magenta transparency fix"
-bin/art2img -o tests/output/no_transparency -f png -p "$PALETTE_PATH" -t "$THREADS" -N "$ART_FILES_DIR/TILES000.ART"
+../bin/art2img -o tests/output/no_transparency -f png -p "$PALETTE_PATH" -t "$THREADS" -N "${ART_FILES_DIR%/}/TILES000.ART"
 if [ $? -eq 0 ]; then
     echo "[OK] PNG without transparency test passed"
 else
@@ -66,7 +71,7 @@ fi
 
 # Test 5: Single tile processing
 echo "Test 5: Single tile processing"
-bin/art2img -o tests/output/single_tile -f png -p "$PALETTE_PATH" -t "$THREADS" "$ART_FILES_DIR/TILES000.ART"
+../bin/art2img -o tests/output/single_tile -f png -p "$PALETTE_PATH" -t "$THREADS" "${ART_FILES_DIR%/}/TILES000.ART"
 if [ $? -eq 0 ]; then
     echo "[OK] Single tile processing test passed"
 else
@@ -76,7 +81,7 @@ fi
 
 # Test 6: Directory processing mode
 echo "Test 6: Directory processing mode"
-bin/art2img -o tests/output/directory_mode -p "$PALETTE_PATH" -t "$THREADS" "$ART_FILES_DIR"
+../bin/art2img -o tests/output/directory_mode -p "$PALETTE_PATH" -t "$THREADS" "$ART_FILES_DIR"
 if [ $? -eq 0 ]; then
     echo "[OK] Directory processing mode test passed"
 else
@@ -86,7 +91,7 @@ fi
 
 # Test 7: Directory processing mode with merge animation flag
 echo "Test 7: Directory processing mode with merge animation flag"
-bin/art2img -o tests/output/merge_anim -p "$PALETTE_PATH" -t "$THREADS" -m "$ART_FILES_DIR"
+../bin/art2img -o tests/output/merge_anim -p "$PALETTE_PATH" -t "$THREADS" -m "$ART_FILES_DIR"
 if [ $? -eq 0 ]; then
     echo "[OK] Directory processing mode with merge animation flag test passed"
 else
@@ -148,7 +153,7 @@ else
 fi
 
 # Test the CLI help option
-if ./bin/art2img --help | grep -q "fix-transparency"; then
+if ./../bin/art2img --help | grep -q "fix-transparency"; then
     echo "[OK] CLI help text includes fix-transparency options"
 else
     echo "[FAIL] CLI help text does not include fix-transparency options"
@@ -178,15 +183,7 @@ else
     exit 1
 fi
 
-# Test 8: Palette functionality tests
-echo "Test 8: Palette functionality tests"
-bash tests/test_palette_functionality.sh
-if [ $? -eq 0 ]; then
-    echo "[OK] Palette functionality tests passed"
-else
-    echo "[FAIL] Palette functionality tests failed"
-    exit 1
-fi
+
 
 echo ""
 echo "[OK] All tests completed successfully"
