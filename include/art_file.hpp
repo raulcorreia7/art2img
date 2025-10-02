@@ -66,6 +66,11 @@ public:
     const std::vector<Tile>& tiles() const { return tiles_; }
     bool is_open() const { return file_.is_open() || !data_.empty(); }
     const std::string& filename() const { return filename_; }
+
+    // Memory data access for zero-copy operations
+    const uint8_t* data() const { return data_.data(); }
+    size_t data_size() const { return data_.size(); }
+    bool has_data() const { return !data_.empty(); }
     
 private:
     bool read_header_from_memory();
