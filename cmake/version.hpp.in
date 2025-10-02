@@ -1,0 +1,2 @@
+#pragma once
+#define ART2IMG_VERSION "@PROJECT_VERSION@"
