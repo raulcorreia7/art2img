@@ -79,12 +79,17 @@ bool PngWriter::write_png(const std::string &filename,
         // Convert indexed color to RGBA
         std::vector<uint8_t> rgba_data = convert_to_rgba(palette, tile, pixel_data, options);
 
+        // Pre-size buffer to minimize reallocations during callbacks
+        if (rgba_data.size() > output.capacity()) {
+            output.reserve(rgba_data.size() + 1024);
+        }
+
         // Write PNG to memory using stb_image_write
         int result = stbi_write_png_to_func(
             [](void* context, void* data, int size) {
-                std::vector<uint8_t>* output = static_cast<std::vector<uint8_t>*>(context);
-                uint8_t* byte_data = static_cast<uint8_t*>(data);
-                output->assign(byte_data, byte_data + size);
+                auto* output_buffer = static_cast<std::vector<uint8_t>*>(context);
+                auto* byte_data = static_cast<uint8_t*>(data);
+                output_buffer->insert(output_buffer->end(), byte_data, byte_data + size);
             },
             &output,
             tile.width,

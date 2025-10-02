@@ -68,10 +68,10 @@ jobs:
           # Basic architecture verification
           if [[ "${{ matrix.platform }}" == "linux" ]]; then
             file bin/art2img${{ matrix.binary_suffix }} | grep -q "ELF" && echo "✓ Linux binary verified" || exit 1
-            file bin/art_diagnostic${{ matrix.binary_suffix }} | grep -q "ELF" && echo "✓ Linux diagnostic verified" || exit 1
+            file bin/art2img_diagnostic${{ matrix.binary_suffix }} | grep -q "ELF" && echo "✓ Linux diagnostic verified" || exit 1
           elif [[ "${{ matrix.platform }}" == "windows" ]]; then
             file bin/art2img${{ matrix.binary_suffix }} | grep -q "PE" && echo "✓ Windows binary verified" || exit 1
-            file bin/art_diagnostic${{ matrix.binary_suffix }} | grep -q "PE" && echo "✓ Windows diagnostic verified" || exit 1
+            file bin/art2img_diagnostic${{ matrix.binary_suffix }} | grep -q "PE" && echo "✓ Windows diagnostic verified" || exit 1
           fi
 
       - name: Binary integrity checks
@@ -82,7 +82,7 @@ jobs:
           if [[ "${{ matrix.platform }}" == "linux" ]]; then
             # Check binary sizes (reasonable range: 100KB - 10MB)
             MAIN_SIZE=$(stat -c%s bin/art2img${{ matrix.binary_suffix }})
-            DIAG_SIZE=$(stat -c%s bin/art_diagnostic${{ matrix.binary_suffix }})
+            DIAG_SIZE=$(stat -c%s bin/art2img_diagnostic${{ matrix.binary_suffix }})
             
             if [[ $MAIN_SIZE -lt 102400 ]] || [[ $MAIN_SIZE -gt 10485760 ]]; then
               echo "❌ Main binary size out of range: $MAIN_SIZE bytes"
@@ -132,7 +132,7 @@ jobs:
 
           # Copy binaries
           cp bin/art2img${{ matrix.binary_suffix }} release/${{ matrix.platform }}-${{ matrix.arch }}/art2img${{ matrix.binary_suffix }}
-          cp bin/art_diagnostic${{ matrix.binary_suffix }} release/${{ matrix.platform }}-${{ matrix.arch }}/art_diagnostic${{ matrix.binary_suffix }}
+          cp bin/art2img_diagnostic${{ matrix.binary_suffix }} release/${{ matrix.platform }}-${{ matrix.arch }}/art2img_diagnostic${{ matrix.binary_suffix }}
 
           # Copy documentation
           cp README.md release/${{ matrix.platform }}-${{ matrix.arch }}/
@@ -146,7 +146,7 @@ jobs:
 
           Binaries:
           - art2img${{ matrix.binary_suffix }} - Main converter
-          - art_diagnostic${{ matrix.binary_suffix }} - Diagnostic tool
+          - art2img_diagnostic${{ matrix.binary_suffix }} - Diagnostic tool
 
           Quick Start:
           ${{ matrix.platform == 'windows' && 'art2img.exe' || './art2img' }} -f png -p PALETTE.DAT TILES000.ART

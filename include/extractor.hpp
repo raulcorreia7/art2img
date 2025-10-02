@@ -9,6 +9,7 @@
 #include <string>
 #include <atomic>
 #include <mutex>
+#include <thread>
 
 namespace art2img {
 
@@ -20,8 +21,13 @@ public:
     };
     
     struct Options {
+        static unsigned default_num_threads() {
+            unsigned count = std::thread::hardware_concurrency();
+            return count == 0 ? 1u : count;
+        }
+
         std::string output_dir = ".";
-        unsigned num_threads = std::thread::hardware_concurrency();
+        unsigned num_threads = default_num_threads();
         bool verbose = true;
         bool dump_animation = true;
         bool merge_animation_data = false; // Merge all animdata.ini files into one

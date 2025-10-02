@@ -28,3 +28,4 @@ Thumbs.db
 # Test outputs (keep test assets but not generated outputs)
 tests/output/
 tests/tests/output/
+build-tests/

@@ -11,19 +11,24 @@ ArtExtractor::ArtExtractor(ArtFile& art_file, Palette& palette)
 }
 
 bool ArtExtractor::extract(const Options& options) {
-    if (!options.is_valid()) {
+    Options sanitized = options;
+    if (sanitized.num_threads == 0) {
+        sanitized.num_threads = Options::default_num_threads();
+    }
+
+    if (!sanitized.is_valid()) {
         throw ExtractionException("Invalid extraction options");
     }
-    
+
     if (!art_file_.is_open()) {
         throw ExtractionException("ART file is not open");
     }
-    
+
     if (!palette_.is_loaded()) {
         throw ExtractionException("Palette is not loaded");
     }
-    
-    options_ = options;
+
+    options_ = sanitized;
     stats_.reset();
     
     // Create output directory (remove existing content first)

@@ -99,6 +99,15 @@ else
     exit 1
 fi
 
+# Test 8: PNG memory regression
+echo "Test 8: PNG memory regression"
+mkdir -p ../build-tests
+g++ -std=c++17 -Wall -Wextra -O2 -pthread -I../include -I../vendor \
+    ../tests/png_memory_regression.cpp ../src/png_writer.cpp ../src/palette.cpp \
+    -o ../build-tests/png_memory_regression || { echo "[FAIL] Failed to build PNG memory regression test"; exit 1; }
+../build-tests/png_memory_regression || { echo "[FAIL] PNG memory regression test failed"; exit 1; }
+echo "[OK] PNG memory regression test passed"
+
 # Validate outputs
 echo ""
 echo "Output validation:"

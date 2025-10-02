@@ -1,3 +1,42 @@
+# Current Delivery Plan — 2025-10-02
+
+## Goals
+- Restore end-to-end CI so release artifacts build for Linux/Windows without manual intervention.
+- Eliminate in-memory PNG corruption so the embeddable API remains byte-for-byte compatible with CLI output.
+- Tighten platform guards (thread defaults, header includes) without changing the public surface area.
+
+## Scope
+- `.github/workflows/build.yml` verification logic and supporting build scripts.
+- `src/png_writer.cpp` / `include/png_writer.hpp` and API-level tests covering in-memory extraction.
+- `include/extractor.hpp`, `src/art2img.cpp`, and supporting utilities for safer thread-count defaults / palette resolution reporting.
+
+## Out of Scope
+- Changing CLI flags, file formats, or default palette heuristics.
+- Replacing the Makefile or switching build toolchains.
+- Introducing new third-party dependencies beyond vendored headers.
+
+## Workstreams
+- **T01 – Pipeline verification fix**: Correct binary naming in workflow, align Makefile verify target with CI usage, add guardrails so missing MinGW toolchain degrades gracefully. _Owner: Codex._
+- **T02 – In-memory PNG buffer integrity**: Fix chunk handling in `PngWriter::write_png_to_memory`, add regression test in `tests/test_library_api.cpp` (or new binary) ensuring multi-chunk writes round-trip. _Owner: Codex._
+- **T03 – Extractor robustness**: Ensure thread defaults never drop to zero, add explicit `<thread>` include, surface helpful logging when palette fallback fails. _Owner: Codex._
+
+## Tooling & Commands
+- Build: `make`, `make linux`, `make windows` (optional when `x86_64-w64-mingw32-g++` present).
+- Verification: `make verify` (delegates to `verify-linux` + `verify-windows`), `make test`, `./tests/test_ci.sh`.
+- Docker (optional parity): `docker build -t art2img .`.
+
+## Risks & Mitigations
+- **Workflow drift**: Misnaming binaries leads to hard failures → add CI assertion + local `make verify` parity command.
+- **PNG regression**: stb callback behaviour may still vary → exercise regression test with synthetic large tile to ensure multi-chunk output.
+- **Thread defaults**: Hardware concurrency returning 0 would halt extraction → clamp minimum to 1 with unit smoke verifying CLI path.
+
+## Rollback Strategy
+- Each change isolated by task; revert offending commit or cherry-pick revert.
+- Release assets built from prior successful tag remain usable; pipeline fix guarded behind matrix so fallback is manual `make linux` + upload.
+
+---
+
+## Historical Plan (previous content)
 # Library Refactoring Plan: Memory-Based C++ API
 
 Based on the current art2img implementation, this plan outlines the transformation of the file-based tool into a stable C++ library API with memory-based operations.

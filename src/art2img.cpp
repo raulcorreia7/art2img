@@ -5,43 +5,72 @@
 #include <CLI11/CLI11.hpp>
 #include <iostream>
 #include <filesystem>
+#include <iomanip>
+#include <sstream>
+#include <thread>
+#include <vector>
 
 namespace {
 
-// Resolve palette file path using dynamic resolution
-std::string resolve_palette_path(const std::string& user_path, const std::string& art_file_path) {
-    // 1. User-specified path (highest priority)
-    if (!user_path.empty()) {
-        if (std::filesystem::exists(user_path)) {
-            return user_path;
+struct PaletteResolutionResult {
+    std::string resolved_path;
+    std::vector<std::string> candidates;
+    bool user_hint_missing = false;
+
+    bool has_resolution() const { return !resolved_path.empty(); }
+};
+
+PaletteResolutionResult resolve_palette_path(const std::string& user_path, const std::string& art_file_path) {
+    PaletteResolutionResult result;
+
+    auto try_candidate = [&](const std::filesystem::path& candidate, bool mark_user = false) -> bool {
+        if (candidate.empty()) {
+            return false;
         }
-        // If user specified but file doesn't exist, we'll try other locations
+
+        std::string candidate_str = candidate.string();
+        result.candidates.push_back(candidate_str);
+
+        std::error_code ec;
+        if (std::filesystem::exists(candidate, ec)) {
+            result.resolved_path = candidate_str;
+            return true;
+        }
+
+        if (mark_user) {
+            result.user_hint_missing = true;
+        }
+        return false;
+    };
+
+    if (!user_path.empty() && try_candidate(user_path, true)) {
+        return result;
     }
-    
-    // 2. Same directory as ART file
-    std::filesystem::path art_dir = std::filesystem::path(art_file_path).parent_path();
-    std::string art_dir_palette = (art_dir / "palette.dat").string();
-    if (std::filesystem::exists(art_dir_palette)) {
-        return art_dir_palette;
+
+    const std::filesystem::path art_dir = std::filesystem::path(art_file_path).parent_path();
+    if (!art_dir.empty()) {
+        if (try_candidate(art_dir / "palette.dat")) {
+            return result;
+        }
+        if (try_candidate(art_dir / "PALETTE.DAT")) {
+            return result;
+        }
     }
-    
-    // 3. Current working directory (current behavior)
-    if (std::filesystem::exists("palette.dat")) {
-        return "palette.dat";
+
+    if (try_candidate("palette.dat")) {
+        return result;
     }
-    
-    // 4. Assets directory (project-specific)
-    if (std::filesystem::exists("assets/palette.dat")) {
-        return "assets/palette.dat";
+    if (try_candidate("PALETTE.DAT")) {
+        return result;
     }
-    
-    // 5. Duke3D pipeline paths (convenience for Duke3D upscaling)
-    if (std::filesystem::exists("../../../../build/duke3d/PALETTE.DAT")) {
-        return "../../../../build/duke3d/PALETTE.DAT";
+    if (try_candidate("assets/palette.dat")) {
+        return result;
     }
-    
-    // 6. Return empty string (trigger fallback to Blood palette)
-    return "";
+    if (try_candidate("assets/PALETTE.DAT")) {
+        return result;
+    }
+
+    return result;
 }
 
 } // anonymous namespace
@@ -96,6 +125,7 @@ bool append_animation_data_to_merged_file(const art2img::ArtFile& art_file, cons
 struct ProcessOptions {
     std::string palette_file;
     art2img::ArtExtractor::Options extractor_options;
+    mutable bool palette_warning_emitted = false;
 };
 
 // Function to process a single ART file
@@ -110,9 +140,21 @@ bool process_single_file(const ProcessOptions& options, const std::string& art_f
         
         // Load palette with dynamic path resolution
         art2img::Palette palette;
-        std::string palette_path = resolve_palette_path(options.palette_file, art_file_path);
-        
-        if (!palette_path.empty() && palette.load_from_file(palette_path)) {
+        PaletteResolutionResult palette_resolution = resolve_palette_path(options.palette_file, art_file_path);
+        const std::string& palette_path = palette_resolution.resolved_path;
+        bool palette_loaded = false;
+
+        if (!palette_path.empty()) {
+            try {
+                palette_loaded = palette.load_from_file(palette_path);
+            } catch (const art2img::PaletteException& e) {
+                if (options.extractor_options.verbose) {
+                    std::cout << "Warning: " << e.what() << std::endl;
+                }
+            }
+        }
+
+        if (palette_loaded) {
             if (options.extractor_options.verbose) {
                 std::cout << "Using palette file: " << palette_path << std::endl;
             }
@@ -120,13 +162,43 @@ bool process_single_file(const ProcessOptions& options, const std::string& art_f
             if (options.extractor_options.verbose) {
                 if (!palette_path.empty()) {
                     std::cout << "Warning: Cannot open palette file '" << palette_path << "'" << std::endl;
+                } else if (palette_resolution.user_hint_missing && !options.palette_file.empty()) {
+                    std::cout << "Warning: Cannot locate palette file '" << options.palette_file << "'" << std::endl;
+                } else {
+                    std::cout << "Warning: No palette file detected" << std::endl;
                 }
                 std::cout << "Using default Duke Nukem 3D palette" << std::endl;
             }
-            // Use Duke Nukem 3D as default palette instead of Blood
+
+            if (!options.palette_warning_emitted) {
+                std::ostringstream warn;
+                if (palette_resolution.user_hint_missing && !options.palette_file.empty()) {
+                    warn << "Warning: Palette file '" << options.palette_file << "' not found.";
+                } else if (!palette_path.empty()) {
+                    warn << "Warning: Failed to load palette file '" << palette_path << "'.";
+                } else {
+                    warn << "Warning: Could not locate palette file.";
+                }
+
+                if (!palette_resolution.candidates.empty()) {
+                    warn << " Checked: ";
+                    for (size_t i = 0; i < palette_resolution.candidates.size(); ++i) {
+                        if (i > 0) {
+                            warn << ", ";
+                        }
+                        warn << palette_resolution.candidates[i];
+                    }
+                    warn << '.';
+                }
+
+                warn << " Using built-in Duke Nukem 3D palette.";
+                std::cerr << warn.str() << std::endl;
+                options.palette_warning_emitted = true;
+            }
+
             palette.load_duke3d_default();
         }
-        
+
         // Create extractor with modified output directory for directory processing
         art2img::ArtExtractor::Options extractor_options = options.extractor_options;
         if (!output_subdir.empty()) {
@@ -206,13 +278,16 @@ int main(int argc, char* argv[]) {
         
         // Handle -1 as special value for all threads
         if (num_threads == -1) {
-            num_threads = std::thread::hardware_concurrency();
+            num_threads = static_cast<int>(std::thread::hardware_concurrency());
+        }
+        if (num_threads <= 0) {
+            num_threads = static_cast<int>(art2img::ArtExtractor::Options::default_num_threads());
         }
         
         // Convert CLI11 options to extractor options
         art2img::ArtExtractor::Options extractor_options;
         extractor_options.output_dir = output_dir;
-        extractor_options.num_threads = num_threads;
+        extractor_options.num_threads = static_cast<unsigned>(num_threads);
         extractor_options.verbose = !quiet;
         extractor_options.dump_animation = !no_anim;
         extractor_options.merge_animation_data = merge_anim;

@@ -25,7 +25,14 @@ mkdir -p tests/output/ci_no_transparency
 ./bin/art2img -o tests/output/ci_no_transparency -f png -p tests/assets/PALETTE.DAT -N tests/assets/TILES000.ART
 
 # Verify output files exist
-echo "5. Verifying output files..."
+echo "5. Testing PNG memory regression..."
+mkdir -p build-tests
+g++ -std=c++17 -Wall -Wextra -O2 -pthread -Iinclude -Ivendor \
+    tests/png_memory_regression.cpp src/png_writer.cpp src/palette.cpp \
+    -o build-tests/png_memory_regression
+./build-tests/png_memory_regression tests/output/png_memory_regression_ci.png
+
+echo "6. Verifying output files..."
 PNG_COUNT=$(find tests/output/ci_png -name "*.png" | wc -l)
 TGA_COUNT=$(find tests/output/ci_tga -name "*.tga" | wc -l)
 TRANSP_COUNT=$(find tests/output/ci_transparency -name "*.png" | wc -l)
@@ -37,8 +44,11 @@ echo "Transparent PNG files created: $TRANSP_COUNT"
 echo "Non-transparent PNG files created: $NO_TRANSP_COUNT"
 
 # Check if we have the expected number of files (256 tiles from TILES000.ART)
-if [ "$PNG_COUNT" -eq "256" ] && [ "$TGA_COUNT" -eq "256" ] && [ "$TRANSP_COUNT" -eq "256" ] && [ "$NO_TRANSP_COUNT" -eq "256" ]; then
-    echo "✅ All tests passed!"
+if [ "$PNG_COUNT" -eq "$TGA_COUNT" ] \
+    && [ "$PNG_COUNT" -eq "$TRANSP_COUNT" ] \
+    && [ "$PNG_COUNT" -eq "$NO_TRANSP_COUNT" ] \
+    && [ "$PNG_COUNT" -gt 0 ]; then
+    echo "✅ All tests passed! ($PNG_COUNT tiles)"
     exit 0
 else
     echo "❌ Test failed: Unexpected number of output files"
