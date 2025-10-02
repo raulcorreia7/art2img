@@ -1,7 +1,9 @@
 #include "extractor_api.hpp"
+#include "test_helpers.hpp"
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <filesystem>
 
 int main() {
     std::cout << "Testing art2img library API..." << std::endl;
@@ -10,7 +12,8 @@ int main() {
     art2img::ExtractorAPI extractor;
     
     // Load ART file from memory
-    std::ifstream art_file("../tests/assets/TILES000.ART", std::ios::binary);
+    const auto art_path = test_asset_path("TILES000.ART");
+    std::ifstream art_file(art_path, std::ios::binary);
     if (!art_file) {
         std::cerr << "Error: Cannot open TILES000.ART" << std::endl;
         return 1;
@@ -34,7 +37,8 @@ int main() {
     std::cout << "Loaded ART file with " << extractor.get_tile_count() << " tiles" << std::endl;
     
     // Load palette from memory
-    std::ifstream palette_file("../tests/assets/PALETTE.DAT", std::ios::binary);
+    const auto palette_path = test_asset_path("PALETTE.DAT");
+    std::ifstream palette_file(palette_path, std::ios::binary);
     if (!palette_file) {
         std::cerr << "Error: Cannot open PALETTE.DAT" << std::endl;
         return 1;
@@ -68,7 +72,9 @@ int main() {
               << " pixels, " << result.image_data.size() << " bytes" << std::endl;
     
     // Save to file
-    std::ofstream output_file("../tests/output/tile0000.png", std::ios::binary);
+    const auto output_root = std::filesystem::path("tests/output");
+    std::filesystem::create_directories(output_root);
+    std::ofstream output_file(output_root / "tile0000.png", std::ios::binary);
     if (!output_file) {
         std::cerr << "Error: Cannot create output file" << std::endl;
         return 1;

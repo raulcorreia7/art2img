@@ -12,6 +12,7 @@ target_sources(art2img_tests
     test_extractor_api.cpp
     test_image_view.cpp
     test_integration.cpp
+    test_functionality.cpp
 )
 
 # Set test executable properties
@@ -37,6 +38,15 @@ target_include_directories(art2img_tests
     ${CMAKE_BINARY_DIR}/../include
 )
 
+set(TEST_ASSET_SOURCE_DIR "${CMAKE_SOURCE_DIR}/tests/assets")
+set(TEST_ASSET_BINARY_DIR "${CMAKE_BINARY_DIR}/tests/assets")
+
+target_compile_definitions(art2img_tests
+    PRIVATE
+    TEST_ASSET_SOURCE_DIR="${TEST_ASSET_SOURCE_DIR}"
+    TEST_ASSET_BINARY_DIR="${TEST_ASSET_BINARY_DIR}"
+)
+
 if(NOT MSVC)
     target_link_options(art2img_tests PRIVATE -pthread)
 endif()
@@ -48,49 +58,17 @@ set_tests_properties(doctest_tests
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-# Create custom target to copy test assets
-add_custom_target(copy_assets
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/tests/assets
-        ${CMAKE_BINARY_DIR}/tests/assets
-    COMMENT "Copying test assets"
+add_custom_target(sync_test_assets ALL
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${TEST_ASSET_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${TEST_ASSET_SOURCE_DIR} ${TEST_ASSET_BINARY_DIR}
+    COMMENT "Syncing test assets"
 )
 
-# Add functionality test via shell script (keep existing shell tests)
-if(EXISTS ${CMAKE_SOURCE_DIR}/tests/test_functionality.sh)
-    add_test(NAME functionality_tests
-        COMMAND ${CMAKE_SOURCE_DIR}/tests/test_functionality.sh
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    )
-endif()
-
-# Add palette comparison test
-if(EXISTS ${CMAKE_SOURCE_DIR}/tests/test_palette_comparison.sh)
-    add_test(NAME palette_comparison_tests
-        COMMAND ${CMAKE_SOURCE_DIR}/tests/test_palette_comparison.sh
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    )
-endif()
-
-# Add palette functionality test
-if(EXISTS ${CMAKE_SOURCE_DIR}/tests/test_palette_functionality.sh)
-    add_test(NAME palette_functionality_tests
-        COMMAND ${CMAKE_SOURCE_DIR}/tests/test_palette_functionality.sh
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    )
-endif()
-
-# Add default palette validation test
-if(EXISTS ${CMAKE_SOURCE_DIR}/tests/test_default_palette_validation.sh)
-    add_test(NAME default_palette_validation_tests
-        COMMAND ${CMAKE_SOURCE_DIR}/tests/test_default_palette_validation.sh
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    )
-endif()
+add_dependencies(art2img_tests sync_test_assets)
 
 # Create a comprehensive test target that handles dependencies
 add_custom_target(run_all_tests
-    DEPENDS art2img art2img_tests copy_assets
+    DEPENDS art2img art2img_tests sync_test_assets
     COMMENT "Building test dependencies"
 )
 

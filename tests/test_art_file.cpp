@@ -16,11 +16,12 @@ TEST_CASE("ArtFile basic functionality") {
     }
 
     SUBCASE("File construction") {
-        art2img::ArtFile art_file("tests/assets/TILES000.ART");
+        const auto tiles_path = test_asset_path("TILES000.ART");
+        art2img::ArtFile art_file(tiles_path.string());
         CHECK(art_file.is_open());
         CHECK_GT(art_file.tiles().size(), 0);
         CHECK_EQ(art_file.header().version, 1);
-        CHECK_EQ(art_file.filename(), "tests/assets/TILES000.ART");
+        CHECK_EQ(std::filesystem::path(art_file.filename()), tiles_path);
     }
 
     SUBCASE("Memory-based construction") {
@@ -37,10 +38,10 @@ TEST_CASE("ArtFile basic functionality") {
 }
 
 TEST_CASE("ArtFile header validation") {
-    auto art_data = load_test_asset("TILES000.ART");
+        auto art_data = load_test_asset("TILES000.ART");
 
-    art2img::ArtFile art_file;
-    REQUIRE(art_file.load_from_memory(art_data.data(), art_data.size()));
+        art2img::ArtFile art_file;
+        REQUIRE(art_file.load_from_memory(art_data.data(), art_data.size()));
 
     const auto& header = art_file.header();
     CHECK_EQ(header.version, 1);
@@ -88,6 +89,7 @@ TEST_CASE("ArtFile tile metadata") {
                 break;
             }
         }
+        static_cast<void>(found_empty);
         // Note: Empty tiles may or may not exist, so we don't REQUIRE this
     }
 }
@@ -131,8 +133,9 @@ TEST_CASE("ArtFile data reading") {
                 CHECK_EQ(buffer.size(), tiles[i].size());
 
                 // Verify we can read the same tile from file if available
-                if (std::filesystem::exists("tests/assets/TILES000.ART")) {
-                    art2img::ArtFile file_based("tests/assets/TILES000.ART");
+                const auto tiles_path = test_asset_path("TILES000.ART");
+                if (std::filesystem::exists(tiles_path)) {
+                    art2img::ArtFile file_based(tiles_path.string());
                     std::vector<uint8_t> file_buffer;
                     REQUIRE(file_based.read_tile_data(i, file_buffer));
 

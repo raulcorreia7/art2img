@@ -20,22 +20,40 @@ bool ArtFile::open(const std::filesystem::path& filename) {
     }
     
     filename_ = filename;
-    
+
     if (!read_header()) {
         close();
         return false;
     }
-    
+
     if (!read_tile_metadata()) {
         close();
         return false;
     }
-    
+
     if (!calculate_offsets()) {
         close();
         return false;
     }
-    
+
+    // Cache the entire ART file in memory to support zero-copy operations
+    file_.seekg(0, std::ios::end);
+    std::streampos file_size = file_.tellg();
+    if (file_size <= 0) {
+        std::cerr << "Error: Empty ART file '" << filename.string() << "'" << std::endl;
+        close();
+        return false;
+    }
+
+    data_.resize(static_cast<size_t>(file_size));
+    file_.seekg(0, std::ios::beg);
+    if (!file_.read(reinterpret_cast<char*>(data_.data()), file_size)) {
+        std::cerr << "Error: Failed to read ART file into memory: "
+                  << filename.string() << std::endl;
+        close();
+        return false;
+    }
+
     return true;
 }
 

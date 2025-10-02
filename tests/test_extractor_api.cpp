@@ -27,15 +27,16 @@ TEST_CASE("ExtractorAPI construction") {
 }
 
 TEST_CASE("ExtractorAPI ART file loading") {
-    if (!std::filesystem::exists("tests/assets/TILES000.ART")) {
+    if (!has_test_asset("TILES000.ART")) {
         MESSAGE("TILES000.ART not found, skipping ART loading tests");
         return;
     }
 
     SUBCASE("Load ART from file") {
         art2img::ExtractorAPI extractor;
+        const auto art_path = test_asset_path("TILES000.ART");
 
-        CHECK_NOTHROW(extractor.load_art_file("tests/assets/TILES000.ART"));
+        CHECK_NOTHROW(extractor.load_art_file(art_path.string()));
         CHECK(extractor.is_art_loaded());
         CHECK_GT(extractor.get_tile_count(), 0);
     }
@@ -66,15 +67,16 @@ TEST_CASE("ExtractorAPI ART file loading") {
 }
 
 TEST_CASE("ExtractorAPI palette loading") {
-    if (!std::filesystem::exists("tests/assets/PALETTE.DAT")) {
+    if (!has_test_asset("PALETTE.DAT")) {
         MESSAGE("PALETTE.DAT not found, skipping palette loading tests");
         return;
     }
 
     SUBCASE("Load palette from file") {
         art2img::ExtractorAPI extractor;
+        const auto palette_path = test_asset_path("PALETTE.DAT");
 
-        CHECK(extractor.load_palette_file("tests/assets/PALETTE.DAT"));
+        CHECK(extractor.load_palette_file(palette_path.string()));
         CHECK(extractor.is_palette_loaded());
     }
 
@@ -110,8 +112,7 @@ TEST_CASE("ExtractorAPI default palettes") {
 }
 
 TEST_CASE("ExtractorAPI tile extraction") {
-    if (!std::filesystem::exists("tests/assets/TILES000.ART") ||
-        !std::filesystem::exists("tests/assets/PALETTE.DAT")) {
+    if (!has_test_asset("TILES000.ART") || !has_test_asset("PALETTE.DAT")) {
         MESSAGE("Required assets not found, skipping extraction tests");
         return;
     }
@@ -168,8 +169,7 @@ TEST_CASE("ExtractorAPI tile extraction") {
 }
 
 TEST_CASE("ExtractorAPI batch extraction") {
-    if (!std::filesystem::exists("tests/assets/TILES000.ART") ||
-        !std::filesystem::exists("tests/assets/PALETTE.DAT")) {
+    if (!has_test_asset("TILES000.ART") || !has_test_asset("PALETTE.DAT")) {
         MESSAGE("Required assets not found, skipping batch extraction tests");
         return;
     }
@@ -220,8 +220,7 @@ TEST_CASE("ExtractorAPI batch extraction") {
 }
 
 TEST_CASE("ExtractorAPI ArtView access") {
-    if (!std::filesystem::exists("tests/assets/TILES000.ART") ||
-        !std::filesystem::exists("tests/assets/PALETTE.DAT")) {
+    if (!has_test_asset("TILES000.ART") || !has_test_asset("PALETTE.DAT")) {
         MESSAGE("Required assets not found, skipping ArtView tests");
         return;
     }

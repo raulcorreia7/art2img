@@ -1,123 +1,41 @@
-# Current Delivery Plan — 2025-10-02
+# Delivery Plan — Oct 2025 refresh
 
 ## Goals
-- Restore end-to-end CI so release artifacts build for Linux/Windows without manual intervention.
-- Eliminate in-memory PNG corruption so the embeddable API remains byte-for-byte compatible with CLI output.
-- Tighten platform guards (thread defaults, header includes) without changing the public surface area.
+- Make the build/test cycle fully offline by vendoring third-party headers (doctest).
+- Ensure palette handling matches Duke Nukem 3D assets byte-for-byte while keeping zero-copy behaviour.
+- Replace brittle shell integration tests with fast C++ coverage.
 
 ## Scope
-- `.github/workflows/build.yml` verification logic and supporting build scripts.
-- `src/png_writer.cpp` / `include/png_writer.hpp` and API-level tests covering in-memory extraction.
-- `include/extractor.hpp`, `src/art2img.cpp`, and supporting utilities for safer thread-count defaults / palette resolution reporting.
+- `src/palette.cpp`, `include/palette.hpp`, `src/art_file.cpp`, `include/extractor_api.hpp` — raw palette storage, scaling, zero-copy caching.
+- `CMakeLists.txt`, `tests/CMakeLists.txt`, `third_party/doctest/` — vendored doctest integration, asset sync.
+- `tests/test_functionality.cpp` plus supporting helpers — new doctest coverage for CLI parity, palette comparison, and extraction.
 
 ## Out of Scope
-- Changing CLI flags, file formats, or default palette heuristics.
-- Replacing the Makefile or switching build toolchains.
-- Introducing new third-party dependencies beyond vendored headers.
+- Shipping additional third-party source trees (e.g. vendor/eduke32 removed).
+- Re-introducing Makefile/CI flows (legacy content preserved below for reference only).
+- Modifying CLI option surface beyond palette-help text.
 
 ## Workstreams
-- **T01 – Pipeline verification fix**: Correct binary naming in workflow, align Makefile verify target with CI usage, add guardrails so missing MinGW toolchain degrades gracefully. _Owner: Codex._
-- **T02 – In-memory PNG buffer integrity**: Fix chunk handling in `PngWriter::write_png_to_memory`, add regression test in `tests/test_library_api.cpp` (or new binary) ensuring multi-chunk writes round-trip. _Owner: Codex._
-- **T03 – Extractor robustness**: Ensure thread defaults never drop to zero, add explicit `<thread>` include, surface helpful logging when palette fallback fails. _Owner: Codex._
+- **T01 – Vendor doctest**: Add `third_party/doctest/doctest.h`, update root CMake to expose `doctest::doctest_with_main` locally.
+- **T02 – Palette/ART refactor**: Store raw 6-bit palette data, regenerate Build-style BGR, cache ART files for zero-copy extraction.
+- **T03 – Test suite refresh**: Port shell scripts to C++ doctests (`tests/test_functionality.cpp`), extend helpers, prune legacy scripts.
 
 ## Tooling & Commands
-- Build: `make`, `make linux`, `make windows` (optional when `x86_64-w64-mingw32-g++` present).
-- Verification: `make verify` (delegates to `verify-linux` + `verify-windows`), `make test`, `./tests/test_ci.sh`.
-- Docker (optional parity): `docker build -t art2img .`.
+- Configure/build: `cmake -S . -B build -DBUILD_TESTS=ON`, `cmake --build build`.
+- Tests: `ctest --test-dir build --output-on-failure`.
+- Manual extraction for sanity: `build/bin/art2img -o tests/output/tmp -f png -p tests/assets/PALETTE.DAT tests/assets/TILES000.ART`.
 
 ## Risks & Mitigations
-- **Workflow drift**: Misnaming binaries leads to hard failures → add CI assertion + local `make verify` parity command.
-- **PNG regression**: stb callback behaviour may still vary → exercise regression test with synthetic large tile to ensure multi-chunk output.
-- **Thread defaults**: Hardware concurrency returning 0 would halt extraction → clamp minimum to 1 with unit smoke verifying CLI path.
+- **Header drift**: vendored doctest could lag upstream → documented in plan/memory bank.
+- **Palette mismatch**: raw pointer comparisons ensure palette bytes remain aligned; tests guard regressions.
+- **CLI parity**: doctest covers key CLI behaviours; fallback CLI invocation documented above.
 
 ## Rollback Strategy
-- Each change isolated by task; revert offending commit or cherry-pick revert.
-- Release assets built from prior successful tag remain usable; pipeline fix guarded behind matrix so fallback is manual `make linux` + upload.
+- Remove `third_party/doctest`, reinstate FetchContent block if networked builds become acceptable.
+- Revert palette/raw caching commits (see CC list below) if legacy behaviour required.
 
 ---
-
-## Historical Plan (previous content)
-# Library Refactoring Plan: Memory-Based C++ API
-
-Based on the current art2img implementation, this plan outlines the transformation of the file-based tool into a stable C++ library API with memory-based operations.
-
-## Current Architecture Analysis
-- **File-based operations**: All current operations use `std::ifstream` and file I/O
-- **Tight coupling**: ArtFile, Palette, and Writers are tightly coupled to file system
-- **No memory API**: Missing memory buffer support needed for Duke3D GRP integration
-
-## Phase 1: Core Memory-Based Infrastructure
-
-### ArtFile Memory API
-- Add `load_from_memory(const uint8_t* data, size_t size)` method
-- Replace `std::ifstream` with memory buffer operations
-- Maintain backward compatibility with file-based API
-
-### Palette Memory API
-- Add `load_from_memory(const uint8_t* data, size_t size)` method
-- Support both Duke3D and Blood palette formats
-- Preserve existing file-based loading
-
-## Phase 2: Memory-Based Image Writers
-
-### PNG Writer Memory API
-- Add `write_png_to_memory()` using STB Image Write callbacks
-- Support RGBA output with alpha transparency
-- Return `std::vector<uint8_t>` with PNG data
-
-### TGA Writer Memory API
-- Add `write_tga_to_memory()` method
-- Support both RGB and RGBA formats
-- Return `std::vector<uint8_t>` with TGA data
-
-## Phase 3: High-Level API Layer
-
-### ExtractorAPI Class
-- Design clean, memory-based extraction interface
-- Support single tile and batch extraction
-- Return structured `ExtractionResult` objects
-
-### ExtractionResult Structure
-- Contain tile data, animation info, and image buffers
-- Support error handling and status reporting
-- Enable Duke3D GRP pipeline integration
-
-## Phase 4: Build System & Documentation
-
-### Library Targets
-- Static library (`libart2img.a`)
-- Shared library (`libart2img.so`)
-- Update Makefile with proper flags
-
-### API Documentation
-- Comprehensive usage examples
-- Duke3D GRP integration guide
-- Memory management guidelines
-
-## Key Technical Decisions
-
-1. **Memory Ownership**: Use RAII patterns, avoid raw pointers
-2. **API Design**: Clean separation between file and memory APIs
-3. **Backward Compatibility**: Maintain existing CLI functionality
-4. **Error Handling**: Consistent exception/return value patterns
-5. **Thread Safety**: Preserve existing thread pool architecture
-
-The library refactoring will enable seamless integration with the Duke3D upscaling pipeline while maintaining all existing functionality.
-
-## Original Implementation Plan
-
-Here is a **C++-native implementation plan** that integrates cleanly into an **existing C++ application** (e.g., one that already converts ART → PNG), and produces **fully transparent, EDuke32/BuildGDX–compatible PNG32 files**.
-
-The plan is split into two phases as requested, with **Phase 2 designed to work with any upscaler—even those that ignore alpha**.
-
-We assume your app already:
-- Reads `PALETTE.DAT`,
-- Decodes ART tiles (column-major),
-- Outputs RGB PNGs with **magenta (`#FC00FC`/`#FF00FF`) as transparency**,
-- Uses a PNG library (e.g., **libpng**, **lodepng**, or **stb_image_write**).
-
----
-
+(historical plans omitted for brevity)
 ## 🎯 Final Output Requirements (Non-Negotiable)
 - **PNG32 (RGBA, 8-bit)**,
 - **Straight (non-premultiplied) alpha** (per PNG spec [Nigel Tao]),

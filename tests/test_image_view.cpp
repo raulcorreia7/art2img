@@ -13,8 +13,7 @@ art2img::ExtractorAPI create_test_extractor() {
     static std::vector<uint8_t> palette_data;
 
     if (!assets_loaded) {
-        if (!std::filesystem::exists("tests/assets/TILES000.ART") ||
-            !std::filesystem::exists("tests/assets/PALETTE.DAT")) {
+        if (!has_test_asset("TILES000.ART") || !has_test_asset("PALETTE.DAT")) {
             throw std::runtime_error("Test assets not found");
         }
 
@@ -33,8 +32,7 @@ art2img::ExtractorAPI create_test_extractor() {
 }
 
 TEST_CASE("ImageView construction") {
-    if (!std::filesystem::exists("tests/assets/TILES000.ART") ||
-        !std::filesystem::exists("tests/assets/PALETTE.DAT")) {
+    if (!has_test_asset("TILES000.ART") || !has_test_asset("PALETTE.DAT")) {
         MESSAGE("Required assets not found, skipping ImageView tests");
         return;
     }
@@ -74,8 +72,7 @@ TEST_CASE("ImageView construction") {
 }
 
 TEST_CASE("ImageView pixel data access") {
-    if (!std::filesystem::exists("tests/assets/TILES000.ART") ||
-        !std::filesystem::exists("tests/assets/PALETTE.DAT")) {
+    if (!has_test_asset("TILES000.ART") || !has_test_asset("PALETTE.DAT")) {
         MESSAGE("Required assets not found, skipping pixel data tests");
         return;
     }
@@ -128,8 +125,7 @@ TEST_CASE("ImageView pixel data access") {
 }
 
 TEST_CASE("ImageView animation data access") {
-    if (!std::filesystem::exists("tests/assets/TILES000.ART") ||
-        !std::filesystem::exists("tests/assets/PALETTE.DAT")) {
+    if (!has_test_asset("TILES000.ART") || !has_test_asset("PALETTE.DAT")) {
         MESSAGE("Required assets not found, skipping animation data tests");
         return;
     }
@@ -157,8 +153,7 @@ TEST_CASE("ImageView animation data access") {
 }
 
 TEST_CASE("ImageView image saving") {
-    if (!std::filesystem::exists("tests/assets/TILES000.ART") ||
-        !std::filesystem::exists("tests/assets/PALETTE.DAT")) {
+    if (!has_test_asset("TILES000.ART") || !has_test_asset("PALETTE.DAT")) {
         MESSAGE("Required assets not found, skipping image saving tests");
         return;
     }
@@ -251,8 +246,7 @@ TEST_CASE("ImageView image saving") {
 }
 
 TEST_CASE("ImageView error handling") {
-    if (!std::filesystem::exists("tests/assets/TILES000.ART") ||
-        !std::filesystem::exists("tests/assets/PALETTE.DAT")) {
+    if (!has_test_asset("TILES000.ART") || !has_test_asset("PALETTE.DAT")) {
         MESSAGE("Required assets not found, skipping error handling tests");
         return;
     }
@@ -261,15 +255,15 @@ TEST_CASE("ImageView error handling") {
     auto art_view = extractor.get_art_view();
 
     SUBCASE("Invalid ImageView state") {
-        art2img::ImageView invalid_image_view;
-        CHECK_EQ(invalid_image_view.pixel_data(), nullptr);
-        CHECK_EQ(invalid_image_view.width(), 0);
-        CHECK_EQ(invalid_image_view.height(), 0);
-        CHECK_EQ(invalid_image_view.size(), 0);
+        art2img::ImageView invalid_image_view{};
+        CHECK_THROWS_AS(invalid_image_view.pixel_data(), art2img::ArtException);
+        CHECK_THROWS_AS(invalid_image_view.width(), art2img::ArtException);
+        CHECK_THROWS_AS(invalid_image_view.height(), art2img::ArtException);
+        CHECK_THROWS_AS(invalid_image_view.size(), art2img::ArtException);
     }
 
     SUBCASE("Out of range tile index") {
-        art2img::ImageView out_of_range_view{&art_view, art_view.image_count()};
+        art2img::ImageView out_of_range_view{&art_view, static_cast<uint32_t>(art_view.image_count())};
         CHECK_THROWS_AS(out_of_range_view.pixel_data(), art2img::ArtException);
         CHECK_THROWS_AS(out_of_range_view.width(), art2img::ArtException);
         CHECK_THROWS_AS(out_of_range_view.height(), art2img::ArtException);

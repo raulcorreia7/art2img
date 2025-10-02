@@ -3,7 +3,6 @@
 #include "extractor_api.hpp"
 #include "exceptions.hpp"
 #include "version.hpp"
-#include <BS_thread_pool/BS_thread_pool.hpp>
 #include <CLI11/CLI11.hpp>
 #include <iostream>
 #include <filesystem>
@@ -213,6 +212,18 @@ bool process_single_file(const ProcessOptions& options, const std::string& art_f
             final_output_dir = (std::filesystem::path(final_output_dir) / output_subdir).string();
         }
 
+        // Ensure output directory exists before writing files
+        std::error_code dir_error;
+        if (!final_output_dir.empty()) {
+            std::filesystem::create_directories(final_output_dir, dir_error);
+        }
+
+        if (dir_error) {
+            std::cerr << "Error: Failed to create output directory '" << final_output_dir
+                      << "': " << dir_error.message() << std::endl;
+            return false;
+        }
+
         // Load ArtFile for animation data processing
         art2img::ArtFile art_file_obj(art_file_path);
         if (!art_file_obj.is_open()) {
@@ -239,7 +250,7 @@ bool process_single_file(const ProcessOptions& options, const std::string& art_f
         // Create ExtractorAPI and load everything from memory
         art2img::ExtractorAPI extractor;
         extractor.load_art_from_memory(art_data.data(), art_data.size());
-        extractor.load_palette_from_memory(palette.data().data(), palette.data().size());
+        extractor.load_palette_from_memory(palette.raw_data().data(), palette.raw_data().size());
         art2img::ArtView art_view = extractor.get_art_view();
 
         // Process tiles sequentially for ordered CLI output
@@ -322,7 +333,8 @@ int main(int argc, char* argv[]) {
             ->default_val(".");
         app.add_option("-t,--threads", num_threads, "Number of threads (-1 for all cores)")
             ->default_val(static_cast<int>(std::thread::hardware_concurrency()));
-        app.add_option("-p,--palette", palette_file, "Palette file path");
+        app.add_option("-p,--palette", palette_file,
+                       "Palette file path (defaults to built-in Duke Nukem 3D palette)");
         app.add_option("-f,--format", format, "Output format: tga or png")
             ->default_val("png")
             ->check(CLI::IsMember({"tga", "png"}));

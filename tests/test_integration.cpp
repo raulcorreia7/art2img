@@ -8,8 +8,7 @@
 #include <fstream>
 
 TEST_CASE("Integration tests - Full pipeline") {
-    if (!std::filesystem::exists("tests/assets/TILES000.ART") ||
-        !std::filesystem::exists("tests/assets/PALETTE.DAT")) {
+    if (!has_test_asset("TILES000.ART") || !has_test_asset("PALETTE.DAT")) {
         MESSAGE("Required assets not found, skipping integration tests");
         return;
     }
@@ -20,7 +19,7 @@ TEST_CASE("Integration tests - Full pipeline") {
         auto palette_data = load_test_asset("PALETTE.DAT");
 
         CHECK_EQ(art_data.size() > 0, true);
-        CHECK_EQ(palette_data.size(), 768); // Standard palette size
+        CHECK_GE(palette_data.size(), art2img::Palette::SIZE);
 
         // Create extractor API and load data
         art2img::ExtractorAPI extractor;
@@ -54,8 +53,11 @@ TEST_CASE("Integration tests - Full pipeline") {
     SUBCASE("Memory vs file consistency") {
         // Load from file
         art2img::ExtractorAPI file_extractor;
-        REQUIRE_NOTHROW(file_extractor.load_art_file("tests/assets/TILES000.ART"));
-        REQUIRE(file_extractor.load_palette_file("tests/assets/PALETTE.DAT"));
+        const auto art_path = test_asset_path("TILES000.ART");
+        const auto palette_path = test_asset_path("PALETTE.DAT");
+
+        REQUIRE_NOTHROW(file_extractor.load_art_file(art_path.string()));
+        REQUIRE(file_extractor.load_palette_file(palette_path.string()));
 
         // Load from memory
         auto art_data = load_test_asset("TILES000.ART");
@@ -167,7 +169,7 @@ TEST_CASE("Integration tests - Full pipeline") {
 }
 
 TEST_CASE("Integration tests - Error handling") {
-    if (!std::filesystem::exists("tests/assets/TILES000.ART")) {
+    if (!has_test_asset("TILES000.ART")) {
         MESSAGE("TILES000.ART not found, skipping error handling tests");
         return;
     }
@@ -201,7 +203,7 @@ TEST_CASE("Integration tests - Error handling") {
 }
 
 TEST_CASE("Integration tests - Performance and limits") {
-    if (!std::filesystem::exists("tests/assets/TILES000.ART")) {
+    if (!has_test_asset("TILES000.ART")) {
         MESSAGE("TILES000.ART not found, skipping performance tests");
         return;
     }
@@ -247,8 +249,7 @@ TEST_CASE("Integration tests - Performance and limits") {
 }
 
 TEST_CASE("Integration tests - Animation data") {
-    if (!std::filesystem::exists("tests/assets/TILES000.ART") ||
-        !std::filesystem::exists("tests/assets/PALETTE.DAT")) {
+    if (!has_test_asset("TILES000.ART") || !has_test_asset("PALETTE.DAT")) {
         MESSAGE("Required assets not found, skipping animation tests");
         return;
     }

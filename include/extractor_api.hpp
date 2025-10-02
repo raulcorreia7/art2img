@@ -46,7 +46,7 @@ struct ArtView {
 
     // On-demand ImageView creation
     size_t image_count() const { return tiles.size(); }
-    ArtFile::Tile get_tile(uint32_t tile_index) const {
+    const ArtFile::Tile& get_tile(uint32_t tile_index) const {
         if (tile_index >= tiles.size()) {
             throw ArtException("Tile index out of range");
         }
@@ -55,35 +55,43 @@ struct ArtView {
 };
 
 struct ImageView {
-    const ArtView* parent;             // Parent ArtView
-    uint32_t tile_index;               // Index of this tile
+    const ArtView* parent = nullptr;   // Parent ArtView
+    uint32_t tile_index = 0;           // Index of this tile
 
     // Direct memory access
     const uint8_t* pixel_data() const {
-        if (!parent || tile_index >= parent->tiles.size()) {
-            throw ArtException("Invalid ImageView state");
-        }
-        const auto& tile = parent->tiles[tile_index];
+        const auto& tile = require_tile();
         if (tile.is_empty()) {
             return nullptr;
         }
-        if (tile.offset + tile.size() > parent->art_size) {
+        if (!parent || tile.offset + tile.size() > parent->art_size) {
             throw ArtException("Tile data extends beyond buffer size");
         }
         return parent->art_data + tile.offset;
     }
 
-    uint16_t width() const { return parent ? parent->tiles[tile_index].width : 0; }
-    uint16_t height() const { return parent ? parent->tiles[tile_index].height : 0; }
-    size_t size() const { return static_cast<size_t>(width()) * height(); }
+    uint16_t width() const {
+        const auto& tile = require_tile();
+        return tile.width;
+    }
+
+    uint16_t height() const {
+        const auto& tile = require_tile();
+        return tile.height;
+    }
+
+    size_t size() const {
+        const auto& tile = require_tile();
+        return static_cast<size_t>(tile.width) * tile.height;
+    }
 
     // Animation data accessors
-    uint32_t anim_frames() const { return parent ? parent->tiles[tile_index].anim_frames() : 0; }
-    uint32_t anim_type() const { return parent ? parent->tiles[tile_index].anim_type() : 0; }
-    int8_t x_offset() const { return parent ? parent->tiles[tile_index].x_offset() : 0; }
-    int8_t y_offset() const { return parent ? parent->tiles[tile_index].y_offset() : 0; }
-    uint32_t anim_speed() const { return parent ? parent->tiles[tile_index].anim_speed() : 0; }
-    uint32_t other_flags() const { return parent ? parent->tiles[tile_index].other_flags() : 0; }
+    uint32_t anim_frames() const { return require_tile().anim_frames(); }
+    uint32_t anim_type() const { return require_tile().anim_type(); }
+    int8_t x_offset() const { return require_tile().x_offset(); }
+    int8_t y_offset() const { return require_tile().y_offset(); }
+    uint32_t anim_speed() const { return require_tile().anim_speed(); }
+    uint32_t other_flags() const { return require_tile().other_flags(); }
 
     // PNG saving (conversion + write happens here)
     bool save_to_png(const std::filesystem::path& path, PngWriter::Options options = PngWriter::Options()) const;
@@ -95,6 +103,14 @@ struct ImageView {
     // TGA saving
     bool save_to_tga(const std::filesystem::path& path) const;
     std::vector<uint8_t> extract_to_tga() const;
+
+private:
+    const ArtFile::Tile& require_tile() const {
+        if (!parent) {
+            throw ArtException("Invalid ImageView state");
+        }
+        return parent->get_tile(tile_index);
+    }
 };
 
 

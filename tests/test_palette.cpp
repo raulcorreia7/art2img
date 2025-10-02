@@ -23,14 +23,15 @@ TEST_CASE("Palette basic functionality") {
 }
 
 TEST_CASE("Palette file loading") {
-    if (!std::filesystem::exists("tests/assets/PALETTE.DAT")) {
+    if (!has_test_asset("PALETTE.DAT")) {
         MESSAGE("PALETTE.DAT not found, skipping file loading tests");
         return;
     }
 
     SUBCASE("Load from file") {
+        const auto palette_path = test_asset_path("PALETTE.DAT");
         art2img::Palette palette;
-        REQUIRE(palette.load_from_file("tests/assets/PALETTE.DAT"));
+        REQUIRE(palette.load_from_file(palette_path.string()));
 
         CHECK_EQ(palette.data().size(), art2img::Palette::SIZE);
 
@@ -47,14 +48,14 @@ TEST_CASE("Palette file loading") {
 }
 
 TEST_CASE("Palette memory loading") {
-    if (!std::filesystem::exists("tests/assets/PALETTE.DAT")) {
+    if (!has_test_asset("PALETTE.DAT")) {
         MESSAGE("PALETTE.DAT not found, skipping memory loading tests");
         return;
     }
 
     SUBCASE("Load from valid memory") {
         auto palette_data = load_test_asset("PALETTE.DAT");
-        REQUIRE_EQ(palette_data.size(), art2img::Palette::SIZE);
+        REQUIRE_GE(palette_data.size(), art2img::Palette::SIZE);
 
         art2img::Palette palette;
         REQUIRE(palette.load_from_memory(palette_data.data(), palette_data.size()));
@@ -82,15 +83,10 @@ TEST_CASE("Default palettes") {
 
         CHECK_EQ(palette.data().size(), art2img::Palette::SIZE);
 
-        // Check some known Duke3D colors
-        CHECK_EQ(palette.get_red(0), 0);   // First color is black
-        CHECK_EQ(palette.get_green(0), 0);
-        CHECK_EQ(palette.get_blue(0), 0);
+        auto reference_bytes = load_test_asset("PALETTE.DAT");
+        std::vector<uint8_t> reference(reference_bytes.begin(), reference_bytes.begin() + art2img::Palette::SIZE);
 
-        // Color 255 should be white in Duke3D
-        CHECK_EQ(palette.get_red(255), 63); // Scaled from 0-63 to 0-255
-        CHECK_EQ(palette.get_green(255), 63);
-        CHECK_EQ(palette.get_blue(255), 63);
+        CHECK_EQ(palette.raw_data(), reference);
     }
 
     SUBCASE("Blood default palette") {
@@ -126,15 +122,16 @@ TEST_CASE("Palette color access") {
     palette.load_duke3d_default();
 
     SUBCASE("Valid color indices") {
-        // Test bounds checking
-        CHECK_EQ(palette.get_red(0), 0);
-        CHECK_EQ(palette.get_red(255), 63);
+        auto reference_bytes = load_test_asset("PALETTE.DAT");
+        const auto* reference = reference_bytes.data();
 
-        CHECK_EQ(palette.get_green(0), 0);
-        CHECK_EQ(palette.get_green(255), 63);
+        CHECK_EQ(palette.get_red(0), reference[0 * 3 + 0]);
+        CHECK_EQ(palette.get_green(0), reference[0 * 3 + 1]);
+        CHECK_EQ(palette.get_blue(0), reference[0 * 3 + 2]);
 
-        CHECK_EQ(palette.get_blue(0), 0);
-        CHECK_EQ(palette.get_blue(255), 63);
+        CHECK_EQ(palette.get_red(255), reference[255 * 3 + 0]);
+        CHECK_EQ(palette.get_green(255), reference[255 * 3 + 1]);
+        CHECK_EQ(palette.get_blue(255), reference[255 * 3 + 2]);
     }
 
     SUBCASE("Invalid color indices") {

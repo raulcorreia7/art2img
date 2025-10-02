@@ -7,22 +7,22 @@ This report documents the successful implementation of Duke Nukem 3D as the defa
 
 ### 1. Palette Data Extraction
 - **Source**: `tests/assets/PALETTE.DAT` (first 768 bytes)
-- **Format**: 256 colors × 3 RGB components (0-63 range)
-- **Scaling**: Values multiplied by 4 to convert to 0-255 range
-- **Storage**: Hardcoded as `static const uint8_t duke3d_palette[768]`
+- **Format**: 256 colors × 3 RGB components in the original 6-bit Build format
+- **Scaling**: Stored raw (0‑63); 8-bit Build-compatible values generated on demand
+- **Storage**: Embedded in `load_duke3d_default()` as canonical raw bytes
 
 ### 2. Code Changes
 - **File**: `src/palette.cpp`
-  - Added `load_duke3d_default()` method with complete palette data
-  - Updated `Palette::Palette()` constructor to use Duke Nukem 3D as default
-  - Maintained `load_blood_default()` for backward compatibility
+  - Updated to keep raw 6-bit palette data plus computed BGR cache
+  - `load_duke3d_default()` now reuses the exact bytes from `PALETTE.DAT`
+  - Maintains `load_blood_default()` for backward compatibility
 
 - **File**: `include/palette.hpp`
   - Added declaration for `load_duke3d_default()` method
 
 - **File**: `src/art2img.cpp`
-  - Updated fallback behavior to use Duke Nukem 3D palette instead of Blood
-  - Modified verbose output to reflect new default palette
+  - CLI help documents the built-in Duke Nukem 3D palette
+  - Palette data passed around using raw 6-bit buffers
 
 - **File**: `src/cli.cpp`
   - Updated help text to document Duke Nukem 3D as default palette
@@ -31,35 +31,21 @@ This report documents the successful implementation of Duke Nukem 3D as the defa
 ### 3. Testing
 Comprehensive test suite created to validate all functionality:
 
-#### Test 1: Duke Nukem 3D Default Palette
-- **Objective**: Verify tool uses Duke Nukem 3D palette when no `-p` parameter provided
-- **Result**: ✓ 194 files generated successfully
-- **Validation**: File count and animation data verified
+#### Test 1: Duke Nukem 3D Default vs External Palette Parity (doctest)
+- **Objective**: Compare extractor output (PNG/TGA) using built-in vs file palette
+- **Result**: ✓ Byte-for-byte parity on sampled tiles across all ART files
 
-#### Test 2: External Palette File Functionality
-- **Objective**: Ensure existing external palette file functionality unchanged
-- **Result**: ✓ 194 files generated with `PALETTE.DAT`
-- **Validation**: Identical output to default palette (same file sizes)
+#### Test 2: Raw Palette Equivalence
+- **Objective**: Ensure `Palette::load_duke3d_default()` matches `PALETTE.DAT`
+- **Result**: ✓ Raw buffers identical; color accessors return original 6-bit values
 
-#### Test 3: File Size Comparison
-- **Objective**: Verify identical output between default and external palettes
-- **Result**: ✓ All file sizes match
-- **Sample**: Tile 2838 - 193 bytes for both methods
+#### Test 3: CLI Help Text
+- **Objective**: Confirm CLI help documents palette behaviour
+- **Result**: ✓ Help output contains “Duke Nukem 3D palette” and `--palette`
 
-#### Test 4: Animation Data Generation
-- **Objective**: Ensure animation data works with default palette
-- **Result**: ✓ 928 lines of animation data generated
-- **Validation**: Identical line counts for both palette methods
-
-#### Test 5: CLI Help Text
-- **Objective**: Verify help text reflects new default palette
-- **Result**: ✓ "Duke Nukem 3D palette" found in help output
-- **Validation**: Clear documentation of palette behavior
-
-#### Test 6: Backward Compatibility
-- **Objective**: Ensure Blood palette method still exists
-- **Result**: ✓ `load_blood_default()` method accessible
-- **Validation**: Palette size and data access verified
+#### Test 4: Backward Compatibility
+- **Objective**: Verify Blood palette loader still available and distinct
+- **Result**: ✓ `load_blood_default()` returns data differing from Duke3D reference
 
 ## Validation Results
 
