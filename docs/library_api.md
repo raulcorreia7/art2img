@@ -177,5 +177,5 @@ LD_LIBRARY_PATH=lib ./your_program
 - **PNG/TGA output**: Extract to either PNG or TGA format
 - **Alpha channel support**: Automatic alpha channel from magenta keying
 - **Thread-safe**: Designed for multi-threaded applications
-- **Cross-platform**: Works on Linux and Windows
+- **Cross-platform**: Works on Linux x86_64 and Windows x86_64
 - **Backward compatible**: Maintains existing file-based CLI functionality
