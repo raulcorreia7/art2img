@@ -1,7 +1,8 @@
-#include "cli.hpp"
 #include "art_file.hpp"
 #include "palette.hpp"
 #include "extractor.hpp"
+#include "exceptions.hpp"
+#include <CLI11/CLI11.hpp>
 #include <iostream>
 #include <filesystem>
 
@@ -91,8 +92,14 @@ bool append_animation_data_to_merged_file(const art2img::ArtFile& art_file, cons
     return true;
 }
 
+// Options structure for process_single_file
+struct ProcessOptions {
+    std::string palette_file;
+    art2img::ArtExtractor::Options extractor_options;
+};
+
 // Function to process a single ART file
-bool process_single_file(const art2img::CLI::Options& options, const std::string& art_file_path, const std::string& output_subdir = "", bool is_directory_mode = false) {
+bool process_single_file(const ProcessOptions& options, const std::string& art_file_path, const std::string& output_subdir = "", bool is_directory_mode = false) {
     try {
         if (options.extractor_options.verbose) {
             std::cout << "Processing ART file: " << art_file_path << std::endl;
@@ -144,6 +151,9 @@ bool process_single_file(const art2img::CLI::Options& options, const std::string
         
         return extraction_success;
         
+    } catch (const art2img::ArtException& e) {
+        std::cerr << "Error processing " << art_file_path << ": " << e.what() << std::endl;
+        return false;
     } catch (const std::exception& e) {
         std::cerr << "Error processing " << art_file_path << ": " << e.what() << std::endl;
         return false;
@@ -155,37 +165,90 @@ bool process_single_file(const art2img::CLI::Options& options, const std::string
 
 int main(int argc, char* argv[]) {
     try {
-        // Parse command line arguments
-        auto options = art2img::CLI::parse_arguments(argc, argv);
+// CLI11 options
+        std::string output_dir = ".";
+        int num_threads = std::thread::hardware_concurrency();
+        std::string palette_file = "";
+        std::string format = "png";
+        bool fix_transparency = true;
+        bool quiet = false;
+        bool no_anim = false;
+        bool merge_anim = false;
+        std::string input_path;
         
-        if (options.show_help) {
-            return 0;
+        CLI::App app{"Extract pictures from ART files to TGA or PNG format"};
+        app.set_version_flag("-v,--version", "art2img 1.0.0");
+        
+        // Positional argument
+        app.add_option("ART_FILE|ART_DIRECTORY", input_path, "Input ART file or directory")
+            ->required();
+        
+        // Options
+        app.add_option("-o,--output", output_dir, "Output directory")
+            ->default_val(".");
+        app.add_option("-t,--threads", num_threads, "Number of threads (-1 for all cores)")
+            ->default_val(static_cast<int>(std::thread::hardware_concurrency()));
+        app.add_option("-p,--palette", palette_file, "Palette file path");
+        app.add_option("-f,--format", format, "Output format: tga or png")
+            ->default_val("png")
+            ->check(CLI::IsMember({"tga", "png"}));
+        auto* fix_flag = app.add_flag("-F,--fix-transparency", "Enable magenta transparency fix");
+        auto* no_fix_flag = app.add_flag("-N,--no-fix-transparency", "Disable magenta transparency fix");
+        app.add_flag("-q,--quiet", quiet, "Suppress verbose output");
+        app.add_flag("-n,--no-anim", no_anim, "Don't generate animdata.ini");
+        app.add_flag("-m,--merge-anim", merge_anim, "Merge animation data into single file (directory mode)");
+        
+        // Configure conflicting flags
+        fix_flag->excludes(no_fix_flag);
+        no_fix_flag->excludes(fix_flag);
+        
+        CLI11_PARSE(app, argc, argv);
+        
+        // Handle -1 as special value for all threads
+        if (num_threads == -1) {
+            num_threads = std::thread::hardware_concurrency();
         }
         
-        if (options.extractor_options.verbose) {
+        // Convert CLI11 options to extractor options
+        art2img::ArtExtractor::Options extractor_options;
+        extractor_options.output_dir = output_dir;
+        extractor_options.num_threads = num_threads;
+        extractor_options.verbose = !quiet;
+        extractor_options.dump_animation = !no_anim;
+        extractor_options.merge_animation_data = merge_anim;
+        extractor_options.format = (format == "tga") ? 
+            art2img::ArtExtractor::OutputFormat::TGA : 
+            art2img::ArtExtractor::OutputFormat::PNG;
+        extractor_options.png_options.enable_magenta_transparency = fix_transparency;
+        if (no_fix_flag->count() > 0) {
+            extractor_options.png_options.enable_magenta_transparency = false;
+        }
+        
+        if (extractor_options.verbose) {
             std::cout << "art2img - Multi-threaded ART to image converter (TGA/PNG)" << std::endl;
             std::cout << "==========================================================" << std::endl;
             std::cout << std::endl;
         }
         
         bool success = true;
+        bool process_directory = std::filesystem::is_directory(input_path);
         
-        if (options.process_directory) {
+        if (process_directory) {
             // Process all ART files in directory
-            if (options.extractor_options.verbose) {
-                std::cout << "Processing ART files in directory: " << options.art_directory << std::endl;
+            if (extractor_options.verbose) {
+                std::cout << "Processing ART files in directory: " << input_path << std::endl;
             }
             
             // If merge animation data is enabled, create/clear the merged file first
-            if (options.extractor_options.merge_animation_data) {
-                std::string merged_ini_path = (std::filesystem::path(options.extractor_options.output_dir) / "animdata.ini").string();
+            if (extractor_options.merge_animation_data) {
+                std::string merged_ini_path = (std::filesystem::path(extractor_options.output_dir) / "animdata.ini").string();
                 std::ofstream merged_file(merged_ini_path);
                 if (merged_file.is_open()) {
                     merged_file << "; Merged animation data from all ART files\n"
          << "; Extracted by art2img\n"
                                << "; Generated: " << __DATE__ << " " << __TIME__ << "\n"
                                << "\n";
-                    if (options.extractor_options.verbose) {
+                    if (extractor_options.verbose) {
                         std::cout << "Created merged animation data file: " << merged_ini_path << std::endl;
                     }
                 } else {
@@ -196,7 +259,12 @@ int main(int argc, char* argv[]) {
             int processed_files = 0;
             int successful_files = 0;
             
-            for (const auto& entry : std::filesystem::directory_iterator(options.art_directory)) {
+            // Create options structure for process_single_file
+            ProcessOptions options;
+            options.palette_file = palette_file;
+            options.extractor_options = extractor_options;
+            
+            for (const auto& entry : std::filesystem::directory_iterator(input_path)) {
                 if (entry.is_regular_file()) {
                     std::string extension = entry.path().extension().string();
                     if (extension == ".art" || extension == ".ART") {
@@ -212,18 +280,25 @@ int main(int argc, char* argv[]) {
                 }
             }
             
-            if (options.extractor_options.verbose) {
+            if (extractor_options.verbose) {
                 std::cout << "Directory processing complete: " << successful_files 
                           << "/" << processed_files << " files successful" << std::endl;
             }
             
         } else {
             // Process single file
-            success = process_single_file(options, options.art_file, "", false);
+            ProcessOptions single_options;
+            single_options.palette_file = palette_file;
+            single_options.extractor_options = extractor_options;
+            
+            success = process_single_file(single_options, input_path, "", false);
         }
         
         return success ? 0 : 1;
         
+    } catch (const art2img::ArtException& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
