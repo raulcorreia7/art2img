@@ -16,9 +16,8 @@ A modern C++ tool to convert Duke Nukem 3D art files into PNG or TGA images with
 git clone https://github.com/raulcorreia7/art2img.git
 cd art2img
 
-# Configure & build with CMake
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON
-cmake --build build --parallel
+# Build with Makefile (recommended)
+make all
 
 # Run a quick extraction
 ./build/bin/art2img -f png -o output tests/assets/TILES000.ART
@@ -56,18 +55,60 @@ cmake --build build --parallel
 
 ## Building
 
-### CMake (recommended)
+### Makefile (recommended)
+The project includes a Makefile that simplifies building, testing, and installation. It wraps CMake and caches dependencies for faster repeated builds.
+
+```bash
+make all          # Build everything and run tests
+make build        # Configure and build in Release mode
+make test         # Build and run tests
+make debug        # Build in Debug mode
+make clean        # Remove build directory
+make install      # Install to /usr/local (requires build)
+make cache-clean  # Clear the dependency cache (_fetch)
+
+# Customizable variables
+make build JOBS=4 CMAKE_BUILD_TYPE=Release BUILD_DIR=mybuild
+```
+
+Dependencies are cached in `~/.cache/art2img/fetchcontent/` using CMake's FetchContent mechanism. First configure downloads them; subsequent builds reuse the cache for speed (especially in CI).
+
+For CMake options like `-DBUILD_CLI=OFF`, pass them via `CMAKE_ARGS="-DBUILD_CLI=OFF make build"`.
+
+### CMake (manual)
+If you prefer direct CMake usage:
+
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake .. -DCMAKE_BUILD_TYPE=Release $(make -s print-cmake-args)  # Optional: use dep flags from Makefile
 cmake --build . --parallel $(nproc)
 
 # Run tests
 ctest --output-on-failure
 
 # Install (optional)
-cmake --build . --target install  # or 'sudo make install'
+cmake --build . --target install
 ```
+
+### CMake Options
+- `-DBUILD_CLI=ON/OFF` – build the command line tool (default ON)
+- `-DBUILD_TESTS=ON/OFF` – build doctest suite (default ON)
+- `-DBUILD_SHARED_LIBS=ON/OFF` – choose shared vs static library (default ON)
+- `-DCMAKE_BUILD_TYPE=Release/Debug` – build type
+
+Pass options to Makefile via `CMAKE_ARGS="-DBUILD_TESTS=OFF" make build`.
+
+### Cross-Platform Builds
+The Makefile supports cross-compilation; set `CMAKE_TOOLCHAIN_FILE` in `CMAKE_ARGS`.
+
+```bash
+# Linux (default)
+make build
+
+# Windows cross-compilation (requires mingw-w64)
+make build CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=../cmake/windows-toolchain.cmake"
+```
+
 
 ### CMake Options
 - `-DBUILD_CLI=ON/OFF` – build the command line tool (default ON)
@@ -168,15 +209,15 @@ c++ -o my_app main.cpp $(pkg-config --cflags --libs art2img-extractor)
 - **Runtime requirements**:
   - No external dependencies for the CLI tool
   - Library requires only standard C++17 runtime
-  - stb_image_write library (bundled, no external dependency required)
-  - doctest framework (bundled for tests only)
+- stb_image_write header (fetched automatically via CMake)
+- doctest framework (fetched automatically for the test suite)
 
 ## Architecture
 The codebase has been modernized with:
 - **Zero-Copy Processing**: ArtView and ImageView structures for efficient memory access
 - **Modern C++17**: std::filesystem::path, constexpr optimizations, RAII
 - **Test Framework**: Migrated to doctest v2.4.11 for modern C++ testing
-- **Build System**: CMake-first approach with vendored doctest for offline builds
+- **Build System**: CMake-first approach with FetchContent-managed dependencies
 - **API Design**: Clean separation between library and CLI components
 
 ## Recent Modernization
@@ -184,7 +225,7 @@ The codebase has been modernized with:
 - ✅ Implemented zero-copy memory processing for better performance
 - ✅ Added std::filesystem::path support throughout the codebase
 - ✅ Added constexpr optimizations for metadata access functions
-- ✅ Migrated to doctest testing framework (vendored for offline builds)
+- ✅ Migrated to doctest testing framework with FetchContent-based setup
 
 ## Development
 - **Testing**: `ctest --test-dir build --output-on-failure`

@@ -161,13 +161,13 @@ for (const auto& result : results) {
 ### Using the Static Library
 
 ```bash
-g++ -std=c++17 -Iinclude -Ivendor your_code.cpp -Llib -lart2img -lpthread -o your_program
+g++ -std=c++17 -Iinclude your_code.cpp -Llib -lart2img -lpthread -o your_program
 ```
 
 ### Using the Shared Library
 
 ```bash
-g++ -std=c++17 -Iinclude -Ivendor your_code.cpp -Llib -lart2img -lpthread -o your_program
+g++ -std=c++17 -Iinclude your_code.cpp -Llib -lart2img -lpthread -o your_program
 LD_LIBRARY_PATH=lib ./your_program
 ```
 
