@@ -1,7 +1,6 @@
-````md
 # AGENTS.md — Autonomous Development Contract
 
-Authoritative, minimal contract for autonomous work in this repository. Keep code simple, clean, modular, and maintainable. Use proven patterns. Modes: Review → Plan → Build → Verify.
+Authoritative, minimal contract for autonomous work. Optimize for simple, clean, modular, maintainable code. Use proven patterns; avoid over-engineering. Modes: Restate → Review → Plan → Build → Test → Verify → Self-Reflect.
 
 ---
 
@@ -17,47 +16,78 @@ make all
 
 ### REVIEW MODE
 
-Create `docs/review.md` when code exists. Capture:
+Capture a concise review process:
 
-* Repo map: languages, toolchains, entry points, build/test/release commands.
+* Languages, toolchains, entry points, build/test/release commands.
 * Dependency health: versions, cadence, licenses, advisories, upgrade candidates.
 * Quality signals: lint/format status, test count/coverage (if available), CI duration/caches, flaky/slow tests.
-* Hotspots: large/complex modules, duplication clusters, cycles, perf bottlenecks, portability issues.
-* Risks/unknowns; immediate low-risk wins.
+* Hotspots: large/complex modules, duplication clusters, dependency cycles, perf bottlenecks, portability issues.
+* Risks/unknowns and immediate low-risk wins.
+* Code: Code that is complex, coupled, duplicated work, check composability, modularity, simplicity. Promote ease-of-use, simplicity, organic.
+
+Output location: after the review, output to the console and write to review.md
 
 ### PLAN MODE
 
-Create `docs/plan.md`, `tasks/status.md`, and atomic tasks under `tasks/plan_<slug>/`.
+Produce a concrete plan and a decomposed set of atomic tasks:
 
-* Tooling rule: prefer **agentic tools** for repository reconnaissance (symbol graph, usages, cross-repo search). Fall back to **system tools** when they’re faster for code search or structural inventory. Agentic examples: Sourcegraph Cody; Claude Code. System examples: ripgrep, fzf, universal-ctags. ([Sourcegraph Docs][1])
-* Minimize questions; make labeled assumptions. Record risks, external dependencies, rollback paths.
+* Prefer **agentic tools** for repository reconnaissance (symbol graphs, usages, cross-repo search). Fall back to **system tools** when faster for code search or structure inventory (see “Tooling Policy”). ([ctags.io][1])
+* Minimize questions; make labeled assumptions with explicit risks, unless critical findings are found.
+* Define acceptance criteria, test strategy, and rollback.
+* Ask if breaking changes or backwards compability is requested.
+* Draw just enough diagrams to augument the plan mode, choose the output style that fits the agentic tool.
+
+Represent the plan directly in the PR description (checklist of tasks and acceptance criteria).
 
 ### BUILD MODE
 
-Deterministic changesets. Execute `DIRECTIVE` blocks in order. Small diffs. Update docs/tests in the same change. Append `.agents/action_log.md`.
+Deterministic, minimal diffs:
 
-* Prefer stable, community-reviewed libraries; verify install from upstream README. Integrate latest stable, then lock with the ecosystem’s lockfile (e.g., `uv` for Python projects). ([Sourcegraph][2])
+* Execute implementation steps in the order specified by the plan.
+* Keep changes small and reversible; update tests alongside code.
+* Prefer stable, community-reviewed libraries; follow upstream install docs; integrate latest stable, then lock with the ecosystem’s lockfile (e.g., `uv` for Python). ([Docker Documentation][2])
+* For multi-file edits: use agentic batch edits when available; otherwise use non-interactive system tools (grep/rg + sed/awk + ctags) to refactor safely at scale. ([GitHub][3])
+
+### TEST MODE
+
+Ensure all implemented changes are covered:
+
+* Unit tests for utilities; integration tests for workflows;
+* Prefer real fixtures/assets over mocks; generate realistic fixtures when real data is unavailable.
+* Treat performance/memory budgets as tests where feasible.
+* Ensure features are covered with happy paths, and edge cases.
 
 ### VERIFY MODE
 
-Post-change smoke and performance checks. CI green; artifacts published. Update ADRs if architecture changed (use MADR template or equivalent). ([GitHub][3])
+Post-change checks before merge:
+
+* Build, linting, formatting tools pass.
+* Smoke tests pass; CI green on supported OS/toolchains; artifacts produced for review.
+* Container images (if any) built via multi-stage Dockerfiles; final images minimal, non-root where possible. ([Docker Documentation][4])
+
+### SELF-REFLECT MODE
+
+Confirm the change satisfies objectives and acceptance criteria, adheres to this contract, and leaves no dead code or stale comments. Note residual risks and follow-ups in the PR.
+
+End of a plan/task do a high level summary what was done with just enough details.
 
 ---
 
 ## Tooling Policy
 
-**Agentic tools (primary in Plan/Build)**
+**Agentic (primary in Plan/Build)**
 
-* Sourcegraph Cody for code search across repos, symbol-aware context, large-scale edits. ([Sourcegraph Docs][1])
-* Claude Code for project-wide assistance and autonomous edit workflows. ([Business Insider][4])
+* Your code assistant of choice for project-wide refactors and explanations (keep loops short, checkpoint often).
 
-**System tools (adjacent/fallback)**
+**System (adjacent/fallback)**
 
-* ripgrep (`rg`) for fast, gitignore-aware search. ([GitHub][5])
-* fzf for interactive filtering/selection. ([GitHub][6])
-* universal-ctags for tags/symbol index. ([GitHub][7])
+* ripgrep (`rg`) for fast, gitignore-aware search. ([GitHub][3])
+* fzf for interactive filtering/selection. ([GitHub][5])
+* grep for ripgrep fallback, to find references.
+* gnu find, to find files.
+* ls to list directories of multiple files.
 
-**Useful commands**
+Useful commands:
 
 ```bash
 rg -n --no-messages 'TODO|FIXME|HACK'
@@ -69,31 +99,7 @@ ctags -R -f .tags .
 
 ## Build & Containers
 
-Expose canonical dev/build/test commands in `docs/plan.md`. For containerized builds, prefer multi-stage Dockerfiles to produce minimal runtime images; copy only the artifacts you need. ([Docker Documentation][8])
-
----
-
-## Repository Layout
-
-```
-docs/
-  review.md
-  plan.md
-  decisions/               # ADRs 0001-....md
-tasks/
-  status.md
-  plan_<slug>/
-    01_task-name.md
-    02_task-name.md
-.agents/
-  memory_bank.md           # durable conventions/commands
-  action_log.md            # append-only timestamps + metrics
-  directives/              # reusable DIRECTIVE snippets
-inputs/                    # read-only (gitignored)
-outputs/                   # write-only (gitignored)
-.cache/                    # tool caches (gitignored)
-.state/                    # state.json, resumable markers (gitignored)
-```
+Expose canonical dev/build/test commands in the root `README`. For containers, use multi-stage Dockerfiles to keep runtime images small and reduce attack surface; copy only required artifacts into the final image. ([Docker Documentation][2])
 
 ---
 
@@ -101,166 +107,84 @@ outputs/                   # write-only (gitignored)
 
 **Primary language**
 
-* Enforce the ecosystem’s standard style and formatter. Keep linters fast. Type hints or interfaces on public APIs. Tests: unit for utilities; integration for workflows; snapshot/golden for binaries with tolerance windows.
+* Enforce the ecosystem’s standard style and formatter. Keep linters fast. Public APIs are typed or interface-annotated.
+* Promote for best practices.
+* Tests: unit for utilities; integration for workflows;
+
+**Code Guidelines**
+
+* Keep changes clean, modular, avoid complexity, organic, easy to read/understand/use.
+* Promote patterns, but don't over do it, use a goldielocks approach, when it best suits, else promote simplicity and avoid complexity.
 
 **Shell**
 
-* `set -euo pipefail`; trap errors; keep shell thin; prefer main language for logic.
+* `set -euo pipefail`; trap errors; keep shell thin; prefer the primary language for logic.
+* Promote the usage of functions to perform logic
 
 **Make**
 
 * Idempotent targets; explicit inputs/outputs; minimal `.PHONY`.
+* Try to have best makefile practices, all/build/test/clean
 
 **Pipelines**
 
-* Idempotent steps, pre/post validation, deterministic ordering, cross-platform behavior, resumable via `.state/state.json`.
+* Idempotent steps, pre/post validation, deterministic ordering, cross-platform behavior, resumable design (state files as needed).
 
-**Docs**
+**Prose**
 
-* Machine-consumable first: commands, paths, contracts in `docs/plan.md` and `.agents/memory_bank.md`.
+* Professional, concise. No emojis.
 
 ---
 
 ## Dependencies and Locking
 
-Adopt → lock. Use the platform’s lockfile and reproducible install. Example for Python projects using `uv`:
+Adopt → lock → verify.
+
+* Use the platform’s lockfile and reproducible install. Example for Python via `uv`:
 
 ```bash
 uv pip compile pyproject.toml -o requirements.lock
 uv pip sync requirements.lock
 ```
 
-([Sourcegraph][2])
+([Docker Documentation][2])
 
 ---
 
 ## Testing & CI
 
-* Unit + integration on each change; property-based where useful; perf/memory budgets as tests where feasible.
-* CI matrix across relevant OS/toolchains. Cache dependency/compile artifacts (e.g., ccache/sccache for C/C++). Publish build artifacts for review. ([ccache.dev][9])
-
----
-
-## Documentation Discipline
-
-Update `docs/review.md`, `docs/plan.md`, task files, and ADRs in the same change as code. Use MADR or a comparable ADR format for non-reversible choices. ([GitHub][3])
+* Run unit and integration suites on each feature implementation; add property-based tests where useful; enforce performance/memory budgets when stability matters.
+* CI: matrix across relevant OS/toolchains; cache dependency/compile artifacts (e.g., ccache/sccache); publish build artifacts for review. ([Docker Documentation][4])
 
 ---
 
 ## Change Management
 
-Small, single-concern changes. Conventional Commits; link task IDs; include repro steps, risks, and evidence. ([conventionalcommits.org][10])
+* Small, single-concern commits and PRs.
+* Conventional Commits for messages; link tasks in the PR checklist; include repro steps, risks, and evidence. ([conventionalcommits.org][7])
 
 ---
 
 ## Security
 
-No network writes without explicit directive. Validate external inputs. Enforce secret scanning in pre-commit/CI. Keep runtime containers minimal; prefer non-root execution. ([Docker Documentation][8])
+* No network writes without explicit approval.
+* Validate all external inputs; sanitize paths; avoid unsafe deserialization.
+* Secret scanning in CI; minimal runtime images; prefer non-root execution. ([Docker Documentation][4])
+* Validate/Review dependencies are latest stable when applicable.
 
----
-
-## Memory Bank
-
-`.agents/memory_bank.md` stores durable conventions:
-
-* Code style and lint rules
-* Project topology and entry points
-* Canonical commands
-* Domain invariants (security/perf budgets)
-* Stack versions and lockfile policy
-
-Keep high-signal, low-churn. Update when conventions change.
-
----
-
-## Directives
-
-Agents execute fenced `DIRECTIVE` blocks verbatim.
-
-```DIRECTIVE
-id: <ID>
-goal: <single, testable outcome>
-scope: <paths/**>
-constraints:
-  - <budgets, compatibility, security, exception-safety>
-steps:
-  - <ordered, deterministic actions>
-verification:
-  - <commands/checks for acceptance>
-artifacts:
-  - <docs/decisions/NNNN-*.md or other outputs>
-logging:
-  - append .agents/action_log.md with start/end + metrics
-```
-
----
-
-## Task Files
-
-`tasks/plan_<slug>/<NN>_<task_name>.md`
-
-```md
-# <NN> <Task Name>
-
-## Intent
-Short rationale and expected impact.
-
-## Scope
-Paths/modules/configs to touch. Out-of-scope listed.
-
-## Acceptance Criteria
-- [ ] Functional outcomes
-- [ ] Performance budget
-- [ ] Security constraints
-- [ ] Docs/tests updated
-
-## Plan
-Bullet micro-steps.
-
-## Tests
-New/updated tests and locations.
-
-## Risks & Rollback
-Known risks, kill-switch, revert plan.
-
-## Evidence
-Change link, CI run, logs, perf numbers.
-
-## Status
-Owner: <name/agent> • State: Todo | Doing | Review | Done • Updated: <ISO8601>
-```
-
-`tasks/status.md`
-
-```md
-# Status Board
-
-## Todo
-- [01] <Task> — link
-
-## Doing
-- [02] <Task> — link
-
-## Review
-- [03] <Task> — link
-
-## Done
-- [00] Bootstrap — link
-```
+## Documentation
+* Keep documentation up to date, clean, consise, professional, and LLM friendly.
+* Ensure documentation is always up-to-date with all changes implementation in the application.
+* Review if the documentation is up to date/relevant.
 
 ```
-
-Sources: Conventional Commits; MADR/ADR; Docker multi-stage builds; Sourcegraph Cody; Claude Code updates; ripgrep; fzf; universal-ctags; ccache. :contentReference[oaicite:14]{index=14}
-::contentReference[oaicite:15]{index=15}
+::contentReference[oaicite:13]{index=13}
 ```
 
-[1]: https://docs.sourcegraph.com/cody/overview?ref=bm&utm_source=chatgpt.com "Cody"
-[2]: https://sourcegraph.com/code-search?utm_source=chatgpt.com "Code Search"
-[3]: https://github.com/adr/madr?utm_source=chatgpt.com "adr/madr: Markdown Architectural Decision Records"
-[4]: https://www.businessinsider.com/anthropic-ai-model-claude-sonnet-extend-coding-lead-2025-9?utm_source=chatgpt.com "Anthropic unveils latest AI model, aiming to extend its lead in coding intelligence"
-[5]: https://github.com/BurntSushi/ripgrep?utm_source=chatgpt.com "ripgrep recursively searches directories for a regex pattern ..."
-[6]: https://github.com/junegunn/fzf?utm_source=chatgpt.com "junegunn/fzf: :cherry_blossom: A command-line fuzzy finder"
-[7]: https://github.com/universal-ctags/ctags?utm_source=chatgpt.com "universal-ctags/ctags: A maintained ctags implementation"
-[8]: https://docs.docker.com/build/building/multi-stage/?utm_source=chatgpt.com "Multi-stage builds"
-[9]: https://ccache.dev/manual/4.12.html?utm_source=chatgpt.com "ccache manual"
-[10]: https://www.conventionalcommits.org/en/v1.0.0/?utm_source=chatgpt.com "Conventional Commits"
+[1]: https://ctags.io/?utm_source=chatgpt.com "Home · Universal Ctags"
+[2]: https://docs.docker.com/build/building/multi-stage/?utm_source=chatgpt.com "Multi-stage builds"
+[3]: https://github.com/BurntSushi/ripgrep?utm_source=chatgpt.com "ripgrep recursively searches directories for a regex pattern ..."
+[4]: https://docs.docker.com/build/building/best-practices/?utm_source=chatgpt.com "Building best practices"
+[5]: https://github.com/junegunn/fzf?utm_source=chatgpt.com "junegunn/fzf: :cherry_blossom: A command-line fuzzy finder"
+[6]: https://github.com/universal-ctags/ctags?utm_source=chatgpt.com "universal-ctags/ctags: A maintained ctags implementation"
+[7]: https://www.conventionalcommits.org/en/v1.0.0/?utm_source=chatgpt.com "Conventional Commits"
