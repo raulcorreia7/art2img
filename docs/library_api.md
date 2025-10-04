@@ -62,14 +62,33 @@ public:
     void set_blood_default_palette();
     
     // Extraction methods
-    ExtractionResult extract_tile(uint32_t tile_index, PngWriter::Options options = PngWriter::Options());
-    ExtractionResult extract_tile_tga(uint32_t tile_index);
+    ExtractionResult extract_tile(uint32_t tile_index, ImageFormat format,
+                                  ImageWriter::Options options = ImageWriter::Options());
+    ExtractionResult extract_tile_png(uint32_t tile_index,
+                                      ImageWriter::Options options = ImageWriter::Options());
+    ExtractionResult extract_tile_tga(uint32_t tile_index,
+                                      ImageWriter::Options options = ImageWriter::Options());
     
     // Batch extraction
-    std::vector<ExtractionResult> extract_all_tiles(PngWriter::Options options = PngWriter::Options());
-    std::vector<ExtractionResult> extract_all_tiles_tga();
+    std::vector<ExtractionResult> extract_all_tiles(ImageFormat format,
+                                                     ImageWriter::Options options = ImageWriter::Options());
+    std::vector<ExtractionResult> extract_all_tiles_png(ImageWriter::Options options = ImageWriter::Options());
+    std::vector<ExtractionResult> extract_all_tiles_tga(ImageWriter::Options options = ImageWriter::Options());
 };
 ```
+
+// Convenience Functions
+//
+// The API provides convenience wrapper functions that call the generic functions
+// with appropriate format parameters:
+// - extract_tile_png() calls extract_tile() with ImageFormat::PNG
+// - extract_tile_tga() calls extract_tile() with ImageFormat::TGA
+// - extract_all_tiles_png() calls extract_all_tiles() with ImageFormat::PNG
+// - extract_all_tiles_tga() calls extract_all_tiles() with ImageFormat::TGA
+//
+// These functions maintain backward compatibility while providing a cleaner API
+// that follows the facade pattern - they are simple wrappers around the generic
+// functions but provide a more convenient interface for common use cases.
 
 #### ExtractionResult
 
@@ -95,16 +114,16 @@ struct ExtractionResult {
 };
 ```
 
-#### PngWriter::Options
+#### ImageWriter::Options
 
-Options for PNG extraction.
+Options for image extraction.
 
 ```cpp
-struct PngWriter::Options {
-    bool enable_alpha = true;           // Enable alpha channel support
-    bool premultiply_alpha = true;      // Apply premultiplication for upscaling
-    bool matte_hygiene = false;         // Apply alpha matte hygiene (erode + blur)
-    bool enable_magenta_transparency = true; // Enable magenta transparency processing
+struct ImageWriter::Options {
+    bool enable_alpha = true;        // Enable alpha channel support (PNG only)
+    bool premultiply_alpha = false;  // Apply premultiplication for upscaling (PNG only)
+    bool matte_hygiene = false;      // Apply alpha matte hygiene (erode + blur) (PNG only)
+    bool fix_transparency = true;    // Enable magenta transparency processing (PNG only)
 };
 ```
 
@@ -125,7 +144,7 @@ int main() {
     extractor.load_palette_file("PALETTE.DAT");
     
     // Extract tile 0
-    art2img::ExtractionResult result = extractor.extract_tile(0);
+    art2img::ExtractionResult result = extractor.extract_tile(0, art2img::ImageFormat::PNG);
     
     if (result.success) {
         std::ofstream file("tile0000.png", std::ios::binary);
@@ -144,7 +163,7 @@ int main() {
 
 ```cpp
 // Extract all tiles
-std::vector<art2img::ExtractionResult> results = extractor.extract_all_tiles();
+std::vector<art2img::ExtractionResult> results = extractor.extract_all_tiles(art2img::ImageFormat::PNG);
 
 for (const auto& result : results) {
     if (result.success) {
@@ -161,13 +180,13 @@ for (const auto& result : results) {
 ### Using the Static Library
 
 ```bash
-g++ -std=c++17 -Iinclude your_code.cpp -Llib -lart2img -lpthread -o your_program
+g++ -std=c++20 -Iinclude your_code.cpp -Llib -lart2img -lpthread -o your_program
 ```
 
 ### Using the Shared Library
 
 ```bash
-g++ -std=c++17 -Iinclude your_code.cpp -Llib -lart2img -lpthread -o your_program
+g++ -std=c++20 -Iinclude your_code.cpp -Llib -lart2img -lpthread -o your_program
 LD_LIBRARY_PATH=lib ./your_program
 ```
 

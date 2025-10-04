@@ -23,7 +23,7 @@
 ## Tooling & Commands
 - Configure/build: `cmake -S . -B build -DBUILD_TESTS=ON`, `cmake --build build`.
 - Tests: `ctest --test-dir build --output-on-failure`.
-- Manual extraction for sanity: `build/bin/art2img -o tests/output/tmp -f png -p tests/assets/PALETTE.DAT tests/assets/TILES000.ART`.
+- Manual extraction for sanity: `build/bin/art2img -o build/tests/output/tmp -f png -p tests/assets/PALETTE.DAT tests/assets/TILES000.ART`.
 
 ## Risks & Mitigations
 - **Dependency drift**: pinned FetchContent revisions could lag upstream → documented in plan/memory bank.
