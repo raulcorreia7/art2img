@@ -1,6 +1,8 @@
 # Build artifacts
 bin/
 obj/
+build/
+build-*/
 *.exe
 *.o
 *.a
@@ -29,7 +31,13 @@ Thumbs.db
 tests/output/
 tests/tests/output/
 build-tests/
+Testing/
+tests/Testing/
+test-package/
+test-release/
+art2img-linux-x86_64-1.0.0.tar.gz
 
-build/
+# Project Files
 cmake-build*/
 _fetch/
+.agents/
