@@ -1,14 +1,15 @@
 # Makefile for art2img project
 # Simplifies building, testing, and installation using CMake
-# Uses built-in FetchContent caching in local _fetch/ directory
+# Uses CPM (CMake Package Manager) for dependency management
 
 BUILD_DIR ?= build
-FETCH_DIR ?= _fetch
 CMAKE_BUILD_TYPE ?= Release
 JOBS ?= $(shell nproc)
-CMAKE_ARGS ?= -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -DFETCHCONTENT_BASE_DIR=$(abspath $(FETCH_DIR))
+CMAKE_ARGS ?= -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE)
 
-.PHONY: all build test clean install debug cache-clean help setup
+# Sanitizer options
+
+.PHONY: all build test clean install debug help setup format format-check asan-build leak-build test-asan test-leak
 
 all: build test
 
@@ -20,17 +21,22 @@ help:
 	@echo "  debug        - Build in Debug mode"
 	@echo "  clean        - Remove build directory"
 	@echo "  install      - Install to system (requires build)"
-	@echo "  cache-clean  - Remove dependency cache (_fetch)"
 	@echo "  setup        - Build project"
+	@echo "  format       - Format source code with clang-format"
+	@echo "  format-check - Check if source code is properly formatted"
+	@echo "  asan-build   - Build with AddressSanitizer"
+	@echo "  leak-build   - Build with LeakSanitizer"
+	@echo "  test-asan    - Run tests with AddressSanitizer"
+	@echo "  test-leak    - Run tests with LeakSanitizer"
 	@echo "Variables: BUILD_DIR=$(BUILD_DIR), CMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE), JOBS=$(JOBS)"
 
 build:
-	@mkdir -p $(BUILD_DIR) $(FETCH_DIR)
+	@mkdir -p $(BUILD_DIR)
 	@cd $(BUILD_DIR) && cmake .. $(CMAKE_ARGS)
 	@cmake --build $(BUILD_DIR) --parallel $(JOBS)
 
 debug: CMAKE_BUILD_TYPE = Debug
-debug: CMAKE_ARGS = -DCMAKE_BUILD_TYPE=Debug -DFETCHCONTENT_BASE_DIR=$(abspath $(FETCH_DIR))
+debug: CMAKE_ARGS = -DCMAKE_BUILD_TYPE=Debug
 debug: build
 
 test: build
@@ -39,10 +45,35 @@ test: build
 clean:
 	@rm -rf $(BUILD_DIR)
 
-cache-clean:
-	@rm -rf $(FETCH_DIR)
-
 install: build
 	@cd $(BUILD_DIR) && cmake --install . --prefix /usr/local
 
-setup: build
+format:
+	@./format_code.sh
+
+format-check:
+	@echo "Checking code formatting..."
+	@mkdir -p $(BUILD_DIR)
+	@cd $(BUILD_DIR) && cmake .. $(CMAKE_ARGS)
+	@cmake --build $(BUILD_DIR) --target clang-format-dry-run
+	@echo "Code formatting check complete!"
+
+# AddressSanitizer build
+asan-build:
+	@mkdir -p $(BUILD_DIR)
+	@cd $(BUILD_DIR) && cmake .. $(CMAKE_ARGS) -DENABLE_ASAN=ON
+	@cmake --build $(BUILD_DIR) --parallel $(JOBS)
+
+# LeakSanitizer build
+leak-build:
+	@mkdir -p $(BUILD_DIR)
+	@cd $(BUILD_DIR) && cmake .. $(CMAKE_ARGS) -DENABLE_LEAK_SANITIZER=ON
+	@cmake --build $(BUILD_DIR) --parallel $(JOBS)
+
+# Test with AddressSanitizer
+test-asan: asan-build
+	@cd $(BUILD_DIR) && ctest --output-on-failure -V
+
+# Test with LeakSanitizer
+test-leak: leak-build
+	@cd $(BUILD_DIR) && ctest --output-on-failure -V
