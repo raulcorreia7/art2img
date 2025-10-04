@@ -1,67 +1,108 @@
 cmake_minimum_required(VERSION 3.14)
 project(art2img VERSION 1.0.0 LANGUAGES CXX)
 
+# Set default parallel build jobs to use all available CPUs if not explicitly set
+if(NOT DEFINED CMAKE_BUILD_PARALLEL_LEVEL)
+    include(ProcessorCount)
+    ProcessorCount(PROCESSOR_COUNT)
+    if(PROCESSOR_COUNT GREATER 1)
+        set(CMAKE_BUILD_PARALLEL_LEVEL ${PROCESSOR_COUNT})
+    else()
+        set(CMAKE_BUILD_PARALLEL_LEVEL 1)
+    endif()
+endif()
+
 # CMake options
 option(BUILD_CLI "Build the command line interface tool" ON)
 option(BUILD_TESTS "Build the test suite" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" ON)
+option(ENABLE_LIBUV "Enable libuv-based parallel processing" ON)
 
 # Enable testing at the top level
 enable_testing()
 
-include(FetchContent)
+# CPM Package Manager
+include(cmake/CPM.cmake)
 
-set(ART2IMG_CLI11_TAG v2.5.0 CACHE STRING "CLI11 version to fetch")
-set(ART2IMG_DOCTEST_TAG v2.4.12 CACHE STRING "doctest version to fetch")
-set(ART2IMG_STB_TAG master CACHE STRING "stb branch to fetch")
-
-FetchContent_Declare(cli11
-    GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
-    GIT_TAG ${ART2IMG_CLI11_TAG}
+# Dependencies via CPM
+CPMFindPackage(
+    NAME CLI11
+    GITHUB_REPOSITORY CLIUtils/CLI11
+    GIT_TAG v2.5.0
 )
 
-FetchContent_Declare(doctest
-    GIT_REPOSITORY https://github.com/doctest/doctest.git
-    GIT_TAG ${ART2IMG_DOCTEST_TAG}
+CPMFindPackage(
+    NAME doctest
+    GITHUB_REPOSITORY doctest/doctest
+    GIT_TAG v2.4.12
 )
 
-FetchContent_Declare(stb
-    GIT_REPOSITORY https://github.com/nothings/stb.git
-    GIT_TAG ${ART2IMG_STB_TAG}
+CPMFindPackage(
+    NAME stb
+    GITHUB_REPOSITORY nothings/stb
+    GIT_TAG fede005abaf93d9d7f3a679d1999b2db341b360f  # Latest commit on master branch
 )
 
-if(BUILD_CLI)
-    FetchContent_MakeAvailable(cli11)
-endif()
+# Create interface library for stb since CPM doesn't create it automatically
+add_library(stb_headers INTERFACE)
+target_include_directories(stb_headers INTERFACE ${stb_SOURCE_DIR})
+# Suppress warnings from stb headers
+set_target_properties(stb_headers PROPERTIES
+    INTERFACE_COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:CXX>:-w>"
+)
+add_library(stb::headers ALIAS stb_headers)
 
-if(BUILD_TESTS)
-    FetchContent_GetProperties(doctest)
-    if(NOT doctest_POPULATED)
-        FetchContent_Populate(doctest)
-        add_library(doctest INTERFACE)
-        target_include_directories(doctest INTERFACE ${doctest_SOURCE_DIR})
-
-        add_library(doctest::doctest_with_main INTERFACE IMPORTED)
-        target_link_libraries(doctest::doctest_with_main INTERFACE doctest)
-
-        if(NOT TARGET doctest::doctest)
-            add_library(doctest::doctest INTERFACE IMPORTED)
-            target_link_libraries(doctest::doctest INTERFACE doctest)
-        endif()
+# Libuv - only if ENABLE_LIBUV is ON
+if(ENABLE_LIBUV)
+    CPMFindPackage(
+        NAME libuv
+        GITHUB_REPOSITORY libuv/libuv
+        GIT_TAG v1.51.0
+    )
+    
+    # Suppress warnings from libuv
+    if(TARGET uv)
+        target_compile_options(uv PRIVATE -w)
+    endif()
+    if(TARGET uv_a)
+        target_compile_options(uv_a PRIVATE -w)
     endif()
 endif()
 
-FetchContent_GetProperties(stb)
-if(NOT stb_POPULATED)
-    FetchContent_Populate(stb)
-    add_library(stb_headers INTERFACE)
-    target_include_directories(stb_headers INTERFACE ${stb_SOURCE_DIR})
-    add_library(stb::headers ALIAS stb_headers)
+# Create interface libraries for doctest if CPM doesn't create the expected targets
+if(BUILD_TESTS)
+    if(NOT TARGET doctest)
+        add_library(doctest INTERFACE)
+        target_include_directories(doctest INTERFACE ${doctest_SOURCE_DIR})
+        # Suppress warnings from doctest
+        set_target_properties(doctest PROPERTIES
+            INTERFACE_COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:CXX>:-w>"
+        )
+    endif()
+
+    if(NOT TARGET doctest::doctest_with_main)
+        add_library(doctest::doctest_with_main INTERFACE IMPORTED)
+        target_link_libraries(doctest::doctest_with_main INTERFACE doctest)
+        # Suppress warnings from doctest
+        set_target_properties(doctest::doctest_with_main PROPERTIES
+            INTERFACE_COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:CXX>:-w>"
+        )
+    endif()
+
+    if(NOT TARGET doctest::doctest)
+        add_library(doctest::doctest INTERFACE IMPORTED)
+        target_link_libraries(doctest::doctest INTERFACE doctest)
+        # Suppress warnings from doctest
+        set_target_properties(doctest::doctest PROPERTIES
+            INTERFACE_COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:CXX>:-w>"
+        )
+    endif()
 endif()
 
 # Set C++ standard
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Set output directories
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -91,6 +132,26 @@ else()
     string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -pedantic -pthread")
 endif()
 
+# Sanitizer options
+option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
+option(ENABLE_LEAK_SANITIZER "Enable LeakSanitizer" OFF)
+
+if(ENABLE_ASAN)
+    if(NOT MSVC)
+        set(SANITIZER_FLAGS "-fsanitize=address -fno-omit-frame-pointer -g")
+        string(APPEND CMAKE_CXX_FLAGS " ${SANITIZER_FLAGS}")
+        string(APPEND CMAKE_EXE_LINKER_FLAGS " ${SANITIZER_FLAGS}")
+    endif()
+endif()
+
+if(ENABLE_LEAK_SANITIZER)
+    if(NOT MSVC)
+        set(LEAK_SANITIZER_FLAGS "-fsanitize=leak -fno-omit-frame-pointer -g")
+        string(APPEND CMAKE_CXX_FLAGS " ${LEAK_SANITIZER_FLAGS}")
+        string(APPEND CMAKE_EXE_LINKER_FLAGS " ${LEAK_SANITIZER_FLAGS}")
+    endif()
+endif()
+
 # Optimization flags for Release build
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     if(MSVC)
@@ -109,27 +170,35 @@ configure_file(
 # Ensure include directories exist
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include)
 
-# Include the source and generated header directories
-include_directories(include)
-include_directories(${CMAKE_BINARY_DIR}/include)
-
 # Create the extractor library
 add_library(art2img_extractor
     src/extractor_api.cpp
     src/art_file.cpp
     src/palette.cpp
-    src/png_writer.cpp
-    src/tga_writer.cpp
+    src/image_writer.cpp
+    src/image_processor.cpp
     src/exceptions.cpp
+    src/file_operations.cpp
 )
 
-# Set up library properties and include directories
+# Set C++ standard via compile features
+target_compile_features(art2img_extractor
+    PUBLIC
+        cxx_std_20
+)
+
+# Suppress warnings from external dependencies
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(art2img_extractor PRIVATE
+        "-Wno-format-truncation"
+    )
+endif()
+
+# Set up library properties
 set_target_properties(art2img_extractor
     PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
 )
 
 # Define public interface - only expose API-relevant headers
@@ -148,9 +217,10 @@ target_sources(art2img_extractor
     include/extractor_api.hpp
     include/art_file.hpp
     include/palette.hpp
-    include/png_writer.hpp
-    include/tga_writer.hpp
+    include/image_writer.hpp
+    include/image_processor.hpp
     include/exceptions.hpp
+    include/file_operations.hpp
     ${CMAKE_BINARY_DIR}/include/version.hpp
 )
 
@@ -182,11 +252,19 @@ if (BUILD_DIAGNOSTIC)
         ${CMAKE_BINARY_DIR}/include
     )
 
+    target_compile_features(art2img_diagnostic
+        PRIVATE
+            cxx_std_20
+    )
+
+    target_link_libraries(art2img_diagnostic
+        PRIVATE
+        art2img_extractor
+    )
+
     set_target_properties(art2img_diagnostic
         PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-        CXX_STANDARD 17
-        CXX_STANDARD_REQUIRED ON
     )
 endif()
 
@@ -214,6 +292,30 @@ install(TARGETS art2img_extractor
 install(FILES include/extractor_api.hpp
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
+
+# Add clang-format target
+find_program(CLANG_FORMAT_EXE NAMES clang-format)
+if(CLANG_FORMAT_EXE)
+    # Get all C++ source and header files in the project
+    file(GLOB_RECURSE ALL_CXX_SOURCE_FILES
+        include/*.hpp include/*.h include/*.cpp include/*.c
+        src/*.hpp src/*.h src/*.cpp src/*.c
+        cli/*.hpp cli/*.h cli/*.cpp cli/*.cc cli/*.cxx
+        tests/*.hpp tests/*.h tests/*.cpp tests/*.c
+    )
+
+    add_custom_target(clang-format
+        COMMAND ${CLANG_FORMAT_EXE} -i ${ALL_CXX_SOURCE_FILES}
+        COMMENT "Formatting all C++ source files with clang-format"
+        VERBATIM
+    )
+
+    add_custom_target(clang-format-dry-run
+        COMMAND ${CLANG_FORMAT_EXE} --dry-run --Werror ${ALL_CXX_SOURCE_FILES}
+        COMMENT "Checking formatting of all C++ source files with clang-format"
+        VERBATIM
+    )
+endif()
 
 # Generate and install pkg-config file if available
 find_package(PkgConfig QUIET)
