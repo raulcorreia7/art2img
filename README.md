@@ -1,9 +1,10 @@
 # art2img - Extract Images from Duke Nukem 3D Art Files
 
-A modern C++ tool to convert Duke Nukem 3D art files into PNG or TGA images with zero-copy processing and modern C++17 features.
+A modern C++ tool to convert Duke Nukem 3D art files into PNG or TGA images with zero-copy processing and modern C++20 features.
 
 ## Features
-- **Modern C++17 Codebase**: Utilizes std::filesystem, constexpr optimizations, and modern API design
+- **Modern C++20 Library**: Core functionality available as a reusable library
+- **Command Line Interface**: Standalone CLI tool for direct usage
 - **Zero-Copy Processing**: ArtView and ImageView structures for efficient memory access
 - **Format Support**: PNG (with alpha transparency) and TGA output formats
 - **Magenta Transparency**: Automatic handling of transparency for game assets
@@ -66,6 +67,10 @@ make debug        # Build in Debug mode
 make clean        # Remove build directory
 make install      # Install to /usr/local (requires build)
 make cache-clean  # Clear the dependency cache (_fetch)
+make asan-build   # Build with AddressSanitizer
+make leak-build   # Build with LeakSanitizer
+make test-asan    # Run tests with AddressSanitizer
+make test-leak    # Run tests with LeakSanitizer
 
 # Customizable variables
 make build JOBS=4 CMAKE_BUILD_TYPE=Release BUILD_DIR=mybuild
@@ -127,7 +132,9 @@ cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../cmake/windows-tool
 
 ## Library Usage
 
-The project provides a modern C++ library (`libart2img_extractor`) with zero-copy processing capabilities:
+The project provides a modern C++ library (`libart2img_extractor`) with zero-copy processing capabilities. The library is separate from the CLI tool, allowing external projects to consume only the core functionality:
+
+### Library Integration
 
 ### Modern API Usage
 ```cpp
@@ -202,20 +209,21 @@ c++ -o my_app main.cpp $(pkg-config --cflags --libs art2img-extractor)
 
 ## Requirements
 - **Build requirements**:
-  - C++17 compiler (GCC 7+, Clang 6+, MSVC 2019+)
+  - C++20 compiler (GCC 10+, Clang 10+, MSVC 2019+)
   - CMake 3.14+
   - pthread library
   - std::filesystem support (GCC 9+ with libstdc++fs, or Clang 9+)
 - **Runtime requirements**:
   - No external dependencies for the CLI tool
-  - Library requires only standard C++17 runtime
+  - Library requires only standard C++20 runtime
 - stb_image_write header (fetched automatically via CMake)
 - doctest framework (fetched automatically for the test suite)
 
 ## Architecture
 The codebase has been modernized with:
+- **Library-CLI Separation**: Core library (`libart2img_extractor`) separate from CLI tool (`art2img`)
 - **Zero-Copy Processing**: ArtView and ImageView structures for efficient memory access
-- **Modern C++17**: std::filesystem::path, constexpr optimizations, RAII
+- **Modern C++20**: std::filesystem::path, constexpr optimizations, RAII, and more
 - **Test Framework**: Migrated to doctest v2.4.11 for modern C++ testing
 - **Build System**: CMake-first approach with FetchContent-managed dependencies
 - **API Design**: Clean separation between library and CLI components
@@ -228,7 +236,80 @@ The codebase has been modernized with:
 - ✅ Migrated to doctest testing framework with FetchContent-based setup
 
 ## Development
-- **Testing**: `ctest --test-dir build --output-on-failure`
+- **Testing**: `ctest --test-dir build --output-on-failure` - Run all tests (doctest and standalone)
 - **Debug builds**: `cmake --build build --config Debug`
-- **Style**: Modern C++17 conventions with const-correctness and RAII
+- **Style**: Modern C++20 conventions with const-correctness and RAII
+- **Code Formatting**: Google C++ style enforced via clang-format
 - **Memory Safety**: Zero-copy design minimizes allocations during processing
+
+## Testing
+This project includes a comprehensive doctest-based test suite:
+
+- **All tests**: `make test` or `ctest --output-on-failure` - Run all unit tests
+- **Doctest tests**: `./build/bin/art2img_tests` - Run complete unit test suite
+- The test suite includes tests for:
+  - Art file parsing and metadata extraction
+  - Palette handling and validation
+  - Image view and extraction functionality
+  - API integration and memory regression
+  - Blood palette validation
+  - Comprehensive library API functionality
+
+## Code Formatting
+This project uses clang-format with Google C++ style for consistent code formatting. You can format your code using:
+
+- Using the Makefile (recommended):
+  ```bash
+  make format                    # Format all source files
+  make format-check             # Check if all files are properly formatted
+  ```
+
+- Using CMake directly:
+  ```bash
+  mkdir build && cd build
+  cmake ..
+  cmake --build . --target clang-format    # Format all files
+  ```
+
+- Using the provided script:
+  ```bash
+  ./format_code.sh             # Format all source files
+  ```
+
+## Memory Safety Testing
+
+The project includes support for memory sanitizers to detect memory leaks and other memory-related issues:
+
+### AddressSanitizer (ASAN)
+AddressSanitizer is a fast memory error detector that can detect:
+- Buffer overflows
+- Use after free
+- Memory leaks
+- Double free errors
+
+```bash
+# Build with AddressSanitizer
+make asan-build
+
+# Run tests with AddressSanitizer
+make test-asan
+```
+
+### LeakSanitizer
+LeakSanitizer is a memory leak detector that can be used standalone:
+
+```bash
+# Build with LeakSanitizer
+make leak-build
+
+# Run tests with LeakSanitizer
+make test-leak
+```
+
+### Interpreting Results
+When running tests with sanitizers, any memory issues will be reported with detailed information including:
+- Stack traces for memory errors
+- Memory leak sizes and locations
+- Suggested fixes
+
+Note: Sanitizer builds are only supported on Linux and macOS with GCC or Clang compilers.
