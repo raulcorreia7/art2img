@@ -3,24 +3,34 @@ cmake_minimum_required(VERSION 3.14)
 # Create unified doctest test executable
 add_executable(art2img_tests)
 
-# Add doctest source files
+# Add doctest source files (excluding test_png_memory_regression.cpp as it's a standalone test)
 target_sources(art2img_tests
     PRIVATE
     doctest_tests.cpp
+    simple_test.cpp
     test_art_file.cpp
-    test_palette.cpp
+    test_blood_palette_validation.cpp
+    test_bmp_format.cpp
+    test_corrupted_files.cpp
     test_extractor_api.cpp
+    test_functionality.cpp
     test_image_view.cpp
     test_integration.cpp
-    test_functionality.cpp
+    test_library_api.cpp
+    test_palette.cpp
+    # Note: test_png_memory_regression.cpp is excluded as it's likely a standalone test
 )
 
 # Set test executable properties
 set_target_properties(art2img_tests
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
+)
+
+# Set C++ standard via compile features
+target_compile_features(art2img_tests
+    PRIVATE
+        cxx_std_20
 )
 
 # Link libraries
@@ -34,6 +44,7 @@ target_include_directories(art2img_tests
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
     ${CMAKE_CURRENT_SOURCE_DIR}/../src
+    ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_BINARY_DIR}/../include
 )
 
@@ -50,9 +61,43 @@ if(NOT MSVC)
     target_link_options(art2img_tests PRIVATE -pthread)
 endif()
 
-# Add to CTest
-add_test(NAME doctest_tests COMMAND art2img_tests)
-set_tests_properties(doctest_tests
+# Create standalone test executables
+add_executable(png_memory_regression
+    png_memory_regression.cpp
+)
+
+# Set C++ standard via compile features
+target_compile_features(png_memory_regression
+    PRIVATE
+        cxx_std_20
+)
+target_link_libraries(png_memory_regression
+    PRIVATE
+    art2img_extractor
+)
+target_include_directories(png_memory_regression
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_BINARY_DIR}/../include
+)
+if(NOT MSVC)
+    target_link_options(png_memory_regression PRIVATE -pthread)
+endif()
+
+# Use doctest test discovery to automatically register individual test cases as CTest tests
+include(${doctest_SOURCE_DIR}/scripts/cmake/doctest.cmake)
+
+doctest_discover_tests(art2img_tests
+    TEST_PREFIX "doctest-"
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    PROPERTIES 
+        TIMEOUT 300
+)
+
+add_test(NAME png_memory_regression_test COMMAND png_memory_regression)
+set_tests_properties(png_memory_regression_test
     PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
