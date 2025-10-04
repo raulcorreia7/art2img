@@ -2,5 +2,5 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
-// Include all test modules (as separate .cpp files compiled together)
-// The build system handles building each test file separately
+// All test files are compiled as part of the same executable target
+// via target_sources in CMakeLists.txt
