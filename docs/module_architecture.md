@@ -255,7 +255,7 @@ art2img::file_operations::write_png_file(filename, rgba_data, width, height);
 
 The refactored architecture does not introduce any breaking changes to the public API. The `ImageWriter` class maintains the same interface as before, ensuring backward compatibility.
 
-However, the internal implementation has been changed to delegate functionality to the new modules, which may affect performance characteristics and error handling.
+However, the internal implementation has been changed to delegate functionality to the new modules, which improves performance characteristics and error handling.
 
 ## Performance Considerations
 

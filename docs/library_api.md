@@ -1,6 +1,6 @@
 # art2img Library API
 
-The art2img library provides a C++ API for extracting Duke Nukem 3D and Blood ART files to PNG/TGA images with full alpha channel support.
+The art2img library provides a modern C++ API for extracting Duke Nukem 3D and Blood ART files to PNG/TGA images with full alpha channel support and zero-copy processing.
 
 ## Building the Library
 

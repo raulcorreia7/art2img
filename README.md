@@ -76,7 +76,7 @@ make test-leak    # Run tests with LeakSanitizer
 make build JOBS=4 CMAKE_BUILD_TYPE=Release BUILD_DIR=mybuild
 ```
 
-Dependencies are cached in `~/.cache/art2img/fetchcontent/` using CMake's FetchContent mechanism. First configure downloads them; subsequent builds reuse the cache for speed (especially in CI).
+Dependencies are managed using CPM (CMake Package Manager) and cached in `~/.cache/art2img/fetchcontent/` using CMake's FetchContent mechanism. First configure downloads them; subsequent builds reuse the cache for speed (especially in CI).
 
 For CMake options like `-DBUILD_CLI=OFF`, pass them via `CMAKE_ARGS="-DBUILD_CLI=OFF make build"`.
 
