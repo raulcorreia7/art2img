@@ -461,22 +461,6 @@ ProcessingResult process_single_art_file(const ProcessingOptions& options,
                            options.enable_parallel);
 }
 
-namespace {
-
-ProcessingOptions make_processing_options(const CliOptions& cli_options) {
-  ProcessingOptions options;
-  options.palette_file = cli_options.palette_file;
-  options.output_dir = cli_options.output_dir;
-  options.format = cli_options.format;
-  options.fix_transparency = cli_options.fix_transparency;
-  options.verbose = !cli_options.quiet;
-  options.dump_animation = !cli_options.no_anim;
-  options.merge_animation_data = cli_options.merge_anim;
-  return options;
-}
-
-}  // namespace
-
 /// Process all ART files in a directory
 CliProcessResult process_art_directory(const CliOptions& cli_options) {
   CliProcessResult cli_result;
