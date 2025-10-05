@@ -7,12 +7,14 @@ add_executable(art2img_tests)
 target_sources(art2img_tests
     PRIVATE
     doctest_tests.cpp
+    ../cli/processor.cpp
     test_art_file.cpp
     test_extractor_api.cpp
     test_functionality.cpp
     test_cli_options.cpp
     test_integration.cpp
     test_palette.cpp
+    test_cli_error_messages.cpp
     test_transparency.cpp
     test_transparency_files.cpp
     test_batch_extraction_files.cpp
