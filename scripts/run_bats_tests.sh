@@ -38,7 +38,8 @@ echo "Bats command: $BATS_CMD"
 echo ""
 
 # Run all bats tests from the new location with pretty output and verbose run
-"$BATS_CMD" "$PROJECT_ROOT/tests/bats" -p --verbose-run
+# Set TERM to avoid tput errors in CI environments
+TERM=dumb "$BATS_CMD" "$PROJECT_ROOT/tests/bats" -p --verbose-run
 
 echo ""
 echo "Bats tests completed."
