@@ -45,16 +45,30 @@ int main(int argc, char* argv[]) {
     }
 
     // Process based on input type
-    bool success = false;
+    CliProcessResult processing_result;
     bool is_directory = std::filesystem::is_directory(cli_options.input_path);
 
     if (is_directory) {
-      success = process_art_directory(cli_options);
+      processing_result = process_art_directory(cli_options);
     } else {
-      success = process_single_art_file_wrapper(cli_options);
+      processing_result = process_single_art_file_wrapper(cli_options);
     }
 
-    return success ? 0 : 1;
+    if (!processing_result.success) {
+      art2img::ColorGuard red(art2img::ColorOutput::RED, std::cerr);
+      std::cerr << "Error: ";
+      if (!processing_result.error_message.empty()) {
+        std::cerr << processing_result.error_message << std::endl;
+      } else {
+        std::cerr << "Processing failed." << std::endl;
+      }
+
+      art2img::ColorGuard yellow(art2img::ColorOutput::YELLOW, std::cerr);
+      std::cerr << "For help, run: art2img --help" << std::endl;
+      return 1;
+    }
+
+    return 0;
 
   } catch (const art2img::ArtException& e) {
     art2img::ColorGuard red(art2img::ColorOutput::RED, std::cerr);
