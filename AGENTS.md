@@ -1,6 +1,6 @@
 # AGENTS.md — Autonomous Development Contract
 
-Authoritative, minimal contract for autonomous work. Optimize for simple, clean, modular, maintainable code. Use proven patterns; avoid over-engineering. Modes: Restate → Review → Plan → Build → Test → Verify → Self-Reflect.
+Authoritative, minimal contract for autonomous work. Optimize for simple, clean, modular, maintainable code. Prefer proven patterns; avoid over-engineering. Modes: Restate → Review → Plan → Build → Test → Verify → Self-Reflect.
 
 ---
 
@@ -12,94 +12,119 @@ make all
 
 ---
 
-## Agent Modes
+## Modes
+
+### RESTATE MODE
+
+Rephrase the request/task in one paragraph. List explicit objectives, constraints, and non-goals. Write assumptions and their risks.
 
 ### REVIEW MODE
 
-Capture a concise review process:
+Concise repo survey:
 
-* Languages, toolchains, entry points, build/test/release commands.
-* Dependency health: versions, cadence, licenses, advisories, upgrade candidates.
-* Quality signals: lint/format status, test count/coverage (if available), CI duration/caches, flaky/slow tests.
-* Hotspots: large/complex modules, duplication clusters, dependency cycles, perf bottlenecks, portability issues.
-* Risks/unknowns and immediate low-risk wins.
-* Code: Code that is complex, coupled, duplicated work, check composability, modularity, simplicity. Promote ease-of-use, simplicity, organic.
+* Languages, toolchains, entry points, canonical build/test/release commands
+* Dependency health (versions, cadence, licenses, advisories, upgrade candidates)
+* Quality signals (lint/format state, test count/coverage, CI duration/cache hits, flaky/slow tests)
+* Hotspots (complex modules, duplication clusters, dependency cycles, perf/portability risks)
+* Code quality heuristics (composability, coupling, simplicity). Favor “organic” APIs that are easy to read/use
+* Risks/unknowns and immediate low-risk wins
 
-Output location: after the review, output to the console and write to review.md
+Output: print summary to console and write `REVIEW_NOTES.md` at repo root.
 
 ### PLAN MODE
 
-Produce a concrete plan and a decomposed set of atomic tasks:
-
-* Prefer **agentic tools** for repository reconnaissance (symbol graphs, usages, cross-repo search). Fall back to **system tools** when faster for code search or structure inventory (see “Tooling Policy”). ([ctags.io][1])
-* Minimize questions; make labeled assumptions with explicit risks, unless critical findings are found.
-* Define acceptance criteria, test strategy, and rollback.
-* Ask if breaking changes or backwards compability is requested.
-* Draw just enough diagrams to augument the plan mode, choose the output style that fits the agentic tool.
-
-Represent the plan directly in the PR description (checklist of tasks and acceptance criteria).
+Deterministic plan and atomic tasks:
+* YOU CANNOT DO ANY FILE MODIFICATIONS OR CHANGES.
+* Prefer **agentic tools** for repo reconnaissance (symbol graphs, references, cross-repo search). Fall back to **system tools** when faster for raw code search or inventory
+* Minimize questions; add labeled assumptions with explicit risks unless critical blockers
+* Define acceptance criteria, test strategy (unit/integration/snapshots), and rollback
+* Call out if breaking changes/backward compatibility are required
+* Draw minimal diagrams only when they disambiguate design; use the output style native to the chosen agentic tool
+* Represent the plan in the PR description as a checklist with acceptance criteria
 
 ### BUILD MODE
 
-Deterministic, minimal diffs:
+Minimal, reversible diffs:
 
-* Execute implementation steps in the order specified by the plan.
-* Keep changes small and reversible; update tests alongside code.
-* Prefer stable, community-reviewed libraries; follow upstream install docs; integrate latest stable, then lock with the ecosystem’s lockfile (e.g., `uv` for Python). ([Docker Documentation][2])
-* For multi-file edits: use agentic batch edits when available; otherwise use non-interactive system tools (grep/rg + sed/awk + ctags) to refactor safely at scale. ([GitHub][3])
+* Execute plan steps in order; update tests with code in the same change
+* Prefer stable, community-reviewed libraries; follow upstream install docs; integrate latest stable, then lock with the ecosystem’s lockfile
+* Multi-file edits: use agentic batch edits; if unavailable use non-interactive pipelines (search → filter → edit → verify) with `rg/find/xargs/sed/awk` or PowerShell equivalents
+* Keep edits scoped; avoid opportunistic refactors unless they remove risk or unlock the task
 
 ### TEST MODE
 
-Ensure all implemented changes are covered:
+Coverage that matters:
 
-* Unit tests for utilities; integration tests for workflows;
-* Prefer real fixtures/assets over mocks; generate realistic fixtures when real data is unavailable.
-* Treat performance/memory budgets as tests where feasible.
-* Ensure features are covered with happy paths, and edge cases.
+* Unit tests for utilities; integration for workflows; snapshot/golden tests for binaries with tolerance windows
+* Prefer real fixtures/assets; otherwise generate realistic fixtures
+* Treat performance and memory ceilings as tests where feasible
+* Ensure happy paths and representative edge cases are covered
 
 ### VERIFY MODE
 
-Post-change checks before merge:
+Pre-merge gates:
 
-* Build, linting, formatting tools pass.
-* Smoke tests pass; CI green on supported OS/toolchains; artifacts produced for review.
-* Container images (if any) built via multi-stage Dockerfiles; final images minimal, non-root where possible. ([Docker Documentation][4])
+* Build/lint/format pass; smoke tests green; CI green across supported OS/toolchains
+* If containers are used: multi-stage builds, minimal runtime image, non-root where possible
 
 ### SELF-REFLECT MODE
 
-Confirm the change satisfies objectives and acceptance criteria, adheres to this contract, and leaves no dead code or stale comments. Note residual risks and follow-ups in the PR.
-
-End of a plan/task do a high level summary what was done with just enough details.
+Confirm objectives/acceptance criteria met, diffs are scoped and reversible, no dead code or stale comments. Summarize changes briefly and record follow-ups in the PR.
 
 ---
 
 ## Tooling Policy
 
-**Agentic (primary in Plan/Build)**
+### Agentic (primary in Plan/Build)
 
-* Your code assistant of choice for project-wide refactors and explanations (keep loops short, checkpoint often).
+* Code assistant with project memory and batch edit support (e.g., Cody/Claude Code). Keep loops short; checkpoint often
 
-**System (adjacent/fallback)**
+### System (adjacent/fallback)
 
-* ripgrep (`rg`) for fast, gitignore-aware search. ([GitHub][3])
-* fzf for interactive filtering/selection. ([GitHub][5])
-* grep for ripgrep fallback, to find references.
-* gnu find, to find files.
-* ls to list directories of multiple files.
+**Cross-platform search / index**
 
-Useful commands:
+* `rg` (ripgrep): fast, gitignore-aware search
+* `fd`: friendly `find`
+* `ctags` (Universal Ctags): tag index for editors/CLI jumps
+* `fzf`: interactive filtering
+
+**POSIX/GNU processing**
+
+* `find`, `xargs`, `parallel` (GNU Parallel)
+* `sed`, `awk` (gawk), `cut`, `tr`, `sort -u`, `uniq`, `comm`, `paste`
+* `grep -RIn` as a fallback when `rg` is unavailable
+* `jq` / `yq` for JSON/YAML
+* `entr` for “on change, run …”
+* `diff -u`, `patch` for generating/applying surgical changes
+
+**Windows equivalents**
+
+* PowerShell: `Get-ChildItem`, `Select-String`, `ForEach-Object`, `Measure-Object`, `Set-Content`
+* Package managers: `winget`, `choco`
+* UNIX toolchains via MSYS2 or WSL when needed
+
+**Native build acceleration**
+
+* `ccache` / `sccache`, and `ninja` where applicable
+
+**Reference one-liners**
 
 ```bash
-rg -n --no-messages 'TODO|FIXME|HACK'
-rg -n --stats -S 'class |struct |interface |def ' -g '!**/vendor/**'
-ctags -R -f .tags .
+# enumerate TODOs and risky markers
+rg -n --no-messages 'TODO|FIXME|HACK|XXX'
+
+# quick API inventory (tune per language)
+rg -n --stats -S 'class |struct |interface |trait |def |fn ' -g '!**/vendor/**'
+
+# safe batch edit skeleton
+rg -l 'old_api' | xargs -r sed -i 's/old_api/new_api/g'
 ```
 
 ---
 
 ## Build & Containers
 
-Expose canonical dev/build/test commands in the root `README`. For containers, use multi-stage Dockerfiles to keep runtime images small and reduce attack surface; copy only required artifacts into the final image. ([Docker Documentation][2])
+Expose canonical dev/build/test commands in `README`. Use multi-stage Dockerfiles; copy only required artifacts into the final image; run as non-root when possible.
 
 ---
 
@@ -107,84 +132,91 @@ Expose canonical dev/build/test commands in the root `README`. For containers, u
 
 **Primary language**
 
-* Enforce the ecosystem’s standard style and formatter. Keep linters fast. Public APIs are typed or interface-annotated.
-* Promote for best practices.
-* Tests: unit for utilities; integration for workflows;
+* Enforce the ecosystem’s formatter/linter; keep checks fast
+* Public APIs typed or interface-annotated, clear, simple, modular, stable.
+* Prefer simple, composable, “boring” patterns; add abstraction only when it reduces net complexity
 
-**Code Guidelines**
+**Design Patterns**
+* Use a KISS/YAGNI/goldielocks approach.
+* Keep a balanced use of the remaining Software Engineering Patterns, but reevalute the previous directives to weight them.
+* Lean on clean, modular, organic, easy to use contracts. Promote Composing versus Inheritance (goldielocks).
 
-* Keep changes clean, modular, avoid complexity, organic, easy to read/understand/use.
-* Promote patterns, but don't over do it, use a goldielocks approach, when it best suits, else promote simplicity and avoid complexity.
+** MCPs usage **
+* try to find and use all mcp available tools.
+* If the context7 MCP is available, Always use context7 when I need code generation, setup or configuration steps, or library/API documentation. This means you should automatically use the Context7 MCP tools to resolve library id and get library docs without me having to explicitly ask.
+* If serena is available, reads its instructions, and try to activate the project and use its tools.
 
 **Shell**
 
-* `set -euo pipefail`; trap errors; keep shell thin; prefer the primary language for logic.
-* Promote the usage of functions to perform logic
+* `set -euo pipefail`; use functions; keep logic minimal
 
 **Make**
 
-* Idempotent targets; explicit inputs/outputs; minimal `.PHONY`.
-* Try to have best makefile practices, all/build/test/clean
+* Idempotent targets; explicit inputs/outputs; minimal `.PHONY`
+* Provide `all`, `build`, `test`, `lint`, `fmt`, `clean`, `package`, `verify`
 
 **Pipelines**
 
-* Idempotent steps, pre/post validation, deterministic ordering, cross-platform behavior, resumable design (state files as needed).
+* Idempotent steps; pre/post validation; deterministic ordering; cross-platform; resumable via lightweight state files when helpful
 
 **Prose**
 
-* Professional, concise. No emojis.
+* Professional, concise, human. No emojis or decorative styling
 
 ---
 
 ## Dependencies and Locking
 
-Adopt → lock → verify.
-
-* Use the platform’s lockfile and reproducible install. Example for Python via `uv`:
-
-```bash
-uv pip compile pyproject.toml -o requirements.lock
-uv pip sync requirements.lock
-```
-
-([Docker Documentation][2])
+Adopt → lock → verify. Use the platform’s lockfile and reproducible installs (example for Python with `uv` shown elsewhere). Prefer maintained, popular libs; document upgrade/removal paths. Validate you’re on a stable release unless pinned for a reason.
 
 ---
 
 ## Testing & CI
 
-* Run unit and integration suites on each feature implementation; add property-based tests where useful; enforce performance/memory budgets when stability matters.
-* CI: matrix across relevant OS/toolchains; cache dependency/compile artifacts (e.g., ccache/sccache); publish build artifacts for review. ([Docker Documentation][4])
+* Unit + integration on every feature; add property-based tests where it pays off
+* CI matrix across relevant OS/toolchains; cache dependencies and compile artifacts; publish build artifacts for review
+* Fail fast, surface logs clearly; keep pipelines under practical time budgets
 
 ---
 
 ## Change Management
 
-* Small, single-concern commits and PRs.
-* Conventional Commits for messages; link tasks in the PR checklist; include repro steps, risks, and evidence. ([conventionalcommits.org][7])
+* Small, single-concern commits and PRs
+* Conventional Commits; link tasks in the PR checklist
+* Include repro steps, risks, evidence (test output, logs, screenshots where relevant)
 
 ---
 
 ## Security
 
-* No network writes without explicit approval.
-* Validate all external inputs; sanitize paths; avoid unsafe deserialization.
-* Secret scanning in CI; minimal runtime images; prefer non-root execution. ([Docker Documentation][4])
-* Validate/Review dependencies are latest stable when applicable.
+* No network writes without explicit approval
+* Validate/sanitize external inputs; avoid unsafe deserialization; guard file paths
+* Secret scanning in CI; minimal runtime images; prefer non-root execution
+* Periodically audit dependencies; prefer latest stable when safe
 
-## Documentation
-* Keep documentation up to date, clean, consise, professional, and LLM friendly.
-* Ensure documentation is always up-to-date with all changes implementation in the application.
-* Review if the documentation is up to date/relevant.
+---
 
+## Project-Specific Information for Agents
+
+### Repository Overview
+This project is a modern C++20 tool to convert Duke Nukem 3D ART files to PNG, TGA, or BMP images.
+
+### Key Components
+- `cli/main.cpp` - Command line interface
+- `include/extractor_api.hpp` - Main library API
+- `src/` - Implementation files
+- `tests/` - Test suite using doctest
+
+### Build Commands
+```bash
+make all          # Build everything
+make build        # Build release version
+make debug        # Build debug version
+make test         # Run tests
 ```
-::contentReference[oaicite:13]{index=13}
-```
 
-[1]: https://ctags.io/?utm_source=chatgpt.com "Home · Universal Ctags"
-[2]: https://docs.docker.com/build/building/multi-stage/?utm_source=chatgpt.com "Multi-stage builds"
-[3]: https://github.com/BurntSushi/ripgrep?utm_source=chatgpt.com "ripgrep recursively searches directories for a regex pattern ..."
-[4]: https://docs.docker.com/build/building/best-practices/?utm_source=chatgpt.com "Building best practices"
-[5]: https://github.com/junegunn/fzf?utm_source=chatgpt.com "junegunn/fzf: :cherry_blossom: A command-line fuzzy finder"
-[6]: https://github.com/universal-ctags/ctags?utm_source=chatgpt.com "universal-ctags/ctags: A maintained ctags implementation"
-[7]: https://www.conventionalcommits.org/en/v1.0.0/?utm_source=chatgpt.com "Conventional Commits"
+### Project Architecture
+- Zero-copy processing with ArtView and ImageView structures
+- RAII for resource management
+- std::filesystem for path handling
+- Modern C++20 features throughout

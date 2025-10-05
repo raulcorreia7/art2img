@@ -44,12 +44,12 @@ bool ArtFile::read_header() {
 
   // Extract values from buffer (like original art2tga)
   header_.version = buffer[0] | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24);
-  // num_tiles field is usually ignored, but we need to read it to match original format
-  (void)(buffer[4] | (buffer[5] << 8) | (buffer[6] << 16) | (buffer[7] << 24));
+  uint32_t num_tiles_from_file =
+      buffer[4] | (buffer[5] << 8) | (buffer[6] << 16) | (buffer[7] << 24);
   header_.start_tile = buffer[8] | (buffer[9] << 8) | (buffer[10] << 16) | (buffer[11] << 24);
   header_.end_tile = buffer[12] | (buffer[13] << 8) | (buffer[14] << 16) | (buffer[15] << 24);
 
-  // Calculate actual number of tiles
+  // Calculate num_tiles based on start and end tiles (as per test expectations)
   header_.num_tiles = header_.end_tile - header_.start_tile + 1;
 
   if (!header_.is_valid()) {
@@ -77,12 +77,12 @@ bool ArtFile::read_header_from_memory() {
 
   // Extract values from buffer (like original art2tga)
   header_.version = buffer[0] | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24);
-  // num_tiles field is usually ignored, but we need to read it to match original format
-  (void)(buffer[4] | (buffer[5] << 8) | (buffer[6] << 16) | (buffer[7] << 24));
+  uint32_t num_tiles_from_file =
+      buffer[4] | (buffer[5] << 8) | (buffer[6] << 16) | (buffer[7] << 24);
   header_.start_tile = buffer[8] | (buffer[9] << 8) | (buffer[10] << 16) | (buffer[11] << 24);
   header_.end_tile = buffer[12] | (buffer[13] << 8) | (buffer[14] << 16) | (buffer[15] << 24);
 
-  // Calculate actual number of tiles
+  // Calculate num_tiles based on start and end tiles (as per test expectations)
   header_.num_tiles = header_.end_tile - header_.start_tile + 1;
 
   if (!header_.is_valid()) {
