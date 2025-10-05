@@ -335,15 +335,16 @@ ProcessingResult process_with_mode(const ProcessingOptions& options,
 }
 
 // Updated process_single_art_file using composable architecture
-bool process_single_art_file(const ProcessingOptions& options, const std::string& art_file_path,
-                             const std::string& output_subdir, bool is_directory_mode) {
+ProcessingResult process_single_art_file(const ProcessingOptions& options, const std::string& art_file_path,
+                                         const std::string& output_subdir, bool is_directory_mode) {
   // For now, always use sequential mode
-  auto result = process_with_mode(options, art_file_path, output_subdir, is_directory_mode, false);
-  return result.success;
+  return process_with_mode(options, art_file_path, output_subdir, is_directory_mode, false);
 }
 
 /// Process all ART files in a directory
-bool process_art_directory(const CliOptions& cli_options) {
+CliProcessResult process_art_directory(const CliOptions& cli_options) {
+  CliProcessResult cli_result;
+
   if (!cli_options.quiet) {
     art2img::ColorGuard cyan(art2img::ColorOutput::CYAN);
     std::cout << "Processing ART files in directory: " << cli_options.input_path
@@ -382,19 +383,27 @@ bool process_art_directory(const CliOptions& cli_options) {
   options.dump_animation = !cli_options.no_anim;
   options.merge_animation_data = cli_options.merge_anim;
 
-  // Process each ART file
-  int processed_files = 0;
-  int successful_files = 0;
+  // Collect all ART files
   std::vector<std::string> art_files;
-
-  // First, collect all ART files
-  for (const auto& entry : std::filesystem::directory_iterator(cli_options.input_path)) {
-    if (entry.is_regular_file()) {
-      std::string extension = entry.path().extension().string();
-      if (extension == ".art" || extension == ".ART") {
-        art_files.push_back(entry.path().string());
+  try {
+    for (const auto& entry : std::filesystem::directory_iterator(cli_options.input_path)) {
+      if (entry.is_regular_file()) {
+        std::string extension = entry.path().extension().string();
+        if (extension == ".art" || extension == ".ART") {
+          art_files.push_back(entry.path().string());
+        }
       }
     }
+  } catch (const std::filesystem::filesystem_error& e) {
+    cli_result.error_message = std::string("Failed to read directory '") + cli_options.input_path +
+                               "': " + e.what();
+    return cli_result;
+  }
+
+  if (art_files.empty()) {
+    cli_result.error_message =
+        std::string("No ART files found in directory '") + cli_options.input_path + "'.";
+    return cli_result;
   }
 
   if (!cli_options.quiet) {
@@ -404,8 +413,12 @@ bool process_art_directory(const CliOptions& cli_options) {
   }
 
   // Process each ART file
+  size_t processed_files = 0;
+  size_t successful_files = 0;
+  std::string first_error_message;
+
   for (const auto& art_file : art_files) {
-    processed_files++;
+    ++processed_files;
     if (!cli_options.quiet) {
       art2img::ColorGuard cyan(art2img::ColorOutput::CYAN);
       std::cout << "Processing file " << processed_files << "/" << art_files.size() << ": "
@@ -413,10 +426,17 @@ bool process_art_directory(const CliOptions& cli_options) {
                 << std::endl;
     }
 
-    // Use filename without extension as subdirectory
-    std::string subdir = std::filesystem::path(art_file).stem().string();
-    if (process_single_art_file(options, art_file, subdir, true)) {
-      successful_files++;
+    const std::string subdir = std::filesystem::path(art_file).stem().string();
+    auto file_result = process_single_art_file(options, art_file, subdir, true);
+
+    if (file_result.success) {
+      ++successful_files;
+    } else if (first_error_message.empty()) {
+      if (!file_result.error_message.empty()) {
+        first_error_message = file_result.error_message;
+      } else {
+        first_error_message = std::string("Failed to process '") + art_file + "'.";
+      }
     }
   }
 
@@ -434,11 +454,27 @@ bool process_art_directory(const CliOptions& cli_options) {
     }
   }
 
-  return processed_files > 0 && successful_files == processed_files;
+  cli_result.success = (processed_files > 0) && (successful_files == processed_files);
+
+  if (!cli_result.success) {
+    if (successful_files == 0) {
+      cli_result.error_message = first_error_message.empty()
+                                    ? std::string("Failed to process any ART files in directory '") +
+                                          cli_options.input_path + "'."
+                                    : first_error_message;
+    } else {
+      std::ostringstream oss;
+      oss << "Processed " << successful_files << " of " << processed_files
+          << " ART files with errors.";
+      cli_result.error_message = first_error_message.empty() ? oss.str() : first_error_message;
+    }
+  }
+
+  return cli_result;
 }
 
 /// Wrapper function to call process_single_art_file with command line options
-bool process_single_art_file_wrapper(const CliOptions& cli_options) {
+CliProcessResult process_single_art_file_wrapper(const CliOptions& cli_options) {
   ProcessingOptions options;
   options.palette_file = cli_options.palette_file;
   options.output_dir = cli_options.output_dir;
@@ -448,5 +484,24 @@ bool process_single_art_file_wrapper(const CliOptions& cli_options) {
   options.dump_animation = !cli_options.no_anim;
   options.merge_animation_data = cli_options.merge_anim;
 
-  return process_single_art_file(options, cli_options.input_path, "", false);
+  auto processing_result = process_single_art_file(options, cli_options.input_path, "", false);
+
+  CliProcessResult cli_result;
+  cli_result.success = processing_result.success;
+
+  if (!processing_result.success) {
+    if (!processing_result.error_message.empty()) {
+      cli_result.error_message = processing_result.error_message;
+    } else if (processing_result.failed_count > 0) {
+      std::ostringstream oss;
+      oss << "Processed " << processing_result.processed_count << " tile(s) with "
+          << processing_result.failed_count << " failure(s) in '" << cli_options.input_path << "'.";
+      cli_result.error_message = oss.str();
+    } else {
+      cli_result.error_message =
+          std::string("Failed to process ART file '") + cli_options.input_path + "'.";
+    }
+  }
+
+  return cli_result;
 }
