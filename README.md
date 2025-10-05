@@ -83,9 +83,14 @@ make all          # Build for Linux (default)
 make build        # Build for Linux
 make windows      # Cross-compile for Windows x64
 make windows-x86  # Cross-compile for Windows x86
+make linux-release       # Release build + tests for Linux
+make windows-release     # Release build for Windows x64
+make windows-x86-release # Release build for Windows x86
 make test         # Run tests on Linux
-make test-windows # Test Windows build (requires Wine)
+make test-windows # Test Windows x64 build (requires Wine)
+make test-windows-x86 # Test Windows x86 build (requires Wine)
 make clean        # Clean build directory
+make doctor       # Check host dependencies
 ```
 
 ## 📚 Documentation

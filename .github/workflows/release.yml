@@ -57,7 +57,7 @@ jobs:
 
       - name: Extract version
         run: |
-          VERSION=$(grep "VERSION = " Makefile | cut -d' ' -f3 | tr -d '\r\n')
+          VERSION=$(cmake -P cmake/print_version.cmake)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Build version: $VERSION"
 
