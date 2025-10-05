@@ -12,6 +12,7 @@ target_sources(art2img_tests
     test_extractor_api.cpp
     test_functionality.cpp
     test_cli_options.cpp
+    test_cli_processing_order.cpp
     test_integration.cpp
     test_palette.cpp
     test_cli_error_messages.cpp

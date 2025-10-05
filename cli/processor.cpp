@@ -1,5 +1,6 @@
 #include "processor.hpp"
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -408,6 +409,8 @@ CliProcessResult process_art_directory(const CliOptions& cli_options) {
                                "': " + e.what();
     return cli_result;
   }
+
+  std::sort(art_files.begin(), art_files.end());
 
   if (art_files.empty()) {
     cli_result.error_message =
