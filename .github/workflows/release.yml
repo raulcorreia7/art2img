@@ -1,9 +1,15 @@
 name: Build and Release
 
 on:
+  push:
+    tags:
+      - 'v*'
   release:
     types: [published]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   # Build job - run on release
@@ -11,8 +17,22 @@ jobs:
     name: Build for ${{ matrix.target }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         target: [linux-x86_64, windows-x86, windows-x86_64]
+        include:
+          - target: linux-x86_64
+            setup: |
+              sudo apt-get update
+              sudo apt-get install -y build-essential clang lld pkg-config
+          - target: windows-x86
+            setup: |
+              sudo apt-get update
+              sudo apt-get install -y build-essential g++-mingw-w64-i686 pkg-config zip
+          - target: windows-x86_64
+            setup: |
+              sudo apt-get update
+              sudo apt-get install -y build-essential g++-mingw-w64-x86-64 pkg-config zip
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -40,20 +60,8 @@ jobs:
           restore-keys: |
             build-${{ runner.os }}-${{ matrix.target }}-
 
-      - name: Install cross-compilation toolchain
-        run: |
-          sudo apt-get update
-          case "${{ matrix.target }}" in
-            linux-x86_64)
-              sudo apt-get install -y build-essential clang lld pkg-config
-              ;;
-            windows-x86)
-              sudo apt-get install -y build-essential g++-mingw-w64-i686 pkg-config zip
-              ;;
-            windows-x86_64)
-              sudo apt-get install -y build-essential g++-mingw-w64-x86-64 pkg-config zip
-              ;;
-          esac
+      - name: Install build toolchain
+        run: ${{ matrix.setup }}
 
       - name: Extract version
         run: |
@@ -159,10 +167,20 @@ jobs:
         with:
           path: artifacts/
 
+      - name: Determine version
+        run: |
+          VERSION=$(cmake -P cmake/print_version.cmake)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          TAG_SOURCE="${GITHUB_REF_NAME:-${{ github.event.release.tag_name || '' }}}"
+          if [ -z "$TAG_SOURCE" ]; then
+            TAG_SOURCE="$VERSION"
+          fi
+          echo "TAG_NAME=$TAG_SOURCE" >> $GITHUB_ENV
+
       - name: Generate release notes
         run: |
           cat > release-notes.md << EOF
-          # art2img ${{ github.event.release.tag_name }}
+          # art2img ${{ env.TAG_NAME }}
           
           Multi-threaded ART to image converter for Duke Nukem 3D assets with support for multiple platforms and architectures.
           
@@ -204,7 +222,7 @@ jobs:
           EOF
 
       - name: Upload release assets
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             artifacts/**/*.tar.gz
@@ -212,5 +230,6 @@ jobs:
           body_path: release-notes.md
           draft: false
           prerelease: ${{ contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
+          tag_name: ${{ env.TAG_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
