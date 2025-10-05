@@ -13,6 +13,10 @@ target_sources(art2img_tests
     test_integration.cpp
     test_palette.cpp
     test_transparency.cpp
+    test_transparency_files.cpp
+    test_batch_extraction_files.cpp
+    test_full_extraction.cpp
+    test_output_directories.cpp
 )
 
 # Set test executable properties
