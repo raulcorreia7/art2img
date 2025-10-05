@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  # CI build and test job
-  build-and-test:
-    name: Build and Test on Ubuntu
+  # Linux build and test
+  linux-build:
+    name: Linux Build and Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -18,18 +18,35 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Cache CPM dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/CPM
+            ~/AppData/Local/Temp/CPM
+          key: cpm-${{ runner.os }}-linux-${{ hashFiles('**/CMakeLists.txt') }}
+          restore-keys: |
+            cpm-${{ runner.os }}-linux-
+
+      - name: Cache build files
+        uses: actions/cache@v3
+        with:
+          path: |
+            build/**
+            !build/**/CMakeCache.txt
+            !build/**/CMakeFiles/**
+          key: build-${{ runner.os }}-linux-${{ github.sha }}
+          restore-keys: |
+            build-${{ runner.os }}-linux-
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
-            g++-mingw-w64-i686 \
-            g++-mingw-w64-x86-64 \
             clang \
             lld \
-            pkg-config \
-            zip \
-            wine
+            pkg-config
 
       - name: Build Linux project
         run: |
@@ -39,6 +56,47 @@ jobs:
         run: |
           make test
 
+  # Windows x86 build and test
+  windows-x86-build:
+    name: Windows x86 Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache CPM dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/CPM
+            ~/AppData/Local/Temp/CPM
+          key: cpm-${{ runner.os }}-win32-${{ hashFiles('**/CMakeLists.txt') }}
+          restore-keys: |
+            cpm-${{ runner.os }}-win32-
+
+      - name: Cache build files
+        uses: actions/cache@v3
+        with:
+          path: |
+            build/**
+            !build/**/CMakeCache.txt
+            !build/**/CMakeFiles/**
+          key: build-${{ runner.os }}-win32-${{ github.sha }}
+          restore-keys: |
+            build-${{ runner.os }}-win32-
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            g++-mingw-w64-i686 \
+            pkg-config \
+            zip \
+            wine
+
       - name: Build Windows x86 project
         run: |
           make windows-x86
@@ -46,6 +104,47 @@ jobs:
       - name: Test Windows x86 project
         run: |
           make test-windows-x86
+
+  # Windows x64 build and test
+  windows-x64-build:
+    name: Windows x64 Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache CPM dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/CPM
+            ~/AppData/Local/Temp/CPM
+          key: cpm-${{ runner.os }}-win64-${{ hashFiles('**/CMakeLists.txt') }}
+          restore-keys: |
+            cpm-${{ runner.os }}-win64-
+
+      - name: Cache build files
+        uses: actions/cache@v3
+        with:
+          path: |
+            build/**
+            !build/**/CMakeCache.txt
+            !build/**/CMakeFiles/**
+          key: build-${{ runner.os }}-win64-${{ github.sha }}
+          restore-keys: |
+            build-${{ runner.os }}-win64-
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            g++-mingw-w64-x86-64 \
+            pkg-config \
+            zip \
+            wine
 
       - name: Build Windows x64 project
         run: |
