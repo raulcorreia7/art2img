@@ -24,22 +24,22 @@ jobs:
           - target: linux-x86_64
             setup: |
               sudo apt-get update
-              sudo apt-get install -y build-essential clang lld pkg-config
+              sudo apt-get install -y build-essential clang lld pkg-config cmake ninja-build
           - target: windows-x86
             setup: |
               sudo apt-get update
-              sudo apt-get install -y build-essential g++-mingw-w64-i686 pkg-config zip
+              sudo apt-get install -y build-essential g++-mingw-w64-i686 pkg-config cmake ninja-build zip
           - target: windows-x86_64
             setup: |
               sudo apt-get update
-              sudo apt-get install -y build-essential g++-mingw-w64-x86-64 pkg-config zip
+              sudo apt-get install -y build-essential g++-mingw-w64-x86-64 pkg-config cmake ninja-build zip
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Cache CPM dependencies
+      - name: Setup CPM dependencies cache
         uses: actions/cache@v3
         with:
           path: |
@@ -49,14 +49,14 @@ jobs:
           restore-keys: |
             cpm-${{ runner.os }}-${{ matrix.target }}-
 
-      - name: Cache build files
+      - name: Setup build cache
         uses: actions/cache@v3
         with:
           path: |
-            build/**
-            !build/**/CMakeCache.txt
-            !build/**/CMakeFiles/**
-          key: build-${{ runner.os }}-${{ matrix.target }}-${{ github.sha }}
+            build/**/CMakeCache.txt
+            build/**/CMakeFiles/**
+            build/**/cmake_install.cmake
+          key: build-${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('**/CMakeLists.txt', '**/src/**', '**/include/**', '**/cli/**') }}
           restore-keys: |
             build-${{ runner.os }}-${{ matrix.target }}-
 
@@ -69,50 +69,77 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Build version: $VERSION"
 
-      - name: Build binaries
+      - name: Configure and build binaries
         run: |
           case "${{ matrix.target }}" in
             linux-x86_64)
-              make linux-release
-              BINARY_DIR="build/linux-release"
-              BINARY_SUFFIX=""
-              PACKAGE_EXT="tar.gz"
+              cmake -B build/linux \
+                    -DCMAKE_BUILD_TYPE=Release \
+                    -DBUILD_TESTS=OFF \
+                    -DBUILD_DIAGNOSTIC=ON \
+                    -DBUILD_SHARED_LIBS=OFF \
+                    -G Ninja
+              cmake --build build/linux --parallel $(nproc)
+              BINARY_DIR="build/linux"
               ;;
             windows-x86)
-              make windows-x86-release
-              BINARY_DIR="build/windows-x86-release"
-              BINARY_SUFFIX=".exe"
-              PACKAGE_EXT="zip"
+              cmake -B build/windows-x86 \
+                    -DCMAKE_BUILD_TYPE=Release \
+                    -DCMAKE_TOOLCHAIN_FILE="cmake/windows-x86-toolchain.cmake" \
+                    -DBUILD_TESTS=OFF \
+                    -DBUILD_DIAGNOSTIC=ON \
+                    -DBUILD_SHARED_LIBS=OFF \
+                    -G "MinGW Makefiles"
+              cmake --build build/windows-x86 --parallel
+              BINARY_DIR="build/windows-x86"
               ;;
             windows-x86_64)
-              make windows-release
-              BINARY_DIR="build/windows-release"
-              BINARY_SUFFIX=".exe"
-              PACKAGE_EXT="zip"
+              cmake -B build/windows-x64 \
+                    -DCMAKE_BUILD_TYPE=Release \
+                    -DCMAKE_TOOLCHAIN_FILE="cmake/windows-toolchain.cmake" \
+                    -DBUILD_TESTS=OFF \
+                    -DBUILD_DIAGNOSTIC=ON \
+                    -DBUILD_SHARED_LIBS=OFF \
+                    -G "MinGW Makefiles"
+              cmake --build build/windows-x64 --parallel
+              BINARY_DIR="build/windows-x64"
               ;;
           esac
           
           echo "BINARY_DIR=$BINARY_DIR" >> $GITHUB_ENV
-          echo "BINARY_SUFFIX=$BINARY_SUFFIX" >> $GITHUB_ENV
-          echo "PACKAGE_EXT=$PACKAGE_EXT" >> $GITHUB_ENV
 
       - name: Verify binaries
         run: |
-          if [[ "${{ matrix.target }}" == "linux-x86_64" ]]; then
-            file ${{ env.BINARY_DIR }}/bin/art2img | grep -q "ELF" && echo "✓ Linux binary verified"
-            file ${{ env.BINARY_DIR }}/bin/art2img_diagnostic | grep -q "ELF" && echo "✓ Linux diagnostic verified"
-          else
-            file ${{ env.BINARY_DIR }}/bin/art2img.exe | grep -q "PE" && echo "✓ Windows binary verified"
-            file ${{ env.BINARY_DIR }}/bin/art2img_diagnostic.exe | grep -q "PE" && echo "✓ Windows diagnostic verified"
-          fi
+          case "${{ matrix.target }}" in
+            linux-x86_64)
+              file ${{ env.BINARY_DIR }}/bin/art2img | grep -q "ELF" && echo "Linux binary verified"
+              file ${{ env.BINARY_DIR }}/bin/art2img_diagnostic | grep -q "ELF" && echo "Linux diagnostic verified"
+              ;;
+            *)
+              file ${{ env.BINARY_DIR }}/bin/art2img.exe | grep -q "PE" && echo "Windows binary verified"
+              file ${{ env.BINARY_DIR }}/bin/art2img_diagnostic.exe | grep -q "PE" && echo "Windows diagnostic verified"
+              ;;
+          esac
 
       - name: Create package
         run: |
           mkdir -p release/${{ matrix.target }}
           
           # Copy binaries
-          cp ${{ env.BINARY_DIR }}/bin/art2img${{ env.BINARY_SUFFIX }} release/${{ matrix.target }}/art2img${{ env.BINARY_SUFFIX }}
-          cp ${{ env.BINARY_DIR }}/bin/art2img_diagnostic${{ env.BINARY_SUFFIX }} release/${{ matrix.target }}/art2img_diagnostic${{ env.BINARY_SUFFIX }}
+          case "${{ matrix.target }}" in
+            linux-x86_64)
+              cp ${{ env.BINARY_DIR }}/bin/art2img release/${{ matrix.target }}/art2img
+              cp ${{ env.BINARY_DIR }}/bin/art2img_diagnostic release/${{ matrix.target }}/art2img_diagnostic
+              BINARY_SUFFIX=""
+              PACKAGE_EXT="tar.gz"
+              ;;
+            *)
+              cp ${{ env.BINARY_DIR }}/bin/art2img.exe release/${{ matrix.target }}/art2img.exe
+              cp ${{ env.BINARY_DIR }}/bin/art2img_diagnostic.exe release/${{ matrix.target }}/art2img_diagnostic.exe
+              BINARY_SUFFIX=".exe"
+              PACKAGE_EXT="zip"
+              ;;
+          esac
           
           # Copy documentation
           cp README.md release/${{ matrix.target }}/
@@ -121,16 +148,16 @@ jobs:
           # Create platform-specific README
           cat > release/${{ matrix.target }}/README.txt << EOF
           art2img ${{ env.VERSION }} - ${{ matrix.target }}
-          
+
           Multi-threaded ART to image converter for Duke Nukem 3D assets.
-          
+
           Binaries:
-          - art2img${{ env.BINARY_SUFFIX }} - Main converter
-          - art2img_diagnostic${{ env.BINARY_SUFFIX }} - Diagnostic tool
-          
+          - art2img${BINARY_SUFFIX} - Main converter
+          - art2img_diagnostic${BINARY_SUFFIX} - Diagnostic tool
+
           Quick Start:
           ${{ matrix.target == 'linux-x86_64' && './art2img' || 'art2img.exe' }} -f png -p PALETTE.DAT TILES000.ART
-          
+
           See README.md for full documentation.
           EOF
           
@@ -143,7 +170,7 @@ jobs:
             cd ../..
           fi
           
-          echo "Package created: art2img-${{ matrix.target }}-${{ env.VERSION }}.${{ env.PACKAGE_EXT }}"
+          echo "Package created: art2img-${{ matrix.target }}-${{ env.VERSION }}.${PACKAGE_EXT}"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -153,11 +180,108 @@ jobs:
             art2img-${{ matrix.target }}-*.${{ env.PACKAGE_EXT }}
           retention-days: 30
 
+  # macOS build and release
+  macos-build:
+    name: Build for macOS
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup CPM dependencies cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/CPM
+            ~/AppData/Local/Temp/CPM
+          key: cpm-${{ runner.os }}-macos-${{ hashFiles('**/CMakeLists.txt') }}
+          restore-keys: |
+            cpm-${{ runner.os }}-macos-
+
+      - name: Setup build cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            build/**/CMakeCache.txt
+            build/**/CMakeFiles/**
+            build/**/cmake_install.cmake
+          key: build-${{ runner.os }}-macos-${{ hashFiles('**/CMakeLists.txt', '**/src/**', '**/include/**', '**/cli/**') }}
+          restore-keys: |
+            build-${{ runner.os }}-macos-
+
+      - name: Install dependencies
+        run: |
+          brew install cmake ninja
+
+      - name: Configure CMake
+        run: |
+          cmake -B build/macos \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DBUILD_TESTS=OFF \
+                -DBUILD_DIAGNOSTIC=ON \
+                -DBUILD_SHARED_LIBS=OFF \
+                -G Ninja
+
+      - name: Build macOS binaries
+        run: |
+          cmake --build build/macos --parallel $(sysctl -n hw.ncpu)
+
+      - name: Verify binaries
+        run: |
+          file build/macos/bin/art2img | grep -q "Mach-O" && echo "macOS binary verified"
+          file build/macos/bin/art2img_diagnostic | grep -q "Mach-O" && echo "macOS diagnostic verified"
+
+      - name: Create macOS package
+        run: |
+          VERSION=$(cmake -P cmake/print_version.cmake)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          
+          mkdir -p release/macos-x86_64
+          
+          # Copy binaries
+          cp build/macos/bin/art2img release/macos-x86_64/art2img
+          cp build/macos/bin/art2img_diagnostic release/macos-x86_64/art2img_diagnostic
+          
+          # Copy documentation
+          cp README.md release/macos-x86_64/
+          cp LICENSE release/macos-x86_64/ 2>/dev/null || echo "No LICENSE file found"
+          
+          # Create platform-specific README
+          cat > release/macos-x86_64/README.txt << EOF
+          art2img $VERSION - macos-x86_64
+
+          Multi-threaded ART to image converter for Duke Nukem 3D assets.
+
+          Binaries:
+          - art2img - Main converter
+          - art2img_diagnostic - Diagnostic tool
+
+          Quick Start:
+          ./art2img -f png -p PALETTE.DAT TILES000.ART
+
+          See README.md for full documentation.
+          EOF
+          
+          # Create archive
+          tar -czf art2img-macos-x86_64-$VERSION.tar.gz -C release/macos-x86_64 .
+          
+          echo "Package created: art2img-macos-x86_64-$VERSION.tar.gz"
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: art2img-macos-x86_64
+          path: |
+            art2img-macos-x86_64-*.tar.gz
+          retention-days: 30
+
   # Release job - run on release
   release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, macos-build]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -181,42 +305,51 @@ jobs:
         run: |
           cat > release-notes.md << EOF
           # art2img ${{ env.TAG_NAME }}
-          
+
           Multi-threaded ART to image converter for Duke Nukem 3D assets with support for multiple platforms and architectures.
-          
-          ## 📥 Downloads
-          
+
+          ## Downloads
+
           ### Linux
           - **x86_64**: \`art2img-linux-x86_64-*.tar.gz\`
-          
-          ### Windows  
+
+          ### Windows
           - **x86**: \`art2img-windows-x86-*.zip\`
           - **x86_64**: \`art2img-windows-x86_64-*.zip\`
-          
-          ## 🚀 Installation
-          
+
+          ### macOS
+          - **x86_64**: \`art2img-macos-x86_64-*.tar.gz\`
+
+          ## Installation
+
           ### Linux
           \`\`\`bash
           tar -xzf art2img-linux-x86_64-*.tar.gz
           ./art2img --help
           \`\`\`
-          
+
           ### Windows
           \`\`\`powershell
           Expand-Archive art2img-windows-x86_64-*.zip
           .\art2img.exe --help
           \`\`\`
-          
-          ## ✅ Features
+
+          ### macOS
+          \`\`\`bash
+          tar -xzf art2img-macos-x86_64-*.tar.gz
+          ./art2img --help
+          \`\`\`
+
+          ## Features
           - Multi-threaded extraction
           - PNG and TGA output with alpha channel support
           - Animation data extraction
           - Cross-platform compatibility
           - Static binaries (no dependencies required)
-          
-          ## 🔧 Verification
+
+          ## Verification
           All binaries are statically linked and digitally verified. No additional dependencies required.
-          
+
           ---
           [Full Documentation](https://github.com/raulcorreia7/art2img)
           EOF
