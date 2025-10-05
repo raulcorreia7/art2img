@@ -23,15 +23,18 @@
 
 int main(int argc, char* argv[]) {
   try {
-    CliOptions cli_options;
     art2img::CliAppBuilder builder;
-    auto app = builder.build(cli_options);
 
     // Show help by default if no arguments provided
     if (argc == 1) {
-      std::cout << app->help();
+      CliOptions help_options;
+      auto help_app = builder.build(help_options);
+      std::cout << help_app->help();
       return 0;
     }
+
+    CliOptions cli_options;
+    auto app = builder.build(cli_options);
 
     CLI11_PARSE(*app, argc, argv);
 
