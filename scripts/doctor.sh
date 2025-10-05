@@ -9,48 +9,26 @@
 
 set -e
 
-# Colors for output
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
-readonly NC='\033[0m' # No Color
-
 # Logging functions
 log_info() {
-    echo -e "${BLUE}ℹ${NC} $1"
+    echo "[INFO] $1"
 }
 
 log_success() {
-    echo -e "${GREEN}✓${NC} $1"
+    echo "[OK] $1"
 }
 
 log_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
+    echo "[WARN] $1"
 }
 
 log_error() {
-    echo -e "${RED}✗${NC} $1"
+    echo "[ERROR] $1"
 }
 
 # Check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
-}
-
-# Check if a package is installed (Debian/Ubuntu)
-package_exists_debian() {
-    dpkg -l | grep -q "^ii  $1 "
-}
-
-# Check if a package is installed (RedHat/Fedora)
-package_exists_redhat() {
-    rpm -q "$1" >/dev/null 2>&1
-}
-
-# Check if a package is installed (Arch)
-package_exists_arch() {
-    pacman -Q "$1" >/dev/null 2>&1
 }
 
 # Detect OS distribution
@@ -335,8 +313,8 @@ show_installation_suggestions() {
 
 # Main function
 main() {
-    echo -e "${BLUE}art2img Doctor Script${NC}"
-    echo "======================"
+    echo "art2img Doctor Script"
+    echo "===================="
     echo "Checking system for art2img build dependencies..."
     echo
     
