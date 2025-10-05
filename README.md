@@ -120,6 +120,56 @@ make linux-release
 
 Both targets rebuild the project as needed so you can rely on them to catch regressions early.
 
+## Testing with Bats
+
+We provide comprehensive tests using the Bats testing framework. All legacy test scripts have been converted to Bats:
+
+```bash
+# Install Bats locally (recommended)
+./scripts/install_bats_local.sh
+
+# Run all Bats tests (with pretty output and verbose run)
+./scripts/run_bats_tests.sh
+```
+
+Alternative installation options:
+```bash
+# Install system-wide (requires sudo)
+# For Ubuntu/Debian: sudo apt-get install bats
+# For macOS: brew install bats-core
+```
+
+To run individual test files:
+```bash
+# With local installation
+./.bin/bats tests/bats/test_conversion.bats -p --verbose-run
+./.bin/bats tests/bats/test_transparency.bats -p --verbose-run
+./.bin/bats tests/bats/test_windows.bats -p --verbose-run
+./.bin/bats tests/bats/test_generic.bats -p --verbose-run
+./.bin/bats tests/bats/test_verify_windows.bats -p --verbose-run
+./.bin/bats tests/bats/test_comprehensive_transparency.bats -p --verbose-run
+
+# With system installation
+bats tests/bats/test_conversion.bats -p --verbose-run
+bats tests/bats/test_transparency.bats -p --verbose-run
+bats tests/bats/test_windows.bats -p --verbose-run
+bats tests/bats/test_generic.bats -p --verbose-run
+bats tests/bats/test_verify_windows.bats -p --verbose-run
+bats tests/bats/test_comprehensive_transparency.bats -p --verbose-run
+```
+
+Other output formats:
+```bash
+# TAP format
+./.bin/bats/bin/bats tests/bats/ -t
+
+# Pretty format only
+./.bin/bats/bin/bats tests/bats/ -p
+
+# Verbose run only
+./.bin/bats/bin/bats tests/bats/ --verbose-run
+```
+
 ## Documentation
 
 - [Building Instructions](BUILDING.md) - Detailed build guide
