@@ -51,7 +51,6 @@ private:
                                   const ArtFile::Tile& tile, const uint8_t* pixel_data,
                                   size_t pixel_data_size, const Options& options);
 
-
   // TGA operations
   static bool write_tga_to_file(const std::filesystem::path& filename, const Palette& palette,
                                 const ArtFile::Tile& tile, const uint8_t* pixel_data,
@@ -69,7 +68,6 @@ private:
   static bool write_bmp_to_memory(std::vector<uint8_t>& output, const Palette& palette,
                                   const ArtFile::Tile& tile, const uint8_t* pixel_data,
                                   size_t pixel_data_size, const Options& options);
-
 };
 
 }  // namespace art2img

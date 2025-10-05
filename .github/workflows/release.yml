@@ -40,18 +40,18 @@ jobs:
       - name: Build binaries
         run: |
           if [[ "${{ matrix.target }}" == "linux-x86_64" ]]; then
-            make linux-release
-            BINARY_DIR="build/linux-release"
+            make build
+            BINARY_DIR="build"
             BINARY_SUFFIX=""
             PACKAGE_EXT="tar.gz"
           elif [[ "${{ matrix.target }}" == "windows-x86" ]]; then
-            make windows-x86-release
-            BINARY_DIR="build/windows-x86-release"
+            make windows-x86
+            BINARY_DIR="build/windows-x86"
             BINARY_SUFFIX=".exe"
             PACKAGE_EXT="zip"
           elif [[ "${{ matrix.target }}" == "windows-x86_64" ]]; then
-            make windows-release
-            BINARY_DIR="build/windows-release"
+            make windows
+            BINARY_DIR="build/windows"
             BINARY_SUFFIX=".exe"
             PACKAGE_EXT="zip"
           fi

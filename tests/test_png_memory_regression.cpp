@@ -10,8 +10,8 @@
 #include "palette.hpp"
 
 // Include new module headers for direct testing
-#include "image_processor.hpp"
 #include "file_operations.hpp"
+#include "image_processor.hpp"
 
 TEST_CASE("PNG Memory Regression - In-memory vs File output") {
   art2img::Palette palette;
@@ -26,7 +26,7 @@ TEST_CASE("PNG Memory Regression - In-memory vs File output") {
   for (size_t i = 0; i < pixel_count; ++i) {
     pixel_data[i] = static_cast<uint8_t>(i % 256);
   }
-  
+
   // Test cases for module-specific PNG operations
   TEST_CASE("Module-specific PNG operations") {
     art2img::Palette palette;
@@ -35,51 +35,57 @@ TEST_CASE("PNG Memory Regression - In-memory vs File output") {
     tile.height = 32;
     tile.anim_data = 0;
     tile.offset = 0;
-  
+
     const size_t pixel_count = static_cast<size_t>(tile.width) * tile.height;
     std::vector<uint8_t> pixel_data(pixel_count);
     for (size_t i = 0; i < pixel_count; ++i) {
       pixel_data[i] = static_cast<uint8_t>(i % 256);
     }
-  
+
     art2img::ImageWriter::Options options;
-  
+
     SUBCASE("Image processor RGBA conversion") {
       // Test the image_processor module directly
-      auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(), pixel_data.size(), options);
+      auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
+                                                                 pixel_data.size(), options);
       CHECK_EQ(rgba_data.size(), pixel_count * 4);
-      
+
       // Verify alpha values
       for (size_t i = 3; i < rgba_data.size(); i += 4) {
         CHECK((rgba_data[i] == 0 || rgba_data[i] == 255));
       }
     }
-  
+
     SUBCASE("File operations PNG encoding") {
       // Test the file_operations module directly
-      auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(), pixel_data.size(), options);
-      auto png_data = art2img::file_operations::encode_png_to_memory(rgba_data, tile.width, tile.height);
+      auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
+                                                                 pixel_data.size(), options);
+      auto png_data =
+          art2img::file_operations::encode_png_to_memory(rgba_data, tile.width, tile.height);
       CHECK_GT(png_data.size(), 0);
-      
+
       // Verify PNG signature
       REQUIRE_GE(png_data.size(), 8);
       unsigned char png_header[8] = {137, 80, 78, 71, 13, 10, 26, 10};
       CHECK(std::equal(png_header, png_header + 8, png_data.begin()));
     }
-  
+
     SUBCASE("Module pipeline vs ImageWriter") {
       // Compare ImageWriter vs direct module usage
       std::vector<uint8_t> image_writer_png;
       bool success = art2img::ImageWriter::write_image_to_memory(
-          image_writer_png, art2img::ImageFormat::PNG, palette, tile, pixel_data.data(), pixel_data.size(), options);
+          image_writer_png, art2img::ImageFormat::PNG, palette, tile, pixel_data.data(),
+          pixel_data.size(), options);
       REQUIRE(success);
       CHECK_GT(image_writer_png.size(), 0);
-      
+
       // Direct module usage
-      auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(), pixel_data.size(), options);
-      auto direct_png = art2img::file_operations::encode_png_to_memory(rgba_data, tile.width, tile.height);
+      auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
+                                                                 pixel_data.size(), options);
+      auto direct_png =
+          art2img::file_operations::encode_png_to_memory(rgba_data, tile.width, tile.height);
       CHECK_GT(direct_png.size(), 0);
-      
+
       // Both should produce valid PNGs
       REQUIRE_GE(image_writer_png.size(), 8);
       REQUIRE_GE(direct_png.size(), 8);

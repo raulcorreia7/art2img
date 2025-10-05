@@ -9,8 +9,8 @@
 #include "test_helpers.hpp"
 
 // Include new module headers for direct testing
-#include "image_processor.hpp"
 #include "file_operations.hpp"
+#include "image_processor.hpp"
 #include "image_writer.hpp"
 
 // Function to create a test extractor with data
@@ -250,7 +250,7 @@ TEST_CASE("ImageView image saving") {
     unsigned char png_header[8] = {137, 80, 78, 71, 13, 10, 26, 10};
     CHECK(std::equal(png_header, png_header + 8, png_data.begin()));
   }
-  
+
   SUBCASE("Save to BMP with default options") {
     std::string filename = "test_tile.bmp";
     REQUIRE(image_view.save_to_bmp(filename, art2img::ImageWriter::Options()));
@@ -293,7 +293,8 @@ TEST_CASE("ImageView image saving") {
   }
 
   SUBCASE("Extract to BMP memory") {
-    auto bmp_data = image_view.extract_to_image(art2img::ImageFormat::BMP, art2img::ImageWriter::Options());
+    auto bmp_data =
+        image_view.extract_to_image(art2img::ImageFormat::BMP, art2img::ImageWriter::Options());
     CHECK_GT(bmp_data.size(), 0);
 
     // BMP files should have headers, so minimum size should be > 54 bytes
@@ -394,10 +395,11 @@ TEST_CASE("ImageProcessor module tests") {
 
   const auto& tile = tiles[target_tile];
   std::vector<uint8_t> pixel_data(tile.size());
-  
+
   // Read pixel data directly from ART file
   if (tile.offset + tile.size() <= art_data.size()) {
-    std::copy(art_data.data() + tile.offset, art_data.data() + tile.offset + tile.size(), pixel_data.data());
+    std::copy(art_data.data() + tile.offset, art_data.data() + tile.offset + tile.size(),
+              pixel_data.data());
   } else {
     MESSAGE("Tile data extends beyond buffer, skipping image_processor tests");
     return;
@@ -405,10 +407,11 @@ TEST_CASE("ImageProcessor module tests") {
 
   SUBCASE("Convert to RGBA") {
     art2img::ImageWriter::Options options;
-    auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(), pixel_data.size(), options);
-    
+    auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
+                                                               pixel_data.size(), options);
+
     CHECK_EQ(rgba_data.size(), static_cast<size_t>(tile.width) * tile.height * 4);
-    
+
     // Check that alpha values are reasonable (0 or 255)
     for (size_t i = 3; i < rgba_data.size(); i += 4) {
       CHECK((rgba_data[i] == 0 || rgba_data[i] == 255));
@@ -417,9 +420,9 @@ TEST_CASE("ImageProcessor module tests") {
 
   SUBCASE("Magenta detection") {
     // Test the is_magenta function
-    CHECK(art2img::ImageWriter::is_magenta(255, 0, 255));  // Pure magenta
-    CHECK(art2img::ImageWriter::is_magenta(250, 0, 250));  // Build engine magenta
-    CHECK(art2img::ImageWriter::is_magenta(255, 5, 255));  // Magenta with some green
+    CHECK(art2img::ImageWriter::is_magenta(255, 0, 255));        // Pure magenta
+    CHECK(art2img::ImageWriter::is_magenta(250, 0, 250));        // Build engine magenta
+    CHECK(art2img::ImageWriter::is_magenta(255, 5, 255));        // Magenta with some green
     CHECK_FALSE(art2img::ImageWriter::is_magenta(255, 6, 255));  // Too much green
     CHECK_FALSE(art2img::ImageWriter::is_magenta(249, 0, 255));  // Not red enough
     CHECK_FALSE(art2img::ImageWriter::is_magenta(255, 0, 249));  // Not blue enough
@@ -462,10 +465,11 @@ TEST_CASE("FileOperations module tests") {
 
   const auto& tile = tiles[target_tile];
   std::vector<uint8_t> pixel_data(tile.size());
-  
+
   // Read pixel data directly from ART file
   if (tile.offset + tile.size() <= art_data.size()) {
-    std::copy(art_data.data() + tile.offset, art_data.data() + tile.offset + tile.size(), pixel_data.data());
+    std::copy(art_data.data() + tile.offset, art_data.data() + tile.offset + tile.size(),
+              pixel_data.data());
   } else {
     MESSAGE("Tile data extends beyond buffer, skipping file_operations tests");
     return;
@@ -473,12 +477,14 @@ TEST_CASE("FileOperations module tests") {
 
   // Convert to RGBA for PNG operations
   art2img::ImageWriter::Options options;
-  auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(), pixel_data.size(), options);
+  auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
+                                                             pixel_data.size(), options);
 
   SUBCASE("PNG encoding to memory") {
-    auto png_data = art2img::file_operations::encode_png_to_memory(rgba_data, tile.width, tile.height);
+    auto png_data =
+        art2img::file_operations::encode_png_to_memory(rgba_data, tile.width, tile.height);
     CHECK_GT(png_data.size(), 0);
-    
+
     // Check PNG signature
     REQUIRE_GE(png_data.size(), 8);
     unsigned char png_header[8] = {137, 80, 78, 71, 13, 10, 26, 10};
@@ -486,9 +492,10 @@ TEST_CASE("FileOperations module tests") {
   }
 
   SUBCASE("TGA encoding to memory") {
-    auto tga_data = art2img::file_operations::encode_tga_to_memory(palette, pixel_data, tile.width, tile.height);
+    auto tga_data = art2img::file_operations::encode_tga_to_memory(palette, pixel_data, tile.width,
+                                                                   tile.height);
     CHECK_GT(tga_data.size(), 0);
-    
+
     // Check TGA header (first 18 bytes)
     REQUIRE_GE(tga_data.size(), 18);
     CHECK_EQ(tga_data[1], 1);  // Color map type

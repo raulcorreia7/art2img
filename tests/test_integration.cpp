@@ -9,8 +9,8 @@
 #include "test_helpers.hpp"
 
 // Include new module headers for direct testing
-#include "image_processor.hpp"
 #include "file_operations.hpp"
+#include "image_processor.hpp"
 #include "image_writer.hpp"
 
 TEST_CASE("Integration tests - Full pipeline") {
@@ -142,7 +142,7 @@ TEST_CASE("Integration tests - Full pipeline") {
     // Empty tile counts should match
     CHECK_EQ(png_empty_count, tga_empty_count);
   }
-  
+
   SUBCASE("Batch extraction BMP format") {
     art2img::ExtractorAPI extractor;
     auto art_data = load_test_asset("TILES000.ART");
@@ -152,7 +152,8 @@ TEST_CASE("Integration tests - Full pipeline") {
     REQUIRE(extractor.load_palette_from_memory(palette_data.data(), palette_data.size()));
 
     // Extract all tiles as BMP
-    auto bmp_results = extractor.extract_all_tiles(art2img::ImageFormat::BMP, art2img::ImageWriter::Options());
+    auto bmp_results =
+        extractor.extract_all_tiles(art2img::ImageFormat::BMP, art2img::ImageWriter::Options());
     CHECK_EQ(bmp_results.size(), extractor.get_tile_count());
 
     size_t bmp_success_count = 0;
@@ -231,7 +232,8 @@ TEST_CASE("Integration tests - Full pipeline") {
 
       // Extract via ImageView
       art2img::ImageView image_view{&art_view, i};
-      auto image_data = image_view.extract_to_image(art2img::ImageFormat::BMP, art2img::ImageWriter::Options());
+      auto image_data =
+          image_view.extract_to_image(art2img::ImageFormat::BMP, art2img::ImageWriter::Options());
 
       REQUIRE(extractor_result.success);
       CHECK_EQ(extractor_result.image_data.size(), image_data.size());
