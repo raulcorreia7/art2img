@@ -96,15 +96,15 @@ jobs:
           # Using vcpkg or other package managers if needed
 
       - name: Setup MinGW-w64 for Windows x86 build
-        uses: egor-tensin/setup-mingw@v2
+        uses: egor-tensin/setup-mingw@v2.2.0
         with:
-          platform: i686
-          
+          platform: x86
+
       - name: Install Git Bash (includes basic Unix tools)
         uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install git -y
-          
+
       - name: Setup Bats for Windows
         run: |
           git clone https://github.com/bats-core/bats-core.git
@@ -112,7 +112,7 @@ jobs:
           ./install.sh $env:GITHUB_WORKSPACE/bats
           echo "$env:GITHUB_WORKSPACE/bats/bin" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
         shell: pwsh
-          
+
       - name: Build Windows x86 release configuration
         run: |
           make windows-x86-release
@@ -160,15 +160,15 @@ jobs:
           # Install required packages for Windows build
 
       - name: Setup MinGW-w64 for Windows x64 build
-        uses: egor-tensin/setup-mingw@v2
+        uses: egor-tensin/setup-mingw@v2.2.0
         with:
           platform: x64
-          
+
       - name: Install Git Bash (includes basic Unix tools)
         uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install git -y
-          
+
       - name: Setup Bats for Windows
         run: |
           git clone https://github.com/bats-core/bats-core.git
@@ -176,7 +176,7 @@ jobs:
           ./install.sh $env:GITHUB_WORKSPACE/bats
           echo "$env:GITHUB_WORKSPACE/bats/bin" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
         shell: pwsh
-          
+
       - name: Build Windows x64 release configuration
         run: |
           make windows-release
