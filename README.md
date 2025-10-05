@@ -8,7 +8,7 @@
   </p>
 </div>
 
-## 🎯 What is art2img?
+## What is art2img?
 
 A modern C++20 tool that converts Duke Nukem 3D ART files to PNG, TGA, or BMP with zero-copy processing and high performance.
 
@@ -17,15 +17,15 @@ Perfect for:
 - **Developers** building tools
 - **Archivists** converting legacy formats
 
-## ✨ Features
+## Features
 
-- **⚡ Ultra-fast** - Zero-copy processing with modern C++20
-- **🎨 Multiple formats** - PNG, TGA, BMP with alpha transparency
-- **🖥️ Cross-platform** - Linux, Windows, macOS
-- **📦 Library & CLI** - Use as library or standalone tool
-- **🔧 Advanced options** - Transparency, animation, custom palettes
+- **Ultra-fast** - Zero-copy processing with modern C++20
+- **Multiple formats** - PNG, TGA, BMP with alpha transparency
+- **Cross-platform** - Linux, Windows, macOS
+- **Library & CLI** - Use as library or standalone tool
+- **Advanced options** - Transparency, animation, custom palettes
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Build
@@ -37,7 +37,7 @@ make all
 ./build/linux-release/bin/art2img art/ -o images/
 ```
 
-## 📖 Usage
+## Usage
 
 ```bash
 # Basic conversion
@@ -56,7 +56,7 @@ make all
 ./build/linux-release/bin/art2img tiles.art --no-fix-transparency
 ```
 
-## 🛠️ Installation
+## Installation
 
 ```bash
 # Clone
@@ -70,7 +70,7 @@ make all
 sudo make install
 ```
 
-## 🔁 Keeping Your Fork Up to Date
+## Keeping Your Fork Up to Date
 
 Before attempting to pull updates, make sure your local clone has a remote configured for the upstream repository:
 
@@ -81,7 +81,7 @@ git pull origin master
 
 Replace the remote URL with the appropriate upstream for your fork or workspace before syncing.
 
-## 🏗️ Building
+## Building
 
 **Requirements:**
 - C++20 compiler (GCC 10+, Clang 10+, MSVC 2019+)
@@ -104,7 +104,7 @@ make clean        # Clean build directory
 make doctor       # Check host dependencies
 ```
 
-## ✅ Verification
+## Verification
 
 Run the test suite locally before pushing changes to ensure everything stays green:
 
@@ -120,17 +120,17 @@ make linux-release
 
 Both targets rebuild the project as needed so you can rely on them to catch regressions early.
 
-## 📚 Documentation
+## Documentation
 
 - [Building Instructions](BUILDING.md) - Detailed build guide
 - [Library API](https://github.com/raulcorreia7/art2img) - API documentation
 - [License](LICENSE) - GPL v2 license
 
-## 🙏 Credits
+## Credits
 
-Based on original work by Mathieu Olivier and Kenneth Silverman.  
+Based on original work by Mathieu Olivier and Kenneth Silverman.
 Modern C++20 implementation by [Raul Correia](https://github.com/raulcorreia7).
 
-## 📄 License
+## License
 
 [GPL v2](LICENSE) - Free and open-source software.
