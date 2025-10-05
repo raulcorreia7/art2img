@@ -12,27 +12,10 @@ permissions:
   contents: write
 
 jobs:
-  # Build job - run on release
-  build:
-    name: Build for ${{ matrix.target }}
+  # Linux build and release
+  linux-build:
+    name: Build for Linux
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [linux-x86_64, windows-x86, windows-x86_64]
-        include:
-          - target: linux-x86_64
-            setup: |
-              sudo apt-get update
-              sudo apt-get install -y build-essential clang lld pkg-config cmake ninja-build
-          - target: windows-x86
-            setup: |
-              sudo apt-get update
-              sudo apt-get install -y build-essential g++-mingw-w64-i686 pkg-config cmake ninja-build zip
-          - target: windows-x86_64
-            setup: |
-              sudo apt-get update
-              sudo apt-get install -y build-essential g++-mingw-w64-x86-64 pkg-config cmake ninja-build zip
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -40,28 +23,37 @@ jobs:
           fetch-depth: 0
 
       - name: Setup CPM dependencies cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/CPM
             ~/AppData/Local/Temp/CPM
-          key: cpm-${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('**/CMakeLists.txt') }}
+          key: cpm-${{ runner.os }}-linux-${{ hashFiles('**/CMakeLists.txt') }}
           restore-keys: |
-            cpm-${{ runner.os }}-${{ matrix.target }}-
+            cpm-${{ runner.os }}-linux-
 
       - name: Setup build cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             build/**/CMakeCache.txt
             build/**/CMakeFiles/**
             build/**/cmake_install.cmake
-          key: build-${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('**/CMakeLists.txt', '**/src/**', '**/include/**', '**/cli/**') }}
+          key: build-${{ runner.os }}-linux-${{ hashFiles('**/CMakeLists.txt', '**/src/**', '**/include/**', '**/cli/**') }}
           restore-keys: |
-            build-${{ runner.os }}-${{ matrix.target }}-
+            build-${{ runner.os }}-linux-
 
-      - name: Install build toolchain
-        run: ${{ matrix.setup }}
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            clang \
+            lld \
+            pkg-config \
+            cmake \
+            ninja-build \
+            zip
 
       - name: Extract version
         run: |
@@ -69,115 +61,170 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Build version: $VERSION"
 
-      - name: Configure and build binaries
+      - name: Configure CMake
         run: |
-          case "${{ matrix.target }}" in
-            linux-x86_64)
-              cmake -B build/linux \
-                    -DCMAKE_BUILD_TYPE=Release \
-                    -DBUILD_TESTS=OFF \
-                    -DBUILD_DIAGNOSTIC=ON \
-                    -DBUILD_SHARED_LIBS=OFF \
-                    -G Ninja
-              cmake --build build/linux --parallel $(nproc)
-              BINARY_DIR="build/linux"
-              ;;
-            windows-x86)
-              cmake -B build/windows-x86 \
-                    -DCMAKE_BUILD_TYPE=Release \
-                    -DCMAKE_TOOLCHAIN_FILE="cmake/windows-x86-toolchain.cmake" \
-                    -DBUILD_TESTS=OFF \
-                    -DBUILD_DIAGNOSTIC=ON \
-                    -DBUILD_SHARED_LIBS=OFF \
-                    -G "MinGW Makefiles"
-              cmake --build build/windows-x86 --parallel
-              BINARY_DIR="build/windows-x86"
-              ;;
-            windows-x86_64)
-              cmake -B build/windows-x64 \
-                    -DCMAKE_BUILD_TYPE=Release \
-                    -DCMAKE_TOOLCHAIN_FILE="cmake/windows-toolchain.cmake" \
-                    -DBUILD_TESTS=OFF \
-                    -DBUILD_DIAGNOSTIC=ON \
-                    -DBUILD_SHARED_LIBS=OFF \
-                    -G "MinGW Makefiles"
-              cmake --build build/windows-x64 --parallel
-              BINARY_DIR="build/windows-x64"
-              ;;
-          esac
-          
-          echo "BINARY_DIR=$BINARY_DIR" >> $GITHUB_ENV
+          cmake -B build/linux \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DBUILD_TESTS=OFF \
+                -DBUILD_DIAGNOSTIC=ON \
+                -DBUILD_SHARED_LIBS=OFF \
+                -G Ninja
+
+      - name: Build Linux binaries
+        run: |
+          cmake --build build/linux --parallel $(nproc)
 
       - name: Verify binaries
         run: |
-          case "${{ matrix.target }}" in
-            linux-x86_64)
-              file ${{ env.BINARY_DIR }}/bin/art2img | grep -q "ELF" && echo "Linux binary verified"
-              file ${{ env.BINARY_DIR }}/bin/art2img_diagnostic | grep -q "ELF" && echo "Linux diagnostic verified"
-              ;;
-            *)
-              file ${{ env.BINARY_DIR }}/bin/art2img.exe | grep -q "PE" && echo "Windows binary verified"
-              file ${{ env.BINARY_DIR }}/bin/art2img_diagnostic.exe | grep -q "PE" && echo "Windows diagnostic verified"
-              ;;
-          esac
+          file build/linux/bin/art2img | grep -q "ELF" && echo "Linux binary verified"
+          file build/linux/bin/art2img_diagnostic | grep -q "ELF" && echo "Linux diagnostic verified"
 
       - name: Create package
         run: |
-          mkdir -p release/${{ matrix.target }}
+          mkdir -p release/linux-x86_64
           
           # Copy binaries
-          case "${{ matrix.target }}" in
-            linux-x86_64)
-              cp ${{ env.BINARY_DIR }}/bin/art2img release/${{ matrix.target }}/art2img
-              cp ${{ env.BINARY_DIR }}/bin/art2img_diagnostic release/${{ matrix.target }}/art2img_diagnostic
-              BINARY_SUFFIX=""
-              PACKAGE_EXT="tar.gz"
-              ;;
-            *)
-              cp ${{ env.BINARY_DIR }}/bin/art2img.exe release/${{ matrix.target }}/art2img.exe
-              cp ${{ env.BINARY_DIR }}/bin/art2img_diagnostic.exe release/${{ matrix.target }}/art2img_diagnostic.exe
-              BINARY_SUFFIX=".exe"
-              PACKAGE_EXT="zip"
-              ;;
-          esac
+          cp build/linux/bin/art2img release/linux-x86_64/art2img
+          cp build/linux/bin/art2img_diagnostic release/linux-x86_64/art2img_diagnostic
           
           # Copy documentation
-          cp README.md release/${{ matrix.target }}/
-          cp LICENSE release/${{ matrix.target }}/ 2>/dev/null || echo "No LICENSE file found"
+          cp README.md release/linux-x86_64/
+          cp LICENSE release/linux-x86_64/ 2>/dev/null || echo "No LICENSE file found"
           
           # Create platform-specific README
-          cat > release/${{ matrix.target }}/README.txt << EOF
-          art2img ${{ env.VERSION }} - ${{ matrix.target }}
+          cat > release/linux-x86_64/README.txt << EOF
+          art2img ${{ env.VERSION }} - linux-x86_64
 
           Multi-threaded ART to image converter for Duke Nukem 3D assets.
 
           Binaries:
-          - art2img${BINARY_SUFFIX} - Main converter
-          - art2img_diagnostic${BINARY_SUFFIX} - Diagnostic tool
+          - art2img - Main converter
+          - art2img_diagnostic - Diagnostic tool
 
           Quick Start:
-          ${{ matrix.target == 'linux-x86_64' && './art2img' || 'art2img.exe' }} -f png -p PALETTE.DAT TILES000.ART
+          ./art2img -f png -p PALETTE.DAT TILES000.ART
 
           See README.md for full documentation.
           EOF
           
           # Create archive
-          if [[ "${{ matrix.target }}" == "linux-x86_64" ]]; then
-            tar -czf art2img-${{ matrix.target }}-${{ env.VERSION }}.tar.gz -C release/${{ matrix.target }} .
-          else
-            cd release/${{ matrix.target }}
-            zip -r ../../art2img-${{ matrix.target }}-${{ env.VERSION }}.zip .
-            cd ../..
-          fi
+          tar -czf art2img-linux-x86_64-${{ env.VERSION }}.tar.gz -C release/linux-x86_64 .
           
-          echo "Package created: art2img-${{ matrix.target }}-${{ env.VERSION }}.${PACKAGE_EXT}"
+          echo "Package created: art2img-linux-x86_64-${{ env.VERSION }}.tar.gz"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: art2img-${{ matrix.target }}
+          name: art2img-linux-x86_64
           path: |
-            art2img-${{ matrix.target }}-*.${{ env.PACKAGE_EXT }}
+            art2img-linux-x86_64-*.tar.gz
+          retention-days: 30
+
+  # Windows build and release
+  windows-build:
+    name: Build for Windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup CPM dependencies cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/CPM
+            ~/AppData/Local/Temp/CPM
+          key: cpm-${{ runner.os }}-windows-${{ hashFiles('**/CMakeLists.txt') }}
+          restore-keys: |
+            cpm-${{ runner.os }}-windows-
+
+      - name: Setup build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/**/CMakeCache.txt
+            build/**/CMakeFiles/**
+            build/**/cmake_install.cmake
+          key: build-${{ runner.os }}-windows-${{ hashFiles('**/CMakeLists.txt', '**/src/**', '**/include/**', '**/cli/**') }}
+          restore-keys: |
+            build-${{ runner.os }}-windows-
+
+      - name: Extract version
+        shell: pwsh
+        run: |
+          $VERSION = $(cmake -P cmake/print_version.cmake)
+          echo "VERSION=$VERSION" >> $env:GITHUB_ENV
+          echo "Build version: $VERSION"
+
+      - name: Configure CMake for Windows
+        shell: pwsh
+        run: |
+          cmake -B build/windows `
+                -DCMAKE_BUILD_TYPE=Release `
+                -DBUILD_TESTS=OFF `
+                -DBUILD_DIAGNOSTIC=ON `
+                -DBUILD_SHARED_LIBS=OFF `
+                -A x64
+
+      - name: Build Windows binaries
+        shell: pwsh
+        run: |
+          cmake --build build/windows --parallel
+
+      - name: Verify binaries
+        shell: pwsh
+        run: |
+          $output = Get-Command build\windows\bin\art2img.exe -ErrorAction SilentlyContinue
+          if ($output) {
+            Write-Host "Windows binary verified"
+          } else {
+            Write-Host "Windows binary verification failed"
+            exit 1
+          }
+
+      - name: Create package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "release\windows-x64" -Force
+          
+          # Copy binaries
+          Copy-Item "build\windows\bin\art2img.exe" -Destination "release\windows-x64\"
+          Copy-Item "build\windows\bin\art2img_diagnostic.exe" -Destination "release\windows-x64\"
+          
+          # Copy documentation
+          Copy-Item "README.md" -Destination "release\windows-x64\"
+          Copy-Item "LICENSE" -Destination "release\windows-x64\" -ErrorAction SilentlyContinue
+          
+          # Create platform-specific README
+          $content = @"
+          art2img ${{ env.VERSION }} - windows-x64
+
+          Multi-threaded ART to image converter for Duke Nukem 3D assets.
+
+          Binaries:
+          - art2img.exe - Main converter
+          - art2img_diagnostic.exe - Diagnostic tool
+
+          Quick Start:
+          .\art2img.exe -f png -p PALETTE.DAT TILES000.ART
+
+          See README.md for full documentation.
+          "@
+          $content | Out-File -FilePath "release\windows-x64\README.txt" -Encoding UTF8
+          
+          # Create ZIP archive (PowerShell 5.1+)
+          Compress-Archive -Path "release\windows-x64\*" -DestinationPath "art2img-windows-x64-${{ env.VERSION }}.zip"
+          
+          Write-Host "Package created: art2img-windows-x64-${{ env.VERSION }}.zip"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: art2img-windows-x64
+          path: |
+            art2img-windows-x64-*.zip
           retention-days: 30
 
   # macOS build and release
@@ -191,7 +238,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup CPM dependencies cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/CPM
@@ -201,7 +248,7 @@ jobs:
             cpm-${{ runner.os }}-macos-
 
       - name: Setup build cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             build/**/CMakeCache.txt
@@ -281,7 +328,7 @@ jobs:
   release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: [build, macos-build]
+    needs: [linux-build, windows-build, macos-build]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -314,8 +361,7 @@ jobs:
           - **x86_64**: \`art2img-linux-x86_64-*.tar.gz\`
 
           ### Windows
-          - **x86**: \`art2img-windows-x86-*.zip\`
-          - **x86_64**: \`art2img-windows-x86_64-*.zip\`
+          - **x86_64**: \`art2img-windows-x64-*.zip\`
 
           ### macOS
           - **x86_64**: \`art2img-macos-x86_64-*.tar.gz\`
@@ -328,9 +374,7 @@ jobs:
           ./art2img --help
           \`\`\`
 
-          ### Windows
-          \`\`\`powershell
-          Expand-Archive art2img-windows-x86_64-*.zip
+          Expand-Archive art2img-windows-x64-*.zip
           .\art2img.exe --help
           \`\`\`
 
