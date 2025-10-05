@@ -59,10 +59,8 @@ jobs:
   # Windows x86 build and test
   windows-x86-build:
     name: Windows x86 Build and Test
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     env:
-      WINEDEBUG: -all
-      WINEDLLOVERRIDES: mscoree,mshtml=
       WINDOWS_X86_RELEASE_DIR: build/windows-x86-release
     steps:
       - name: Checkout repository
@@ -92,29 +90,29 @@ jobs:
             build-${{ runner.os }}-win32-
 
       - name: Install dependencies
+        shell: pwsh
         run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            g++-mingw-w64-i686 \
-            pkg-config \
-            zip \
-            wine64 \
-            wine32 \
-            winbind \
-            xvfb
+          # Install required packages for Windows build
+          # Using vcpkg or other package managers if needed
 
-      - name: Set Wine prefix path
+      - name: Setup MinGW-w64 for Windows x86 build
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: i686
+          
+      - name: Install Git Bash (includes basic Unix tools)
+        uses: crazy-max/ghaction-chocolatey@v3
+        with:
+          args: install git -y
+          
+      - name: Setup Bats for Windows
         run: |
-          echo "WINEPREFIX=${RUNNER_TEMP}/wine-prefix-x86" >> "$GITHUB_ENV"
-          mkdir -p "${RUNNER_TEMP}/wine-prefix-x86"
-
-      - name: Initialize Wine prefix
-        run: |
-          mkdir -p "$WINEPREFIX"
-          xvfb-run -a wineboot --init
-
+          git clone https://github.com/bats-core/bats-core.git
+          cd bats-core
+          ./install.sh $env:GITHUB_WORKSPACE/bats
+          echo "$env:GITHUB_WORKSPACE/bats/bin" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        shell: pwsh
+          
       - name: Build Windows x86 release configuration
         run: |
           make windows-x86-release
@@ -126,10 +124,8 @@ jobs:
   # Windows x64 build and test
   windows-x64-build:
     name: Windows x64 Build and Test
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     env:
-      WINEDEBUG: -all
-      WINEDLLOVERRIDES: mscoree,mshtml=
       WINDOWS_RELEASE_DIR: build/windows-release
     steps:
       - name: Checkout repository
@@ -159,29 +155,28 @@ jobs:
             build-${{ runner.os }}-win64-
 
       - name: Install dependencies
+        shell: pwsh
         run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            g++-mingw-w64-x86-64 \
-            pkg-config \
-            zip \
-            wine64 \
-            wine32 \
-            winbind \
-            xvfb
+          # Install required packages for Windows build
 
-      - name: Set Wine prefix path
+      - name: Setup MinGW-w64 for Windows x64 build
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
+          
+      - name: Install Git Bash (includes basic Unix tools)
+        uses: crazy-max/ghaction-chocolatey@v3
+        with:
+          args: install git -y
+          
+      - name: Setup Bats for Windows
         run: |
-          echo "WINEPREFIX=${RUNNER_TEMP}/wine-prefix-x64" >> "$GITHUB_ENV"
-          mkdir -p "${RUNNER_TEMP}/wine-prefix-x64"
-
-      - name: Initialize Wine prefix
-        run: |
-          mkdir -p "$WINEPREFIX"
-          xvfb-run -a wineboot --init
-
+          git clone https://github.com/bats-core/bats-core.git
+          cd bats-core
+          ./install.sh $env:GITHUB_WORKSPACE/bats
+          echo "$env:GITHUB_WORKSPACE/bats/bin" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        shell: pwsh
+          
       - name: Build Windows x64 release configuration
         run: |
           make windows-release

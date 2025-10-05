@@ -25,7 +25,8 @@ BATS_SCRIPT="$SCRIPT_DIR/run_bats_tests.sh"
 
 if [[ -f "$BATS_SCRIPT" ]]; then
     echo "Running Bats tests..."
-    "$BATS_SCRIPT"
+    # Pass the platform to the BATS script
+    PLATFORM="$PLATFORM" "$BATS_SCRIPT"
 else
     echo "Error: Bats test runner script not found at $BATS_SCRIPT"
     echo "Please make sure the Bats testing framework is properly set up."
