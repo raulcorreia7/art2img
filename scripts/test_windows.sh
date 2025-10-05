@@ -16,16 +16,20 @@ source "$SCRIPT_DIR/test_common.sh"
 # Configuration
 # -----------------------------------------------------------------------------
 readonly PROJECT_ROOT="$(detect_project_root)"
-readonly BUILD_DIR="$(detect_build_dir)"
 
-# Detect which Windows build directory to use
-if [[ -d "${BUILD_DIR}/windows-x86" ]]; then
-    readonly WINDOWS_BUILD_DIR="${BUILD_DIR}/windows-x86"
-elif [[ -d "${BUILD_DIR}/windows" ]]; then
-    readonly WINDOWS_BUILD_DIR="${BUILD_DIR}/windows"
+# Use provided build directory or detect it
+if [[ -n "$1" ]]; then
+    readonly BUILD_DIR="$1"
 else
-    # Fallback to default
-    readonly WINDOWS_BUILD_DIR="${BUILD_DIR}/windows"
+    readonly BUILD_DIR="$(detect_build_dir)"
+fi
+
+# Use provided Windows build directory or detect it
+if [[ -n "$2" ]]; then
+    readonly WINDOWS_BUILD_DIR="$2"
+else
+    # Default to the build directory passed as first parameter
+    readonly WINDOWS_BUILD_DIR="${BUILD_DIR}"
 fi
 
 readonly WINDOWS_BIN_DIR="${WINDOWS_BUILD_DIR}/bin"
