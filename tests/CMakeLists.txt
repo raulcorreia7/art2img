@@ -10,6 +10,7 @@ target_sources(art2img_tests
     test_art_file.cpp
     test_extractor_api.cpp
     test_functionality.cpp
+    test_cli_options.cpp
     test_integration.cpp
     test_palette.cpp
     test_transparency.cpp
@@ -36,12 +37,14 @@ target_link_libraries(art2img_tests
     PRIVATE
     art2img_extractor
     doctest::doctest_with_main
+    CLI11::CLI11
 )
 
 target_include_directories(art2img_tests
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
     ${CMAKE_CURRENT_SOURCE_DIR}/../src
+    ${CMAKE_CURRENT_SOURCE_DIR}/../cli
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_BINARY_DIR}/../include
 )
