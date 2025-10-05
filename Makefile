@@ -1,79 +1,57 @@
-# Makefile for art2img project
-# Simplifies building, testing, and installation using CMake
-# Uses CPM (CMake Package Manager) for dependency management
+# Makefile for art2img - Simplified and focused
+# Supports Linux development and Windows cross-compilation
 
+# Configuration
 BUILD_DIR ?= build
-CMAKE_BUILD_TYPE ?= Release
 JOBS ?= $(shell nproc)
-CMAKE_ARGS ?= -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE)
 
-# Sanitizer options
+# Main targets
+.PHONY: all build test clean install format help
+.PHONY: windows test-windows
 
-.PHONY: all build test clean install debug help setup format format-check asan-build leak-build test-asan test-leak
+# Default target - build for Linux
+all: build
 
-all: build test
-
-help:
-	@echo "Available targets:"
-	@echo "  all          - Build and test (default)"
-	@echo "  build        - Configure and build project"
-	@echo "  test         - Build and run tests"
-	@echo "  debug        - Build in Debug mode"
-	@echo "  clean        - Remove build directory"
-	@echo "  install      - Install to system (requires build)"
-	@echo "  setup        - Build project"
-	@echo "  format       - Format source code with clang-format"
-	@echo "  format-check - Check if source code is properly formatted"
-	@echo "  asan-build   - Build with AddressSanitizer"
-	@echo "  leak-build   - Build with LeakSanitizer"
-	@echo "  test-asan    - Run tests with AddressSanitizer"
-	@echo "  test-leak    - Run tests with LeakSanitizer"
-	@echo "Variables: BUILD_DIR=$(BUILD_DIR), CMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE), JOBS=$(JOBS)"
-
+# Build for Linux
 build:
 	@mkdir -p $(BUILD_DIR)
-	@cd $(BUILD_DIR) && cmake .. $(CMAKE_ARGS)
+	@cd $(BUILD_DIR) && cmake .. -DCMAKE_BUILD_TYPE=Release
 	@cmake --build $(BUILD_DIR) --parallel $(JOBS)
 
-debug: CMAKE_BUILD_TYPE = Debug
-debug: CMAKE_ARGS = -DCMAKE_BUILD_TYPE=Debug
-debug: build
+# Build for Windows (cross-compilation)
+windows:
+	@mkdir -p $(BUILD_DIR)/windows
+	@cd $(BUILD_DIR)/windows && cmake ../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../../cmake/windows-toolchain.cmake -DBUILD_SHARED_LIBS=OFF
+	@cmake --build $(BUILD_DIR)/windows --parallel $(JOBS)
 
+# Run tests on Linux
 test: build
-	@cd $(BUILD_DIR) && ctest --output-on-failure -V
+	@cd $(BUILD_DIR) && ctest --output-on-failure
 
-clean:
-	@rm -rf $(BUILD_DIR)
+# Test Windows build (requires Wine)
+test-windows: windows
+	@./scripts/test_windows.sh
 
+# Install to system
 install: build
 	@cd $(BUILD_DIR) && cmake --install . --prefix /usr/local
 
+# Code formatting
 format:
 	@./format_code.sh
 
-format-check:
-	@echo "Checking code formatting..."
-	@mkdir -p $(BUILD_DIR)
-	@cd $(BUILD_DIR) && cmake .. $(CMAKE_ARGS)
-	@cmake --build $(BUILD_DIR) --target clang-format-dry-run
-	@echo "Code formatting check complete!"
+# Clean build directory
+clean:
+	@rm -rf $(BUILD_DIR)
 
-# AddressSanitizer build
-asan-build:
-	@mkdir -p $(BUILD_DIR)
-	@cd $(BUILD_DIR) && cmake .. $(CMAKE_ARGS) -DENABLE_ASAN=ON
-	@cmake --build $(BUILD_DIR) --parallel $(JOBS)
-
-# LeakSanitizer build
-leak-build:
-	@mkdir -p $(BUILD_DIR)
-	@cd $(BUILD_DIR) && cmake .. $(CMAKE_ARGS) -DENABLE_LEAK_SANITIZER=ON
-	@cmake --build $(BUILD_DIR) --parallel $(JOBS)
-
-# Test with AddressSanitizer
-test-asan: asan-build
-	@cd $(BUILD_DIR) && ctest --output-on-failure -V
-
-# Test with LeakSanitizer
-test-leak: leak-build
-	@cd $(BUILD_DIR) && ctest --output-on-failure -V
+# Help
+help:
+	@echo "art2img - Build Commands"
+	@echo "  make all          - Build for Linux (default)"
+	@echo "  make build        - Build for Linux"
+	@echo "  make windows      - Cross-compile for Windows"
+	@echo "  make test         - Run tests on Linux"
+	@echo "  make test-windows - Test Windows build (requires Wine)"
+	@echo "  make install      - Install to system"
+	@echo "  make clean        - Remove build directory"
+	@echo "  make format       - Format source code"
