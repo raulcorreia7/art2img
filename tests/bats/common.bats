@@ -61,22 +61,16 @@ teardown() {
 # Logging utilities
 # =============================================================================
 
-# Colors for output (if tput is available)
-if command -v tput >/dev/null 2>&1; then
-    RED=$(tput setaf 1)
-    GREEN=$(tput setaf 2)
-    YELLOW=$(tput setaf 3)
-    BLUE=$(tput setaf 4)
-    BOLD=$(tput bold)
-    RESET=$(tput sgr0)
-else
-    RED=""
-    GREEN=""
-    YELLOW=""
-    BLUE=""
-    BOLD=""
-    RESET=""
-fi
+# Set default empty values for colors (no tput to avoid CI issues)
+RED=""
+GREEN=""
+YELLOW=""
+BLUE=""
+BOLD=""
+RESET=""
+
+# Make these variables available to functions that will be used
+export RED GREEN YELLOW BLUE BOLD RESET
 
 log_debug() { echo "${BLUE}[DEBUG]${RESET} $*" >&3; }
 log_info() { echo "${BLUE}[INFO]${RESET} $*" >&3; }
