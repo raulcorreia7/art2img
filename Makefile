@@ -16,9 +16,13 @@ WINDOWS_X86_RELEASE_DIR := $(BUILD_DIR)/windows-x86-release
 CMAKE_BASE_FLAGS := -DBUILD_TESTS=ON
 CMAKE_RELEASE_FLAGS := $(CMAKE_BASE_FLAGS) -DCMAKE_BUILD_TYPE=Release -DBUILD_DIAGNOSTIC=ON -DBUILD_SHARED_LIBS=OFF
 
+# Run bats tests
+test-bats:
+	@./scripts/run_bats_tests.sh
+
 # Main targets
 .PHONY: all build test clean install format fmt fmt-check lint help
-.PHONY: windows windows-x86 test-windows doctor
+.PHONY: windows windows-x86 test-windows doctor test-bats
 .PHONY: linux-release windows-release windows-x86-release
 
 # Default target - build for Linux
