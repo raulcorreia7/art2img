@@ -28,7 +28,8 @@ jobs:
             clang \
             lld \
             pkg-config \
-            zip
+            zip \
+            wine
 
       - name: Build Linux project
         run: |
@@ -42,6 +43,14 @@ jobs:
         run: |
           make windows-x86
 
+      - name: Test Windows x86 project
+        run: |
+          make test-windows
+
       - name: Build Windows x64 project
         run: |
           make windows
+
+      - name: Test Windows x64 project
+        run: |
+          make test-windows
