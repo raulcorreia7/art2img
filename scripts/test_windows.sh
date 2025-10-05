@@ -12,6 +12,52 @@ set -e
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/test_common.sh"
 
+# Override wine execution functions to run from correct working directory
+execute_wine_command() {
+    local wine_cmd="$1"
+    local description="${2:-Wine command}"
+    local verbose="${3:-false}"
+    local allow_failure="${4:-false}"
+
+    # Extract executable path and arguments
+    local executable_path
+    local args
+    executable_path=$(echo "$wine_cmd" | cut -d' ' -f1)
+    args=$(echo "$wine_cmd" | cut -d' ' -f2-)
+
+    # Get absolute path for build directory 
+    local abs_build_dir="$(cd "${WINDOWS_BUILD_DIR}" && pwd)"
+    
+    # Convert executable path to relative path for execution from build directory
+    local relative_executable="$executable_path"
+    if [[ "$executable_path" == "$abs_build_dir/"* ]]; then
+        relative_executable="./${executable_path#"${abs_build_dir}/"}"
+    fi
+
+    # Reconstruct the wine command with relative executable path
+    local relative_cmd="$relative_executable"
+    if [[ -n "$args" ]]; then
+        relative_cmd="$relative_cmd $args"
+    fi
+
+    # Run Wine command from Windows build directory to ensure correct path resolution
+    local full_cmd="cd '${WINDOWS_BUILD_DIR}' && wine ${relative_cmd}"
+
+    if [[ "$verbose" == "true" ]]; then
+        execute_command_verbose "$full_cmd" "$description" "$allow_failure"
+    else
+        execute_command "$full_cmd" "$description" "false" "$allow_failure"
+    fi
+}
+
+execute_wine_command_verbose() {
+    local wine_cmd="$1"
+    local description="${2:-Wine command}"
+    local allow_failure="${3:-false}"
+
+    execute_wine_command "$wine_cmd" "$description" "true" "$allow_failure"
+}
+
 # -----------------------------------------------------------------------------
 # Configuration
 # -----------------------------------------------------------------------------
@@ -45,16 +91,25 @@ else
     WINDOWS_BUILD_DIR="${BUILD_DIR}"
 fi
 
+# Ensure WINDOWS_BUILD_DIR is an absolute path
+if [[ "${WINDOWS_BUILD_DIR}" != /* ]]; then
+    WINDOWS_BUILD_DIR="${PROJECT_ROOT}/${WINDOWS_BUILD_DIR}"
+fi
+
 readonly FUNCTIONAL_ONLY BUILD_DIR WINDOWS_BUILD_DIR
 
 readonly WINDOWS_BIN_DIR="${WINDOWS_BUILD_DIR}/bin"
 readonly MAIN_BIN="${WINDOWS_BIN_DIR}/art2img.exe"
 readonly TEST_BIN="${WINDOWS_BIN_DIR}/art2img_tests.exe"
 
-# Test assets
-readonly TEST_ASSETS_DIR="tests/assets"
+# Test assets - relative to the Windows build directory
+readonly TEST_ASSETS_DIR="${WINDOWS_BUILD_DIR}/tests/assets"
 readonly PALETTE_FILE="${TEST_ASSETS_DIR}/PALETTE.DAT"
 readonly TEST_ART_FILE="${TEST_ASSETS_DIR}/TILES000.ART"
+
+# Paths relative to build directory for use with Wine commands
+readonly PALETTE_FILE_WINE="./tests/assets/PALETTE.DAT"
+readonly TEST_ART_FILE_WINE="./tests/assets/TILES000.ART"
 
 # Output directories
 readonly OUTPUT_DIR="${BUILD_DIR}/tests/output"
@@ -72,11 +127,7 @@ validate_environment() {
 
     validate_wine_installation || return 1
 
-    if [[ -n "${WINEPREFIX:-}" ]]; then
-        log_info "Using Wine prefix: $WINEPREFIX"
-    else
-        log_info "Using default Wine prefix"
-    fi
+    log_info "Using default Wine prefix"
 
     # Validate binaries
     local missing_bins=()
@@ -135,7 +186,8 @@ test_extraction_format() {
     log_step "Testing $description"
     create_directory_if_needed "$output_dir"
     
-    local cmd="$MAIN_BIN -o $output_dir -f $format -p $PALETTE_FILE $extra_args $TEST_ART_FILE"
+    # Use relative paths for files when executing from build directory
+    local cmd="$MAIN_BIN -o $output_dir -f $format -p $PALETTE_FILE_WINE $extra_args $TEST_ART_FILE_WINE"
     execute_wine_command "$cmd" "$description" || return 1
     
     log_success "$description completed"

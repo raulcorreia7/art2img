@@ -13,13 +13,13 @@
 #include "image_processor.hpp"
 #include "image_writer.hpp"
 
-TEST_CASE("Integration tests - Full pipeline") {
+TEST_CASE("Integration tests - Complete pipeline from ART loading to image extraction") {
   if (!has_test_asset("TILES000.ART") || !has_test_asset("PALETTE.DAT")) {
     MESSAGE("Required assets not found, skipping integration tests");
     return;
   }
 
-  SUBCASE("Complete extraction workflow") {
+  SUBCASE("End-to-end workflow: ART and palette loading through PNG/TGA extraction") {
     // Load data from file
     auto art_data = load_test_asset("TILES000.ART");
     auto palette_data = load_test_asset("PALETTE.DAT");

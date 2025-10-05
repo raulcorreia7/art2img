@@ -8,7 +8,7 @@
 #include "palette.hpp"
 
 // Test transparency functionality with both file and memory operations
-TEST_CASE("Transparency - Core functionality") {
+TEST_CASE("Transparency processing - magenta pixel detection and alpha channel handling") {
   // Create a simple palette with magenta colors
   art2img::Palette palette;
   palette.load_duke3d_default();
@@ -43,7 +43,7 @@ TEST_CASE("Transparency - Core functionality") {
       254   // Magenta pixel
   };
 
-  SUBCASE("With fix_transparency enabled") {
+  SUBCASE("Magenta pixels become transparent when fix_transparency is enabled") {
     art2img::ImageWriter::Options options;
     options.fix_transparency = true;
     options.enable_alpha = true;
@@ -61,7 +61,7 @@ TEST_CASE("Transparency - Core functionality") {
     CHECK_EQ(rgba_data[15], 0);    // Fourth pixel alpha = 0 (transparent)
   }
 
-  SUBCASE("With fix_transparency disabled") {
+  SUBCASE("All pixels remain opaque when fix_transparency is disabled") {
     art2img::ImageWriter::Options options;
     options.fix_transparency = false;
     options.enable_alpha = true;

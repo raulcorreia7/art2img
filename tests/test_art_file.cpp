@@ -7,8 +7,8 @@
 #include "exceptions.hpp"
 #include "test_helpers.hpp"
 
-TEST_CASE("ArtFile basic functionality") {
-  SUBCASE("Default construction") {
+TEST_CASE("ArtFile basic functionality - initialization and file loading") {
+  SUBCASE("Default construction creates empty art file object") {
     art2img::ArtFile art_file;
     CHECK(!art_file.is_open());
     CHECK_EQ(art_file.data_size(), 0);
@@ -16,7 +16,7 @@ TEST_CASE("ArtFile basic functionality") {
     CHECK_EQ(art_file.header().version, 0);
   }
 
-  SUBCASE("File construction") {
+  SUBCASE("Construction with valid ART file path loads tile data") {
     const auto tiles_path = test_asset_path("TILES000.ART");
     art2img::ArtFile art_file(tiles_path.string());
     CHECK(art_file.is_open());
@@ -25,7 +25,7 @@ TEST_CASE("ArtFile basic functionality") {
     CHECK_EQ(std::filesystem::path(art_file.filename()), tiles_path);
   }
 
-  SUBCASE("Memory-based construction") {
+  SUBCASE("Memory-based construction loads ART data from memory buffer") {
     auto art_data = load_test_asset("TILES000.ART");
 
     art2img::ArtFile art_file;
@@ -38,7 +38,7 @@ TEST_CASE("ArtFile basic functionality") {
   }
 }
 
-TEST_CASE("ArtFile header validation") {
+TEST_CASE("ArtFile header validation - version and tile count consistency") {
   auto art_data = load_test_asset("TILES000.ART");
 
   art2img::ArtFile art_file;
@@ -51,7 +51,7 @@ TEST_CASE("ArtFile header validation") {
   CHECK_LE(header.num_tiles, 9216);  // Max tiles as per implementation
 }
 
-TEST_CASE("ArtFile tile metadata") {
+TEST_CASE("ArtFile tile metadata - dimensions, animation, and emptiness detection") {
   auto art_data = load_test_asset("TILES000.ART");
 
   art2img::ArtFile art_file;
@@ -60,7 +60,7 @@ TEST_CASE("ArtFile tile metadata") {
   const auto& tiles = art_file.tiles();
   REQUIRE_GT(tiles.size(), 0);
 
-  SUBCASE("Tile structure validation") {
+  SUBCASE("Tile dimensions are within reasonable bounds and size calculation is correct") {
     const auto& tile = tiles[0];
 
     // Verify tile fields are reasonable
@@ -71,7 +71,7 @@ TEST_CASE("ArtFile tile metadata") {
     CHECK_EQ(tile.size(), static_cast<uint32_t>(tile.width) * tile.height);
   }
 
-  SUBCASE("Animation data validation") {
+  SUBCASE("Animation data fields are within valid bit ranges") {
     const auto& tile = tiles[0];
 
     // Animation data should be within reasonable ranges
@@ -80,7 +80,7 @@ TEST_CASE("ArtFile tile metadata") {
     CHECK_LE(tile.anim_speed(), 16);   // 4 bits
   }
 
-  SUBCASE("Empty tiles") {
+  SUBCASE("Detection of empty tiles with zero size") {
     // Find an empty tile if it exists
     bool found_empty = false;
     for (const auto& tile : tiles) {
@@ -95,19 +95,19 @@ TEST_CASE("ArtFile tile metadata") {
   }
 }
 
-TEST_CASE("ArtFile error handling") {
-  SUBCASE("Invalid file") {
+TEST_CASE("ArtFile error handling - invalid files and corrupted data") {
+  SUBCASE("Constructor throws exception for non-existent ART file") {
     CHECK_THROWS_AS(art2img::ArtFile("nonexistent.art"), art2img::ArtException);
   }
 
-  SUBCASE("Invalid memory data") {
+  SUBCASE("Memory loading fails for insufficient data size") {
     std::vector<uint8_t> invalid_data = {0x00, 0x00, 0x00, 0x00};  // Too short
 
     art2img::ArtFile art_file;
     CHECK(!art_file.load(invalid_data.data(), invalid_data.size()));
   }
 
-  SUBCASE("Wrong version") {
+  SUBCASE("Memory loading fails for unsupported ART version") {
     // Create data with wrong version
     std::vector<uint8_t> wrong_version(16, 0);
     wrong_version[0] = 0xFF;  // Invalid version
@@ -117,7 +117,7 @@ TEST_CASE("ArtFile error handling") {
   }
 }
 
-TEST_CASE("ArtFile data reading") {
+TEST_CASE("ArtFile data reading - tile extraction functionality") {
   auto art_data = load_test_asset("TILES000.ART");
 
   art2img::ArtFile art_file;
@@ -125,7 +125,7 @@ TEST_CASE("ArtFile data reading") {
 
   const auto& tiles = art_file.tiles();
 
-  SUBCASE("Read tile data") {
+  SUBCASE("Read tile pixel data and verify consistency between memory and file sources") {
     for (size_t i = 0; i < std::min(tiles.size(), size_t(5)); ++i) {
       if (!tiles[i].is_empty()) {
         std::vector<uint8_t> buffer;
@@ -147,7 +147,7 @@ TEST_CASE("ArtFile data reading") {
     }
   }
 
-  SUBCASE("Read invalid tile") {
+  SUBCASE("Read operation fails for out-of-range tile index") {
     std::vector<uint8_t> buffer;
     CHECK(!art_file.read_tile_data(tiles.size(), buffer));  // Out of range
   }

@@ -1,6 +1,7 @@
 #include "processor.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <future>
@@ -193,13 +194,23 @@ LoadedArtData load_art_and_palette_composable(const ProcessingOptions& options,
 // Composable function to save image in specific format
 bool save_image_format(const art2img::ImageView& image_view, const std::string& filepath,
                        const std::string& format, bool fix_transparency) {
-  if (format == "tga") {
+  // Normalize format string to handle potential Windows encoding issues
+  std::string normalized_format = format;
+  std::transform(normalized_format.begin(), normalized_format.end(), normalized_format.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+  if (normalized_format == "tga") {
     return image_view.save_to_tga(filepath);
-  } else if (format == "bmp") {
+  } else if (normalized_format == "bmp") {
     art2img::ImageWriter::Options bmp_options;
     bmp_options.fix_transparency = fix_transparency;
     return image_view.save_to_image(filepath, art2img::ImageFormat::BMP, bmp_options);
-  } else {  // default to PNG
+  } else if (normalized_format == "png" || normalized_format.empty()) {  // default to PNG
+    art2img::ImageWriter::Options png_options;
+    png_options.fix_transparency = fix_transparency;
+    return image_view.save_to_png(filepath, png_options);
+  } else {
+    // Fallback to PNG for unknown formats
     art2img::ImageWriter::Options png_options;
     png_options.fix_transparency = fix_transparency;
     return image_view.save_to_png(filepath, png_options);
