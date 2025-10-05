@@ -341,6 +341,22 @@ ProcessingResult process_single_art_file(const ProcessingOptions& options, const
   return process_with_mode(options, art_file_path, output_subdir, is_directory_mode, false);
 }
 
+namespace {
+
+ProcessingOptions make_processing_options(const CliOptions& cli_options) {
+  ProcessingOptions options;
+  options.palette_file = cli_options.palette_file;
+  options.output_dir = cli_options.output_dir;
+  options.format = cli_options.format;
+  options.fix_transparency = cli_options.fix_transparency;
+  options.verbose = !cli_options.quiet;
+  options.dump_animation = !cli_options.no_anim;
+  options.merge_animation_data = cli_options.merge_anim;
+  return options;
+}
+
+}  // namespace
+
 /// Process all ART files in a directory
 CliProcessResult process_art_directory(const CliOptions& cli_options) {
   CliProcessResult cli_result;
@@ -374,14 +390,7 @@ CliProcessResult process_art_directory(const CliOptions& cli_options) {
   }
 
   // Prepare processing options
-  ProcessingOptions options;
-  options.palette_file = cli_options.palette_file;
-  options.output_dir = cli_options.output_dir;
-  options.format = cli_options.format;
-  options.fix_transparency = cli_options.fix_transparency;
-  options.verbose = !cli_options.quiet;
-  options.dump_animation = !cli_options.no_anim;
-  options.merge_animation_data = cli_options.merge_anim;
+  ProcessingOptions options = make_processing_options(cli_options);
 
   // Collect all ART files
   std::vector<std::string> art_files;
@@ -475,14 +484,7 @@ CliProcessResult process_art_directory(const CliOptions& cli_options) {
 
 /// Wrapper function to call process_single_art_file with command line options
 CliProcessResult process_single_art_file_wrapper(const CliOptions& cli_options) {
-  ProcessingOptions options;
-  options.palette_file = cli_options.palette_file;
-  options.output_dir = cli_options.output_dir;
-  options.format = cli_options.format;
-  options.fix_transparency = cli_options.fix_transparency;
-  options.verbose = !cli_options.quiet;
-  options.dump_animation = !cli_options.no_anim;
-  options.merge_animation_data = cli_options.merge_anim;
+  ProcessingOptions options = make_processing_options(cli_options);
 
   auto processing_result = process_single_art_file(options, cli_options.input_path, "", false);
 
