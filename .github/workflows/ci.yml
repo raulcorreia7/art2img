@@ -48,9 +48,13 @@ jobs:
             lld \
             pkg-config
 
-      - name: Build and test Linux release configuration
+      - name: Build Linux release configuration
         run: |
           make linux-release
+
+      - name: Test Linux release binaries
+        run: |
+          ./scripts/test_generic.sh linux build/linux-release
 
   # Windows x86 build and test
   windows-x86-build:
@@ -117,7 +121,7 @@ jobs:
 
       - name: Test Windows x86 release binaries
         run: |
-          xvfb-run -a ./scripts/test_windows.sh "$WINDOWS_X86_RELEASE_DIR"
+          ./scripts/test_generic.sh windows "$WINDOWS_X86_RELEASE_DIR"
 
   # Windows x64 build and test
   windows-x64-build:
@@ -184,4 +188,4 @@ jobs:
 
       - name: Test Windows x64 release binaries
         run: |
-          xvfb-run -a ./scripts/test_windows.sh "$WINDOWS_RELEASE_DIR"
+          ./scripts/test_generic.sh windows "$WINDOWS_RELEASE_DIR"
