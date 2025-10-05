@@ -76,18 +76,18 @@ ExtractionResult ExtractorAPI::extract_tile(uint32_t tile_index, ImageFormat for
   result.success = false;
   result.tile_index = tile_index;
   switch (format) {
-    case ImageFormat::PNG:
-      result.format = "png";
-      break;
-    case ImageFormat::TGA:
-      result.format = "tga";
-      break;
-    case ImageFormat::BMP:
-      result.format = "bmp";
-      break;
-    default:
-      result.format = "unknown";
-      break;
+  case ImageFormat::PNG:
+    result.format = "png";
+    break;
+  case ImageFormat::TGA:
+    result.format = "tga";
+    break;
+  case ImageFormat::BMP:
+    result.format = "bmp";
+    break;
+  default:
+    result.format = "unknown";
+    break;
   }
 
   if (!art_file_ || !palette_) {
@@ -228,6 +228,7 @@ ArtView ExtractorAPI::get_art_view() const {
 }
 
 // ImageView method implementations
+
 bool ImageView::save_to_image(const std::filesystem::path& path, ImageFormat format,
                               ImageWriter::Options options) const {
   if (!parent || !parent->palette) {
@@ -277,8 +278,7 @@ bool ImageView::save_to_tga(const std::filesystem::path& path) const {
   return save_to_image(path, ImageFormat::TGA);
 }
 
-bool ImageView::save_to_bmp(const std::filesystem::path& path,
-                            ImageWriter::Options options) const {
+bool ImageView::save_to_bmp(const std::filesystem::path& path, ImageWriter::Options options) const {
   return save_to_image(path, ImageFormat::BMP, options);
 }
 

@@ -10,16 +10,8 @@
 
 // =============================================================================
 
-// Color codes for terminal output
-#define COLOR_RESET "\033[0m"
-#define COLOR_RED "\033[31m"
-#define COLOR_GREEN "\033[32m"
-#define COLOR_YELLOW "\033[33m"
-#define COLOR_BLUE "\033[34m"
-#define COLOR_MAGENTA "\033[35m"
-#define COLOR_CYAN "\033[36m"
-
 #include "art_file.hpp"
+#include "colors.hpp"
 #include "extractor_api.hpp"
 #include "image_writer.hpp"
 #include "palette.hpp"
@@ -117,8 +109,8 @@ ProcessingResult process_sequential_impl(const ProcessingOptions& options,
 
   try {
     if (options.verbose) {
-      std::cout << COLOR_CYAN << "Processing ART file: " << art_file_path << COLOR_RESET
-                << std::endl;
+      art2img::ColorGuard cyan(art2img::ColorOutput::CYAN);
+      std::cout << "Processing ART file: " << art_file_path << std::endl;
     }
 
     // Load data using composable function
@@ -163,27 +155,30 @@ ProcessingResult process_sequential_impl(const ProcessingOptions& options,
       } else {
         result.failed_count++;
         if (image_view.pixel_data() != nullptr) {  // Only error for non-empty tiles
-          std::cerr << COLOR_YELLOW << "Warning: Failed to process tile " << tile_index << ": "
-                    << tile_result.error_message << COLOR_RESET << std::endl;
-          std::cerr << COLOR_YELLOW << "This may be due to file permissions or disk space issues."
-                    << COLOR_RESET << std::endl;
+          art2img::ColorGuard yellow(art2img::ColorOutput::YELLOW, std::cerr);
+          std::cerr << "Warning: Failed to process tile " << tile_index << ": "
+                    << tile_result.error_message << std::endl;
+          std::cerr << "This may be due to file permissions or disk space issues." << std::endl;
         }
       }
 
       // Show progress for large files
       if (options.verbose && total_tiles > 50 && (i + 1) % 10 == 0) {
-        std::cout << COLOR_CYAN << "Progress: " << (i + 1) << "/" << total_tiles
-                  << " tiles processed" << COLOR_RESET << std::endl;
+        art2img::ColorGuard cyan(art2img::ColorOutput::CYAN);
+        std::cout << "Progress: " << (i + 1) << "/" << total_tiles
+                  << " tiles processed" << art2img::ColorOutput::reset() << std::endl;
       }
     }
 
     if (options.verbose) {
       if (result.failed_count == 0) {
-        std::cout << COLOR_GREEN << "Tile processing complete: " << result.processed_count
-                  << " successful" << COLOR_RESET << std::endl;
+        art2img::ColorGuard green(art2img::ColorOutput::GREEN);
+        std::cout << "Tile processing complete: " << result.processed_count
+                  << " successful" << art2img::ColorOutput::reset() << std::endl;
       } else {
-        std::cout << COLOR_YELLOW << "Tile processing complete: " << result.processed_count
-                  << " successful, " << result.failed_count << " failed" << COLOR_RESET
+        art2img::ColorGuard yellow(art2img::ColorOutput::YELLOW);
+        std::cout << "Tile processing complete: " << result.processed_count
+                  << " successful, " << result.failed_count << " failed" << art2img::ColorOutput::reset()
                   << std::endl;
       }
     }
@@ -303,12 +298,13 @@ bool create_output_directories(const std::string& output_dir) {
   std::filesystem::create_directories(output_dir, dir_error);
 
   if (dir_error) {
-    std::cerr << COLOR_RED << "Error: Failed to create output directory '" << output_dir
-              << "': " << dir_error.message() << COLOR_RESET << std::endl;
-    std::cerr << COLOR_YELLOW
-              << "Please ensure you have write permissions to the parent directory and that the "
+    art2img::ColorGuard red(art2img::ColorOutput::RED, std::cerr);
+    std::cerr << "Error: Failed to create output directory '" << output_dir
+              << "': " << dir_error.message() << art2img::ColorOutput::reset() << std::endl;
+    art2img::ColorGuard yellow(art2img::ColorOutput::YELLOW, std::cerr);
+    std::cerr << "Please ensure you have write permissions to the parent directory and that the "
                  "path is valid."
-              << COLOR_RESET << std::endl;
+              << art2img::ColorOutput::reset() << std::endl;
     return false;
   }
   return true;
@@ -350,8 +346,9 @@ bool process_single_art_file(const ProcessingOptions& options, const std::string
 /// Process all ART files in a directory
 bool process_art_directory(const CliOptions& cli_options) {
   if (!cli_options.quiet) {
-    std::cout << COLOR_CYAN << "Processing ART files in directory: " << cli_options.input_path
-              << COLOR_RESET << std::endl;
+    art2img::ColorGuard cyan(art2img::ColorOutput::CYAN);
+    std::cout << "Processing ART files in directory: " << cli_options.input_path
+              << art2img::ColorOutput::reset() << std::endl;
   }
 
   // Create merged animation data file if needed
@@ -368,11 +365,11 @@ bool process_art_directory(const CliOptions& cli_options) {
         std::cout << "Created merged animation data file: " << merged_ini_path << std::endl;
       }
     } else {
-      std::cerr << COLOR_YELLOW << "Warning: Failed to create merged animation data file"
-                << COLOR_RESET << std::endl;
-      std::cerr << COLOR_YELLOW
-                << "Please ensure you have write permissions to the output directory."
-                << COLOR_RESET << std::endl;
+      art2img::ColorGuard yellow(art2img::ColorOutput::YELLOW, std::cerr);
+      std::cerr << "Warning: Failed to create merged animation data file"
+                << art2img::ColorOutput::reset() << std::endl;
+      std::cerr << "Please ensure you have write permissions to the output directory."
+                << art2img::ColorOutput::reset() << std::endl;
     }
   }
 
@@ -402,16 +399,18 @@ bool process_art_directory(const CliOptions& cli_options) {
   }
 
   if (!cli_options.quiet) {
-    std::cout << COLOR_CYAN << "Found " << art_files.size() << " ART files to process"
-              << COLOR_RESET << std::endl;
+    art2img::ColorGuard cyan(art2img::ColorOutput::CYAN);
+    std::cout << "Found " << art_files.size() << " ART files to process"
+              << art2img::ColorOutput::reset() << std::endl;
   }
 
   // Process each ART file
   for (const auto& art_file : art_files) {
     processed_files++;
     if (!cli_options.quiet) {
-      std::cout << COLOR_CYAN << "Processing file " << processed_files << "/" << art_files.size()
-                << ": " << std::filesystem::path(art_file).filename() << COLOR_RESET << std::endl;
+      art2img::ColorGuard cyan(art2img::ColorOutput::CYAN);
+      std::cout << "Processing file " << processed_files << "/" << art_files.size()
+                << ": " << std::filesystem::path(art_file).filename() << art2img::ColorOutput::reset() << std::endl;
     }
 
     // Use filename without extension as subdirectory
@@ -425,9 +424,11 @@ bool process_art_directory(const CliOptions& cli_options) {
     std::cout << "\nDirectory processing complete: " << successful_files << "/" << processed_files
               << " files successful" << std::endl;
     if (successful_files == processed_files) {
-      std::cout << COLOR_GREEN << "All files processed successfully!" << COLOR_RESET << std::endl;
+      art2img::ColorGuard green(art2img::ColorOutput::GREEN);
+      std::cout << "All files processed successfully!" << art2img::ColorOutput::reset() << std::endl;
     } else if (successful_files > 0) {
-      std::cout << COLOR_YELLOW << "Some files processed with warnings." << COLOR_RESET
+      art2img::ColorGuard yellow(art2img::ColorOutput::YELLOW);
+      std::cout << "Some files processed with warnings." << art2img::ColorOutput::reset()
                 << std::endl;
     }
   }

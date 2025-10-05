@@ -32,16 +32,16 @@ jobs:
 
       - name: Build Linux project
         run: |
-          make linux-release
+          make build
 
       - name: Run Linux tests
         run: |
-          make test-linux
+          make test
 
       - name: Build Windows x86 project
         run: |
-          make windows-x86-release
+          make windows
 
       - name: Build Windows x64 project
         run: |
-          make windows-release
+          make windows
