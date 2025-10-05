@@ -3,8 +3,10 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <future>
 #include <iostream>
-#include <sstream>
+#include <thread>
+#include <vector>
 
 #include "cli_operations.hpp"
 #include "version.hpp"
@@ -12,10 +14,153 @@
 // =============================================================================
 
 #include "art_file.hpp"
+#include "BS_thread_pool.hpp"
 #include "colors.hpp"
 #include "extractor_api.hpp"
 #include "image_writer.hpp"
 #include "palette.hpp"
+
+namespace {
+
+std::size_t hardware_thread_count() {
+  unsigned int count = std::thread::hardware_concurrency();
+  return count == 0 ? 1U : static_cast<std::size_t>(count);
+}
+
+std::size_t resolve_worker_count(const ProcessingOptions& options, std::size_t total_tiles) {
+  std::size_t desired = options.max_threads > 0 ? options.max_threads : hardware_thread_count();
+  if (desired == 0) {
+    desired = 1;
+  }
+  if (total_tiles > 0) {
+    desired = std::min<std::size_t>(desired, total_tiles);
+  }
+  return std::max<std::size_t>(desired, 1);
+}
+
+bool should_use_parallel(const ProcessingOptions& options, std::size_t total_tiles,
+                         bool prefer_parallel) {
+  if (!prefer_parallel || !options.enable_parallel) {
+    return false;
+  }
+  return resolve_worker_count(options, total_tiles) > 1;
+}
+
+struct TileProcessingContext {
+  const art2img::ArtView* art_view = nullptr;
+  const ProcessingOptions* options = nullptr;
+  const std::string* output_dir = nullptr;
+  uint32_t total_tiles = 0;
+};
+
+TileResult export_tile(const TileProcessingContext& context, uint32_t local_index) {
+  art2img::ImageView image_view{context.art_view, local_index};
+  const uint32_t tile_index = local_index + context.art_view->header.start_tile;
+  return process_single_tile_composable(image_view, *context.output_dir, *context.options,
+                                        tile_index);
+}
+
+void log_tile_failure(const TileResult& tile_result) {
+  art2img::ColorGuard yellow(art2img::ColorOutput::YELLOW, std::cerr);
+  std::cerr << "Warning: Failed to process tile " << tile_result.tile_index << ": "
+            << tile_result.error_message << std::endl;
+  std::cerr << "This may be due to file permissions or disk space issues." << std::endl;
+}
+
+void log_progress_if_needed(const ProcessingOptions& options, std::size_t completed,
+                            std::size_t total_tiles) {
+  if (!options.verbose || total_tiles <= 50 || (completed % 10) != 0) {
+    return;
+  }
+
+  art2img::ColorGuard cyan(art2img::ColorOutput::CYAN);
+  std::cout << "Progress: " << completed << "/" << total_tiles << " tiles processed"
+            << art2img::ColorOutput::reset() << std::endl;
+}
+
+void handle_tile_result(const TileResult& tile_result, ProcessingResult& summary,
+                        const ProcessingOptions& options, uint32_t total_tiles,
+                        std::size_t completed) {
+  if (tile_result.success) {
+    summary.processed_count++;
+  } else {
+    summary.failed_count++;
+    log_tile_failure(tile_result);
+  }
+
+  log_progress_if_needed(options, completed, static_cast<std::size_t>(total_tiles));
+}
+
+ProcessingOptions make_processing_options(const CliOptions& cli_options) {
+  ProcessingOptions options;
+  options.palette_file = cli_options.palette_file;
+  options.output_dir = cli_options.output_dir;
+  options.format = cli_options.format;
+  options.fix_transparency = cli_options.fix_transparency;
+  options.verbose = !cli_options.quiet;
+  options.dump_animation = !cli_options.no_anim;
+  options.merge_animation_data = cli_options.merge_anim;
+  options.enable_parallel = cli_options.enable_parallel;
+  options.max_threads = cli_options.max_threads;
+  return options;
+}
+
+void process_tiles_sequential(const TileProcessingContext& context, ProcessingResult& result) {
+  for (uint32_t i = 0; i < context.total_tiles; ++i) {
+    TileResult tile_result = export_tile(context, i);
+    handle_tile_result(tile_result, result, *context.options, context.total_tiles,
+                       static_cast<std::size_t>(i + 1));
+  }
+}
+
+void process_tiles_parallel(const TileProcessingContext& context, std::size_t worker_count,
+                            ProcessingResult& result) {
+  BS::thread_pool pool(worker_count);
+  std::vector<std::future<TileResult>> futures;
+  futures.reserve(context.total_tiles);
+
+  for (uint32_t i = 0; i < context.total_tiles; ++i) {
+    futures.emplace_back(pool.submit_task([context, i]() { return export_tile(context, i); }));
+  }
+
+  std::size_t completed = 0;
+  for (auto& future : futures) {
+    TileResult tile_result = future.get();
+    ++completed;
+    handle_tile_result(tile_result, result, *context.options, context.total_tiles, completed);
+  }
+}
+
+void log_processing_summary(const ProcessingOptions& options, const ProcessingResult& result) {
+  if (!options.verbose) {
+    return;
+  }
+
+  if (result.failed_count == 0) {
+    art2img::ColorGuard green(art2img::ColorOutput::GREEN);
+    std::cout << "Tile processing complete: " << result.processed_count << " successful"
+              << art2img::ColorOutput::reset() << std::endl;
+  } else {
+    art2img::ColorGuard yellow(art2img::ColorOutput::YELLOW);
+    std::cout << "Tile processing complete: " << result.processed_count << " successful, "
+              << result.failed_count << " failed" << art2img::ColorOutput::reset() << std::endl;
+  }
+}
+
+void write_animation_data_if_requested(art2img::ExtractorAPI& extractor,
+                                       const ProcessingOptions& options,
+                                       const std::string& art_file_path, bool is_directory_mode) {
+  if (!((options.dump_animation && !is_directory_mode) ||
+        (options.merge_animation_data && is_directory_mode))) {
+    return;
+  }
+
+  if (!extractor.write_animation_data(art_file_path, options.output_dir) && !is_directory_mode) {
+    std::cerr << "Warning: Failed to write animation data for " << art_file_path << std::endl;
+  }
+}
+
+}  // namespace
 
 // Composable function to load ART file and palette
 LoadedArtData load_art_and_palette_composable(const ProcessingOptions& options,
@@ -102,10 +247,12 @@ TileResult process_single_tile_composable(const art2img::ImageView& image_view,
   return result;
 }
 
-// Sequential processing implementation
-ProcessingResult process_sequential_impl(const ProcessingOptions& options,
-                                         const std::string& art_file_path,
-                                         const std::string& output_subdir, bool is_directory_mode) {
+namespace {
+
+ProcessingResult process_art_file_internal(const ProcessingOptions& options,
+                                           const std::string& art_file_path,
+                                           const std::string& output_subdir, bool is_directory_mode,
+                                           bool prefer_parallel) {
   ProcessingResult result;
 
   try {
@@ -114,7 +261,6 @@ ProcessingResult process_sequential_impl(const ProcessingOptions& options,
       std::cout << "Processing ART file: " << art_file_path << std::endl;
     }
 
-    // Load data using composable function
     auto loaded_data = load_art_and_palette_composable(options, art_file_path);
     if (!loaded_data.success) {
       result.success = false;
@@ -122,76 +268,46 @@ ProcessingResult process_sequential_impl(const ProcessingOptions& options,
       return result;
     }
 
-    // Determine final output directory
     std::string final_output_dir = options.output_dir;
     if (!output_subdir.empty()) {
       final_output_dir = (std::filesystem::path(final_output_dir) / output_subdir).string();
     }
 
-    // Ensure output directory exists
     if (!create_output_directories(final_output_dir)) {
       result.success = false;
       result.error_message = "Failed to create output directory: " + final_output_dir;
       return result;
     }
 
-    // Get art view for processing
     auto art_view = loaded_data.extractor->get_art_view();
-    uint32_t total_tiles = art_view.image_count();
+    const uint32_t total_tiles = art_view.image_count();
 
     if (options.verbose) {
       std::cout << "Processing " << total_tiles << " tiles..." << std::endl;
     }
 
-    // Process all tiles sequentially using composable function
-    for (uint32_t i = 0; i < total_tiles; ++i) {
-      art2img::ImageView image_view{&art_view, i};
-      uint32_t tile_index = i + art_view.header.start_tile;
+    const bool run_parallel = should_use_parallel(options, total_tiles, prefer_parallel);
+    const std::size_t worker_count =
+        run_parallel ? resolve_worker_count(options, total_tiles) : static_cast<std::size_t>(1);
 
-      auto tile_result =
-          process_single_tile_composable(image_view, final_output_dir, options, tile_index);
-
-      if (tile_result.success) {
-        result.processed_count++;
-      } else {
-        result.failed_count++;
-        if (image_view.pixel_data() != nullptr) {  // Only error for non-empty tiles
-          art2img::ColorGuard yellow(art2img::ColorOutput::YELLOW, std::cerr);
-          std::cerr << "Warning: Failed to process tile " << tile_index << ": "
-                    << tile_result.error_message << std::endl;
-          std::cerr << "This may be due to file permissions or disk space issues." << std::endl;
-        }
-      }
-
-      // Show progress for large files
-      if (options.verbose && total_tiles > 50 && (i + 1) % 10 == 0) {
-        art2img::ColorGuard cyan(art2img::ColorOutput::CYAN);
-        std::cout << "Progress: " << (i + 1) << "/" << total_tiles << " tiles processed"
-                  << art2img::ColorOutput::reset() << std::endl;
-      }
+    if (run_parallel && options.verbose) {
+      art2img::ColorGuard cyan(art2img::ColorOutput::CYAN);
+      std::cout << "Using parallel export with " << worker_count << " worker threads"
+                << art2img::ColorOutput::reset() << std::endl;
     }
 
-    if (options.verbose) {
-      if (result.failed_count == 0) {
-        art2img::ColorGuard green(art2img::ColorOutput::GREEN);
-        std::cout << "Tile processing complete: " << result.processed_count << " successful"
-                  << art2img::ColorOutput::reset() << std::endl;
-      } else {
-        art2img::ColorGuard yellow(art2img::ColorOutput::YELLOW);
-        std::cout << "Tile processing complete: " << result.processed_count << " successful, "
-                  << result.failed_count << " failed" << art2img::ColorOutput::reset() << std::endl;
-      }
+    TileProcessingContext context{&art_view, &options, &final_output_dir, total_tiles};
+
+    if (run_parallel) {
+      process_tiles_parallel(context, worker_count, result);
+    } else {
+      process_tiles_sequential(context, result);
     }
 
-    // Handle animation data output
-    if ((options.dump_animation && !is_directory_mode) ||
-        (options.merge_animation_data && is_directory_mode)) {
-      if (!loaded_data.extractor->write_animation_data(art_file_path, options.output_dir)) {
-        if (!is_directory_mode) {
-          std::cerr << "Warning: Failed to write animation data for " << art_file_path << std::endl;
-        }
-      }
-    }
+    log_processing_summary(options, result);
+
+    write_animation_data_if_requested(*loaded_data.extractor, options, art_file_path,
+                                      is_directory_mode);
 
     result.success = (result.failed_count == 0) || (result.processed_count > 0);
   } catch (const art2img::ArtException& e) {
@@ -206,6 +322,20 @@ ProcessingResult process_sequential_impl(const ProcessingOptions& options,
   }
 
   return result;
+}
+
+}  // namespace
+
+ProcessingResult process_sequential_impl(const ProcessingOptions& options,
+                                         const std::string& art_file_path,
+                                         const std::string& output_subdir, bool is_directory_mode) {
+  return process_art_file_internal(options, art_file_path, output_subdir, is_directory_mode, false);
+}
+
+ProcessingResult process_parallel_impl(const ProcessingOptions& options,
+                                       const std::string& art_file_path,
+                                       const std::string& output_subdir, bool is_directory_mode) {
+  return process_art_file_internal(options, art_file_path, output_subdir, is_directory_mode, true);
 }
 
 // Composable function to find palette file
@@ -310,19 +440,6 @@ bool create_output_directories(const std::string& output_dir) {
   return true;
 }
 
-// Parallel processing stub (for future implementation)
-ProcessingResult process_parallel_impl(const ProcessingOptions& options,
-                                       const std::string& art_file_path,
-                                       const std::string& output_subdir, bool is_directory_mode) {
-  // For now, delegate to sequential implementation
-  // Future: Implement with thread pool or parallel algorithms
-  if (options.verbose) {
-    std::cout << "Note: Parallel processing not yet implemented, using sequential mode"
-              << std::endl;
-  }
-  return process_sequential_impl(options, art_file_path, output_subdir, is_directory_mode);
-}
-
 // Processing router that can switch between modes
 ProcessingResult process_with_mode(const ProcessingOptions& options,
                                    const std::string& art_file_path,
@@ -338,8 +455,8 @@ ProcessingResult process_with_mode(const ProcessingOptions& options,
 // Updated process_single_art_file using composable architecture
 ProcessingResult process_single_art_file(const ProcessingOptions& options, const std::string& art_file_path,
                                          const std::string& output_subdir, bool is_directory_mode) {
-  // For now, always use sequential mode
-  return process_with_mode(options, art_file_path, output_subdir, is_directory_mode, false);
+  return process_with_mode(options, art_file_path, output_subdir, is_directory_mode,
+                           options.enable_parallel);
 }
 
 namespace {
@@ -417,6 +534,14 @@ CliProcessResult process_art_directory(const CliOptions& cli_options) {
         std::string("No ART files found in directory '") + cli_options.input_path + "'.";
     return cli_result;
   }
+
+  if (art_files.empty()) {
+    cli_result.error_message =
+        std::string("No ART files found in directory '") + cli_options.input_path + "'.";
+    return cli_result;
+  }
+
+  std::sort(art_files.begin(), art_files.end());
 
   if (!cli_options.quiet) {
     art2img::ColorGuard cyan(art2img::ColorOutput::CYAN);

@@ -65,6 +65,12 @@ std::unique_ptr<CLI::App> CliAppBuilder::build(CliOptions& options) const {
   app->add_flag("-n,--no-anim", options.no_anim, "Skip animation data generation");
   app->add_flag("-m,--merge-anim", options.merge_anim,
                 "Merge all animation data into a single file (directory mode)");
+  app->add_flag("--parallel,!--no-parallel", options.enable_parallel,
+                "Enable parallel tile export (default: enabled)");
+  app->add_option("-j,--jobs", options.max_threads,
+                  "Maximum number of worker threads to use (0 = auto)")
+      ->check(CLI::NonNegativeNumber)
+      ->default_val("0");
 
   app->footer(footer_);
 

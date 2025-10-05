@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <string>
 
 struct CliOptions {
@@ -11,6 +12,8 @@ struct CliOptions {
   bool quiet = false;
   bool no_anim = false;
   bool merge_anim = false;
+  bool enable_parallel = true;
+  std::size_t max_threads = 0;
 };
 
 struct ProcessingOptions {
@@ -21,4 +24,6 @@ struct ProcessingOptions {
   bool verbose = false;
   bool dump_animation = true;
   bool merge_animation_data = false;
+  bool enable_parallel = true;
+  std::size_t max_threads = 0;
 };
