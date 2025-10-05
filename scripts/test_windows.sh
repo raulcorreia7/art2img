@@ -17,6 +17,11 @@ source "$SCRIPT_DIR/test_common.sh"
 # -----------------------------------------------------------------------------
 readonly PROJECT_ROOT="$(detect_project_root)"
 
+# Sensible defaults for Wine in headless environments
+: "${WINEDEBUG:=-all}"
+: "${WINEDLLOVERRIDES:=mscoree,mshtml=}"
+export WINEDEBUG WINEDLLOVERRIDES
+
 # Parse arguments: optional "functional-only" flag followed by build directories
 FUNCTIONAL_ONLY="false"
 ARGS=("$@")
@@ -64,9 +69,15 @@ readonly NO_TRANSP_OUTPUT_DIR="${OUTPUT_DIR}/ci_no_transparency"
 # -----------------------------------------------------------------------------
 validate_environment() {
     log_info "Validating test environment"
-    
+
     validate_wine_installation || return 1
-    
+
+    if [[ -n "${WINEPREFIX:-}" ]]; then
+        log_info "Using Wine prefix: $WINEPREFIX"
+    else
+        log_info "Using default Wine prefix"
+    fi
+
     # Validate binaries
     local missing_bins=()
     [[ ! -f "$MAIN_BIN" ]] && missing_bins+=("$MAIN_BIN")

@@ -48,18 +48,19 @@ jobs:
             lld \
             pkg-config
 
-      - name: Build Linux project
+      - name: Build and test Linux release configuration
         run: |
-          make build
-
-      - name: Run Linux tests
-        run: |
-          make test
+          make linux-release
 
   # Windows x86 build and test
   windows-x86-build:
     name: Windows x86 Build and Test
     runs-on: ubuntu-latest
+    env:
+      WINEDEBUG: -all
+      WINEDLLOVERRIDES: mscoree,mshtml=
+      WINEPREFIX: ${{ runner.temp }}/wine-prefix-x86
+      WINDOWS_X86_RELEASE_DIR: build/windows-x86-release
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -89,26 +90,40 @@ jobs:
 
       - name: Install dependencies
         run: |
+          sudo dpkg --add-architecture i386
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
             g++-mingw-w64-i686 \
             pkg-config \
             zip \
-            wine
+            wine64 \
+            wine32 \
+            winbind \
+            xvfb
 
-      - name: Build Windows x86 project
+      - name: Initialize Wine prefix
         run: |
-          make windows-x86
+          mkdir -p "$WINEPREFIX"
+          xvfb-run -a wineboot --init
 
-      - name: Test Windows x86 project
+      - name: Build Windows x86 release configuration
         run: |
-          make test-windows-x86
+          make windows-x86-release
+
+      - name: Test Windows x86 release binaries
+        run: |
+          ./scripts/test_windows.sh "$WINDOWS_X86_RELEASE_DIR"
 
   # Windows x64 build and test
   windows-x64-build:
     name: Windows x64 Build and Test
     runs-on: ubuntu-latest
+    env:
+      WINEDEBUG: -all
+      WINEDLLOVERRIDES: mscoree,mshtml=
+      WINEPREFIX: ${{ runner.temp }}/wine-prefix-x64
+      WINDOWS_RELEASE_DIR: build/windows-release
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -138,18 +153,27 @@ jobs:
 
       - name: Install dependencies
         run: |
+          sudo dpkg --add-architecture i386
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
             g++-mingw-w64-x86-64 \
             pkg-config \
             zip \
-            wine
+            wine64 \
+            wine32 \
+            winbind \
+            xvfb
 
-      - name: Build Windows x64 project
+      - name: Initialize Wine prefix
         run: |
-          make windows
+          mkdir -p "$WINEPREFIX"
+          xvfb-run -a wineboot --init
 
-      - name: Test Windows x64 project
+      - name: Build Windows x64 release configuration
         run: |
-          make test-windows
+          make windows-release
+
+      - name: Test Windows x64 release binaries
+        run: |
+          ./scripts/test_windows.sh "$WINDOWS_RELEASE_DIR"

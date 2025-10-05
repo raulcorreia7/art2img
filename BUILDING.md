@@ -22,10 +22,15 @@ make all          # Build for Linux (default)
 make build        # Build for Linux
 make windows      # Cross-compile for Windows x64
 make windows-x86  # Cross-compile for Windows x86
+make linux-release       # Release build + tests for Linux
+make windows-release     # Release build for Windows x64
+make windows-x86-release # Release build for Windows x86
 make test         # Run tests on Linux
-make test-windows # Test Windows build (requires Wine)
+make test-windows # Test Windows x64 build (requires Wine)
+make test-windows-x86 # Test Windows x86 build (requires Wine)
 make clean        # Clean build directory
 make install      # Install to system
+make doctor       # Check host dependencies
 ```
 
 ### CMake Direct
@@ -40,8 +45,10 @@ cmake --build . --parallel
 ### Windows (Cross-compilation)
 ```bash
 make windows-release
-# or
-make build CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=../cmake/windows-toolchain.cmake"
+# or configure manually
+mkdir -p build/windows && cd build/windows
+cmake ../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../../cmake/windows-toolchain.cmake -DBUILD_SHARED_LIBS=OFF
+cmake --build . --parallel
 ```
 
 ### Windows (Native)
@@ -55,10 +62,10 @@ cmake --build . --parallel
 ## 🧪 Testing
 
 ```bash
-make test-linux        # Run Linux tests
-make test-windows      # Run Windows tests (requires Wine)
-make test-asan         # Run with AddressSanitizer
-make test-leak         # Run with LeakSanitizer
+make test                 # Run unit/integration tests on Linux
+make test-windows         # Run Windows x64 tests under Wine
+make test-windows-x86     # Run Windows x86 tests under Wine
+./scripts/test_windows.sh functional-only build/windows-release # Functional tests only
 ```
 
 ## 🐳 Docker
