@@ -93,6 +93,22 @@ make clean        # Clean build directory
 make doctor       # Check host dependencies
 ```
 
+## ✅ Verification
+
+Run the test suite locally before pushing changes to ensure everything stays green:
+
+```bash
+make test
+```
+
+For a release-style verification that configures a fresh build directory and executes the same tests, use:
+
+```bash
+make linux-release
+```
+
+Both targets rebuild the project as needed so you can rely on them to catch regressions early.
+
 ## 📚 Documentation
 
 - [Building Instructions](BUILDING.md) - Detailed build guide
