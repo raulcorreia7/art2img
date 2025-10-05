@@ -239,14 +239,22 @@ execute_wine_command() {
     local description="${2:-Wine command}"
     local verbose="${3:-false}"
     local allow_failure="${4:-false}"
-    
+
     local full_cmd="wine $wine_cmd"
-    
+
     if [[ "$verbose" == "true" ]]; then
         execute_command_verbose "$full_cmd" "$description" "$allow_failure"
     else
         execute_command "$full_cmd" "$description" "false" "$allow_failure"
     fi
+}
+
+execute_wine_command_verbose() {
+    local wine_cmd="$1"
+    local description="${2:-Wine command}"
+    local allow_failure="${3:-false}"
+
+    execute_wine_command "$wine_cmd" "$description" "true" "$allow_failure"
 }
 
 validate_wine_installation() {
@@ -359,7 +367,8 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
     export -f validate_command_exists validate_file_exists validate_directory_exists
     export -f count_files_by_pattern validate_file_format count_valid_files_by_format
     export -f create_directory_if_needed execute_command execute_command_verbose
-    export -f execute_wine_command validate_wine_installation validate_wine_functionality
+    export -f execute_wine_command execute_wine_command_verbose
+    export -f validate_wine_installation validate_wine_functionality
     export -f create_test_summary load_configuration cleanup_on_exit version_compare
     export -f detect_project_root detect_build_dir
 fi
