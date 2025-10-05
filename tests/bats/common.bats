@@ -16,7 +16,7 @@ setup() {
     # Detect platform
     if [[ -n "${1:-}" ]]; then
         PLATFORM="$1"
-    elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]] || command -v wine >/dev/null 2>&1; then
+    elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]] || [[ "$RUNNER_OS" == "Windows" ]] || [[ -n "${WINDIR:-}" ]]; then
         PLATFORM="windows"
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         PLATFORM="macos"
@@ -119,11 +119,20 @@ execute_wine_command() {
     local allow_failure="${3:-false}"
     local verbose="${4:-false}"
     
-    # Use Wine for Windows binaries on non-Windows platforms
+    local full_cmd="$cmd"
+    
+    # Use Wine for Windows binaries on non-Windows platforms 
+    # when running on Linux/Mac with Wine installed
     if [[ "$PLATFORM" == "windows" ]]; then
-        local full_cmd="wine $cmd"
-    else
-        local full_cmd="$cmd"
+        # On actual Windows, we don't need Wine
+        # On Linux/Mac with Wine, we add the wine command prefix
+        # Check if we're on a non-Windows host but testing Windows binaries
+        if command -v wine >/dev/null 2>&1 && [[ "$RUNNER_OS" != "Windows" ]]; then
+            full_cmd="wine $cmd"
+        else
+            # On actual Windows host, run command directly
+            full_cmd="$cmd"
+        fi
     fi
     
     if [[ "$verbose" == "true" ]]; then
@@ -144,7 +153,14 @@ execute_binary_command() {
     
     case "$PLATFORM" in
         "windows")
-            execute_wine_command "$full_cmd" "$description" "$allow_failure"
+            # On actual Windows platforms vs cross-compilation with Wine
+            if [[ "$RUNNER_OS" == "Windows" ]]; then
+                # On actual Windows runner, run command directly
+                execute_platform_command "$full_cmd" "$description" "$allow_failure"
+            else
+                # On Linux/Mac with Wine for Windows cross-compilation, use Wine
+                execute_wine_command "$full_cmd" "$description" "$allow_failure"
+            fi
             ;;
         *)
             execute_platform_command "$full_cmd" "$description" "$allow_failure"

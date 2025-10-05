@@ -43,7 +43,7 @@ execute_wine_command_bats() {
     validate_test_assets || skip "Test assets not found"
     validate_binaries "$MAIN_BIN" "$TEST_BIN" || skip "Binaries not found"
     
-    # Skip if not on Windows platform
+    # Skip if not on Windows platform (but account for actual Windows vs Wine)
     if [[ "$PLATFORM" != "windows" ]]; then
         skip "Skipping Windows-specific tests on non-Windows platform"
     fi
