@@ -19,17 +19,41 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Cache CPM dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/CPM
+            ~/AppData/Local/Temp/CPM
+          key: cpm-${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('**/CMakeLists.txt') }}
+          restore-keys: |
+            cpm-${{ runner.os }}-${{ matrix.target }}-
+
+      - name: Cache build files
+        uses: actions/cache@v3
+        with:
+          path: |
+            build/**
+            !build/**/CMakeCache.txt
+            !build/**/CMakeFiles/**
+          key: build-${{ runner.os }}-${{ matrix.target }}-${{ github.sha }}
+          restore-keys: |
+            build-${{ runner.os }}-${{ matrix.target }}-
+
       - name: Install cross-compilation toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            g++-mingw-w64-i686 \
-            g++-mingw-w64-x86-64 \
-            clang \
-            lld \
-            pkg-config \
-            zip
+          case "${{ matrix.target }}" in
+            linux-x86_64)
+              sudo apt-get install -y build-essential clang lld pkg-config
+              ;;
+            windows-x86)
+              sudo apt-get install -y build-essential g++-mingw-w64-i686 pkg-config zip
+              ;;
+            windows-x86_64)
+              sudo apt-get install -y build-essential g++-mingw-w64-x86-64 pkg-config zip
+              ;;
+          esac
 
       - name: Extract version
         run: |
@@ -39,22 +63,26 @@ jobs:
 
       - name: Build binaries
         run: |
-          if [[ "${{ matrix.target }}" == "linux-x86_64" ]]; then
-            make build
-            BINARY_DIR="build"
-            BINARY_SUFFIX=""
-            PACKAGE_EXT="tar.gz"
-          elif [[ "${{ matrix.target }}" == "windows-x86" ]]; then
-            make windows-x86
-            BINARY_DIR="build/windows-x86"
-            BINARY_SUFFIX=".exe"
-            PACKAGE_EXT="zip"
-          elif [[ "${{ matrix.target }}" == "windows-x86_64" ]]; then
-            make windows
-            BINARY_DIR="build/windows"
-            BINARY_SUFFIX=".exe"
-            PACKAGE_EXT="zip"
-          fi
+          case "${{ matrix.target }}" in
+            linux-x86_64)
+              make linux-release
+              BINARY_DIR="build/linux-release"
+              BINARY_SUFFIX=""
+              PACKAGE_EXT="tar.gz"
+              ;;
+            windows-x86)
+              make windows-x86-release
+              BINARY_DIR="build/windows-x86-release"
+              BINARY_SUFFIX=".exe"
+              PACKAGE_EXT="zip"
+              ;;
+            windows-x86_64)
+              make windows-release
+              BINARY_DIR="build/windows-release"
+              BINARY_SUFFIX=".exe"
+              PACKAGE_EXT="zip"
+              ;;
+          esac
           
           echo "BINARY_DIR=$BINARY_DIR" >> $GITHUB_ENV
           echo "BINARY_SUFFIX=$BINARY_SUFFIX" >> $GITHUB_ENV
