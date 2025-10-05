@@ -16,7 +16,7 @@ endif()
 option(BUILD_CLI "Build the command line interface tool" ON)
 option(BUILD_TESTS "Build the test suite" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" ON)
-option(ENABLE_LIBUV "Enable libuv-based parallel processing" ON)
+option(BUILD_DIAGNOSTIC "Build diagnostic tool" OFF)
 
 # Enable testing at the top level
 enable_testing()
@@ -43,6 +43,12 @@ CPMFindPackage(
     GIT_TAG fede005abaf93d9d7f3a679d1999b2db341b360f  # Latest commit on master branch
 )
 
+CPMFindPackage(
+    NAME fmt
+    GITHUB_REPOSITORY fmtlib/fmt
+    GIT_TAG 11.0.2
+)
+
 # Create interface library for stb since CPM doesn't create it automatically
 add_library(stb_headers INTERFACE)
 target_include_directories(stb_headers INTERFACE ${stb_SOURCE_DIR})
@@ -52,22 +58,7 @@ set_target_properties(stb_headers PROPERTIES
 )
 add_library(stb::headers ALIAS stb_headers)
 
-# Libuv - only if ENABLE_LIBUV is ON
-if(ENABLE_LIBUV)
-    CPMFindPackage(
-        NAME libuv
-        GITHUB_REPOSITORY libuv/libuv
-        GIT_TAG v1.51.0
-    )
-    
-    # Suppress warnings from libuv
-    if(TARGET uv)
-        target_compile_options(uv PRIVATE -w)
-    endif()
-    if(TARGET uv_a)
-        target_compile_options(uv_a PRIVATE -w)
-    endif()
-endif()
+
 
 # Create interface libraries for doctest if CPM doesn't create the expected targets
 if(BUILD_TESTS)
@@ -129,7 +120,11 @@ endif()
 if(MSVC)
     string(APPEND CMAKE_CXX_FLAGS " /W4")
 else()
-    string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -pedantic -pthread")
+    string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -pedantic")
+    # Add pthread for non-MSVC compilers (Linux, MinGW)
+    if(NOT WIN32)
+        string(APPEND CMAKE_CXX_FLAGS " -pthread")
+    endif()
 endif()
 
 # Sanitizer options
@@ -137,7 +132,7 @@ option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
 option(ENABLE_LEAK_SANITIZER "Enable LeakSanitizer" OFF)
 
 if(ENABLE_ASAN)
-    if(NOT MSVC)
+    if(NOT MSVC AND NOT WIN32)
         set(SANITIZER_FLAGS "-fsanitize=address -fno-omit-frame-pointer -g")
         string(APPEND CMAKE_CXX_FLAGS " ${SANITIZER_FLAGS}")
         string(APPEND CMAKE_EXE_LINKER_FLAGS " ${SANITIZER_FLAGS}")
@@ -145,7 +140,7 @@ if(ENABLE_ASAN)
 endif()
 
 if(ENABLE_LEAK_SANITIZER)
-    if(NOT MSVC)
+    if(NOT MSVC AND NOT WIN32)
         set(LEAK_SANITIZER_FLAGS "-fsanitize=leak -fno-omit-frame-pointer -g")
         string(APPEND CMAKE_CXX_FLAGS " ${LEAK_SANITIZER_FLAGS}")
         string(APPEND CMAKE_EXE_LINKER_FLAGS " ${LEAK_SANITIZER_FLAGS}")
@@ -157,7 +152,12 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
     if(MSVC)
         string(APPEND CMAKE_CXX_FLAGS_RELEASE " /O2")
     else()
-        string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
+        string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O3 -DNDEBUG -flto=auto -ffast-math")
+        string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -flto=auto")
+        # Architecture-specific optimizations for x86_64
+        if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
+            string(APPEND CMAKE_CXX_FLAGS_RELEASE " -march=x86-64 -mtune=generic")
+        endif()
     endif()
 endif()
 
@@ -179,6 +179,7 @@ add_library(art2img_extractor
     src/image_processor.cpp
     src/exceptions.cpp
     src/file_operations.cpp
+    src/colors.cpp
 )
 
 # Set C++ standard via compile features
