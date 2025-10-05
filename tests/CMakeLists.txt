@@ -60,12 +60,20 @@ endif()
 # Use doctest test discovery to automatically register individual test cases as CTest tests
 include(${doctest_SOURCE_DIR}/scripts/cmake/doctest.cmake)
 
-doctest_discover_tests(art2img_tests
-    TEST_PREFIX "doctest-"
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    PROPERTIES 
-        TIMEOUT 300
-)
+# Check if we're cross-compiling for Windows
+if(CMAKE_CROSSCOMPILING AND CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    # For Windows cross-compiled builds, disable automatic test discovery
+    # Tests will be run manually via Wine in the build scripts
+    message(STATUS "Cross-compiling for Windows - tests will be run manually with Wine")
+else()
+    # Native build or non-Windows cross-compilation - run tests directly
+    doctest_discover_tests(art2img_tests
+        TEST_PREFIX "doctest-"
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        PROPERTIES 
+            TIMEOUT 300
+    )
+endif()
 
 # Standalone tests removed
 
