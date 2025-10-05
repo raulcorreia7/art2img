@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup CPM dependencies cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/CPM
@@ -29,7 +29,7 @@ jobs:
             cpm-${{ runner.os }}-linux-
 
       - name: Setup build cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             build/**/CMakeCache.txt
@@ -67,12 +67,10 @@ jobs:
         run: |
           cd build/linux && ctest --output-on-failure
 
-  # Windows x86 build and test
-  windows-x86-build:
-    name: Windows x86 Build and Test
+  # Windows native build and test
+  windows-build:
+    name: Windows Build and Test
     runs-on: windows-latest
-    env:
-      WINDOWS_X86_RELEASE_DIR: build/windows-x86
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -80,110 +78,46 @@ jobs:
           fetch-depth: 0
 
       - name: Setup CPM dependencies cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/CPM
             ~/AppData/Local/Temp/CPM
-          key: cpm-${{ runner.os }}-win32-${{ hashFiles('**/CMakeLists.txt') }}
+          key: cpm-${{ runner.os }}-windows-${{ hashFiles('**/CMakeLists.txt') }}
           restore-keys: |
-            cpm-${{ runner.os }}-win32-
+            cpm-${{ runner.os }}-windows-
 
       - name: Setup build cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             build/**/CMakeCache.txt
             build/**/CMakeFiles/**
             build/**/cmake_install.cmake
-          key: build-${{ runner.os }}-win32-${{ hashFiles('**/CMakeLists.txt', '**/src/**', '**/include/**', '**/cli/**') }}
+          key: build-${{ runner.os }}-windows-${{ hashFiles('**/CMakeLists.txt', '**/src/**', '**/include/**', '**/cli/**') }}
           restore-keys: |
-            build-${{ runner.os }}-win32-
+            build-${{ runner.os }}-windows-
 
-      - name: Setup MinGW-w64 for Windows x86 build
-        uses: egor-tensin/setup-mingw@v2.2.0
-        with:
-          platform: x86
-
-      - name: Configure CMake for Windows x86
-        shell: bash
+      - name: Configure CMake for Windows
+        shell: pwsh
         run: |
-          cmake -B build/windows-x86 \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/cmake/windows-x86-toolchain.cmake" \
-                -DBUILD_TESTS=ON \
-                -DBUILD_DIAGNOSTIC=ON \
-                -DBUILD_SHARED_LIBS=OFF \
-                -G "MinGW Makefiles"
+          cmake -B build/windows `
+                -DCMAKE_BUILD_TYPE=Release `
+                -DBUILD_TESTS=ON `
+                -DBUILD_DIAGNOSTIC=ON `
+                -DBUILD_SHARED_LIBS=OFF `
+                -A x64
 
-      - name: Build Windows x86 binaries
-        shell: bash
+      - name: Build Windows binaries
+        shell: pwsh
         run: |
-          cmake --build build/windows-x86 --parallel
+          cmake --build build/windows --parallel
 
-      - name: Display artifacts
-        shell: bash
+      - name: Run tests
+        shell: pwsh
         run: |
-          find build/windows-x86 -name "*.exe" -type f
-
-  # Windows x64 build and test
-  windows-x64-build:
-    name: Windows x64 Build and Test
-    runs-on: windows-latest
-    env:
-      WINDOWS_RELEASE_DIR: build/windows-x64
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup CPM dependencies cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/CPM
-            ~/AppData/Local/Temp/CPM
-          key: cpm-${{ runner.os }}-win64-${{ hashFiles('**/CMakeLists.txt') }}
-          restore-keys: |
-            cpm-${{ runner.os }}-win64-
-
-      - name: Setup build cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            build/**/CMakeCache.txt
-            build/**/CMakeFiles/**
-            build/**/cmake_install.cmake
-          key: build-${{ runner.os }}-win64-${{ hashFiles('**/CMakeLists.txt', '**/src/**', '**/include/**', '**/cli/**') }}
-          restore-keys: |
-            build-${{ runner.os }}-win64-
-
-      - name: Setup MinGW-w64 for Windows x64 build
-        uses: egor-tensin/setup-mingw@v2.2.0
-        with:
-          platform: x64
-
-      - name: Configure CMake for Windows x64
-        shell: bash
-        run: |
-          cmake -B build/windows-x64 \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/cmake/windows-toolchain.cmake" \
-                -DBUILD_TESTS=ON \
-                -DBUILD_DIAGNOSTIC=ON \
-                -DBUILD_SHARED_LIBS=OFF \
-                -G "MinGW Makefiles"
-
-      - name: Build Windows x64 binaries
-        shell: bash
-        run: |
-          cmake --build build/windows-x64 --parallel
-
-      - name: Display artifacts
-        shell: bash
-        run: |
-          find build/windows-x64 -name "*.exe" -type f
+          cd build/windows
+          ctest --output-on-failure
 
   # macOS build and test
   macos-build:
@@ -196,7 +130,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup CPM dependencies cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/CPM
@@ -206,7 +140,7 @@ jobs:
             cpm-${{ runner.os }}-macos-
 
       - name: Setup build cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             build/**/CMakeCache.txt
