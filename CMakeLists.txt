@@ -339,6 +339,11 @@ file(GLOB_RECURSE ART2IMG_ALL_TRANSLATION_UNITS
     ${CMAKE_SOURCE_DIR}/tests/*.cpp
 )
 
+# Install vendored dependencies that need to be available to consumers
+install(FILES include/BS_thread_pool.hpp
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
 # Add clang-format targets
 find_program(CLANG_FORMAT_EXE NAMES clang-format)
 if(CLANG_FORMAT_EXE)

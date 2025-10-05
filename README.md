@@ -70,6 +70,17 @@ make all
 sudo make install
 ```
 
+## 🔁 Keeping Your Fork Up to Date
+
+Before attempting to pull updates, make sure your local clone has a remote configured for the upstream repository:
+
+```bash
+git remote add origin git@github.com:your-org/art2img.git
+git pull origin master
+```
+
+Replace the remote URL with the appropriate upstream for your fork or workspace before syncing.
+
 ## 🏗️ Building
 
 **Requirements:**

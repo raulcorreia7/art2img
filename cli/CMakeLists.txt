@@ -8,6 +8,11 @@ add_executable(art2img
     processor.cpp
 )
 
+target_sources(art2img
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include/BS_thread_pool.hpp
+)
+
 
 
 # Set target properties
