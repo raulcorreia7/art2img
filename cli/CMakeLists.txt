@@ -3,6 +3,7 @@ project(art2img_cli)
 
 # Create the main executable
 add_executable(art2img
+    cli_app_builder.cpp
     main.cpp
     processor.cpp
 )
