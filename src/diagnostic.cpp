@@ -3,6 +3,8 @@
 #include <version.hpp>
 
 int main(int argc, char* argv[]) {
+  void(argc);
+  void(argv);
   std::cout << "art2img Diagnostic Tool" << std::endl;
   std::cout << "Version: " << ART2IMG_VERSION << std::endl;
   std::cout << "========================" << std::endl;
