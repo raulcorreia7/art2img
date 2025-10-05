@@ -38,11 +38,47 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(*app, argc, argv);
 
+    auto translation_result = translate_to_processing_options(cli_options);
+    if (!translation_result.success()) {
+      art2img::ColorGuard red(art2img::ColorOutput::RED, std::cerr);
+      if (translation_result.error.has_value()) {
+        const auto& error = *translation_result.error;
+        const char* code_label = nullptr;
+        switch (error.code) {
+        case OptionTranslationErrorCode::InvalidFormat:
+          code_label = "invalid-format";
+          break;
+        case OptionTranslationErrorCode::AnimationConflict:
+          code_label = "animation-conflict";
+          break;
+        case OptionTranslationErrorCode::PaletteConflict:
+          code_label = "palette-conflict";
+          break;
+        case OptionTranslationErrorCode::None:
+          break;
+        }
+
+        std::cerr << "Invalid option combination";
+        if (code_label != nullptr) {
+          std::cerr << " [" << code_label << "]";
+        }
+        std::cerr << ": " << error.message << std::endl;
+      } else {
+        std::cerr << "Invalid option combination" << std::endl;
+      }
+
+      art2img::ColorGuard yellow(art2img::ColorOutput::YELLOW, std::cerr);
+      std::cerr << "For help, run: art2img --help" << std::endl;
+      return 1;
+    }
+
+    const ProcessingOptions& processing_options = *translation_result.options;
+
     // Print banner if not quiet
-    if (!cli_options.quiet) {
+    if (processing_options.verbose) {
       art2img::ColorGuard cyan(art2img::ColorOutput::CYAN);
-      std::cout << "art2img v" << ART2IMG_VERSION
-                << " - Duke Nukem 3D ART File Converter" << std::endl;
+      std::cout << "art2img v" << ART2IMG_VERSION << " - Duke Nukem 3D ART File Converter"
+                << std::endl;
       std::cout << "=============================================" << std::endl;
       std::cout << std::endl;
     }
@@ -52,9 +88,9 @@ int main(int argc, char* argv[]) {
     bool is_directory = std::filesystem::is_directory(cli_options.input_path);
 
     if (is_directory) {
-      processing_result = process_art_directory(cli_options);
+      processing_result = process_art_directory(cli_options, processing_options);
     } else {
-      processing_result = process_single_art_file_wrapper(cli_options);
+      processing_result = process_single_art_file_wrapper(cli_options, processing_options);
     }
 
     if (!processing_result.success) {

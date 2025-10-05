@@ -7,7 +7,9 @@ add_executable(art2img_tests)
 target_sources(art2img_tests
     PRIVATE
     doctest_tests.cpp
+    ../cli/cli_app_builder.cpp
     ../cli/processor.cpp
+    ../cli/config.cpp
     test_art_file.cpp
     test_extractor_api.cpp
     test_functionality.cpp

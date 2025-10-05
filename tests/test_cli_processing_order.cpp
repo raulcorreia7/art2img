@@ -10,6 +10,7 @@
 #include <system_error>
 #include <vector>
 
+#include "config.hpp"
 #include "processor.hpp"
 #include "test_helpers.hpp"
 
@@ -28,7 +29,9 @@ public:
     }
   }
 
-  const std::filesystem::path& path() const { return path_; }
+  const std::filesystem::path& path() const {
+    return path_;
+  }
 
 private:
   std::filesystem::path path_;
@@ -36,12 +39,11 @@ private:
 
 std::filesystem::path make_temp_directory(const std::string& prefix) {
   static std::atomic<uint64_t> counter{0};
-  const auto timestamp = static_cast<uint64_t>(
-      std::chrono::steady_clock::now().time_since_epoch().count());
+  const auto timestamp =
+      static_cast<uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count());
   auto base = std::filesystem::temp_directory_path();
-  auto temp_dir =
-      base / (prefix + "-" + std::to_string(timestamp) + "-" +
-              std::to_string(counter.fetch_add(1, std::memory_order_relaxed)));
+  auto temp_dir = base / (prefix + "-" + std::to_string(timestamp) + "-" +
+                          std::to_string(counter.fetch_add(1, std::memory_order_relaxed)));
   std::filesystem::create_directories(temp_dir);
   return temp_dir;
 }
@@ -81,7 +83,10 @@ TEST_CASE("process_art_directory sorts matching files before processing") {
   cli_options.no_anim = false;
   cli_options.merge_anim = true;
 
-  const auto result = process_art_directory(cli_options);
+  const auto translation = translate_to_processing_options(cli_options);
+  REQUIRE(translation.success());
+
+  const auto result = process_art_directory(cli_options, *translation.options);
 
   CAPTURE(result.error_message);
   CHECK_MESSAGE(result.success, "Directory processing should succeed: " << result.error_message);
@@ -110,4 +115,3 @@ TEST_CASE("process_art_directory sorts matching files before processing") {
   REQUIRE_EQ(processed_paths.size(), sorted_paths.size());
   CHECK_EQ(processed_paths, sorted_paths);
 }
-
