@@ -45,7 +45,7 @@ jobs:
 
       - name: Test Windows x86 project
         run: |
-          make test-windows
+          make test-windows-x86
 
       - name: Build Windows x64 project
         run: |

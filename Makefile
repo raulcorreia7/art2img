@@ -38,6 +38,9 @@ test: build
 test-windows: windows
 	@./scripts/test_windows.sh
 
+test-windows-x86: windows-x86
+	@./scripts/test_windows.sh
+
 # Install to system
 install: build
 	@cd $(BUILD_DIR) && cmake --install . --prefix /usr/local
