@@ -92,20 +92,6 @@ void handle_tile_result(const TileResult& tile_result, ProcessingResult& summary
   log_progress_if_needed(options, completed, static_cast<std::size_t>(total_tiles));
 }
 
-ProcessingOptions make_processing_options(const CliOptions& cli_options) {
-  ProcessingOptions options;
-  options.palette_file = cli_options.palette_file;
-  options.output_dir = cli_options.output_dir;
-  options.format = cli_options.format;
-  options.fix_transparency = cli_options.fix_transparency;
-  options.verbose = !cli_options.quiet;
-  options.dump_animation = !cli_options.no_anim;
-  options.merge_animation_data = cli_options.merge_anim;
-  options.enable_parallel = cli_options.enable_parallel;
-  options.max_threads = cli_options.max_threads;
-  return options;
-}
-
 void process_tiles_sequential(const TileProcessingContext& context, ProcessingResult& result) {
   for (uint32_t i = 0; i < context.total_tiles; ++i) {
     TileResult tile_result = export_tile(context, i);
