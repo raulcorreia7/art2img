@@ -165,21 +165,20 @@ ProcessingResult process_sequential_impl(const ProcessingOptions& options,
       // Show progress for large files
       if (options.verbose && total_tiles > 50 && (i + 1) % 10 == 0) {
         art2img::ColorGuard cyan(art2img::ColorOutput::CYAN);
-        std::cout << "Progress: " << (i + 1) << "/" << total_tiles
-                  << " tiles processed" << art2img::ColorOutput::reset() << std::endl;
+        std::cout << "Progress: " << (i + 1) << "/" << total_tiles << " tiles processed"
+                  << art2img::ColorOutput::reset() << std::endl;
       }
     }
 
     if (options.verbose) {
       if (result.failed_count == 0) {
         art2img::ColorGuard green(art2img::ColorOutput::GREEN);
-        std::cout << "Tile processing complete: " << result.processed_count
-                  << " successful" << art2img::ColorOutput::reset() << std::endl;
+        std::cout << "Tile processing complete: " << result.processed_count << " successful"
+                  << art2img::ColorOutput::reset() << std::endl;
       } else {
         art2img::ColorGuard yellow(art2img::ColorOutput::YELLOW);
-        std::cout << "Tile processing complete: " << result.processed_count
-                  << " successful, " << result.failed_count << " failed" << art2img::ColorOutput::reset()
-                  << std::endl;
+        std::cout << "Tile processing complete: " << result.processed_count << " successful, "
+                  << result.failed_count << " failed" << art2img::ColorOutput::reset() << std::endl;
       }
     }
 
@@ -409,8 +408,9 @@ bool process_art_directory(const CliOptions& cli_options) {
     processed_files++;
     if (!cli_options.quiet) {
       art2img::ColorGuard cyan(art2img::ColorOutput::CYAN);
-      std::cout << "Processing file " << processed_files << "/" << art_files.size()
-                << ": " << std::filesystem::path(art_file).filename() << art2img::ColorOutput::reset() << std::endl;
+      std::cout << "Processing file " << processed_files << "/" << art_files.size() << ": "
+                << std::filesystem::path(art_file).filename() << art2img::ColorOutput::reset()
+                << std::endl;
     }
 
     // Use filename without extension as subdirectory
@@ -425,7 +425,8 @@ bool process_art_directory(const CliOptions& cli_options) {
               << " files successful" << std::endl;
     if (successful_files == processed_files) {
       art2img::ColorGuard green(art2img::ColorOutput::GREEN);
-      std::cout << "All files processed successfully!" << art2img::ColorOutput::reset() << std::endl;
+      std::cout << "All files processed successfully!" << art2img::ColorOutput::reset()
+                << std::endl;
     } else if (successful_files > 0) {
       art2img::ColorGuard yellow(art2img::ColorOutput::YELLOW);
       std::cout << "Some files processed with warnings." << art2img::ColorOutput::reset()

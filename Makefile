@@ -44,11 +44,11 @@ install: build
 
 # Code formatting
 format:
-	@find . -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" | xargs clang-format -i --style=file
+	@find include src tests cli -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" | xargs clang-format -i --style=file
 
 # Check code formatting (dry run)
 format-check:
-	@find . -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" | xargs clang-format --style=file --dry-run -Werror || (echo "Code formatting issues found. Run 'make format' to fix." && exit 1)
+	@find include src tests cli -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" | xargs clang-format --style=file --dry-run -Werror || (echo "Code formatting issues found. Run 'make format' to fix." && exit 1)
 
 # Clean build directory
 clean:

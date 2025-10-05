@@ -79,14 +79,13 @@ sudo make install
 
 **Build options:**
 ```bash
-make all                 # Build Linux Release (default)
-make linux-release       # Build Linux Release
-make linux-debug         # Build Linux Debug
-make windows-release     # Build Windows Release
-make windows-debug       # Build Windows Debug
-make test-linux          # Run Linux tests
-make test-windows        # Run Windows tests (requires Wine)
-make clean               # Clean build directory
+make all          # Build for Linux (default)
+make build        # Build for Linux
+make windows      # Cross-compile for Windows x64
+make windows-x86  # Cross-compile for Windows x86
+make test         # Run tests on Linux
+make test-windows # Test Windows build (requires Wine)
+make clean        # Clean build directory
 ```
 
 ## 📚 Documentation

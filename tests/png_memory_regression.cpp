@@ -9,8 +9,8 @@
 #include "palette.hpp"
 
 // Include new module headers for direct testing
-#include "image_processor.hpp"
 #include "file_operations.hpp"
+#include "image_processor.hpp"
 
 int main(int argc, char** argv) {
   try {
@@ -36,11 +36,12 @@ int main(int argc, char** argv) {
 
     art2img::ImageWriter::Options options;
     std::vector<uint8_t> memory_png;
-    
+
     // Test direct module usage
-    auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(), pixel_data.size(), options);
+    auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
+                                                               pixel_data.size(), options);
     memory_png = art2img::file_operations::encode_png_to_memory(rgba_data, tile.width, tile.height);
-    
+
     if (memory_png.empty()) {
       std::cerr << "Failed to write PNG to memory using direct module calls" << std::endl;
       return 1;
@@ -48,9 +49,9 @@ int main(int argc, char** argv) {
 
     // Also test ImageWriter for comparison
     std::vector<uint8_t> image_writer_png;
-    if (!art2img::ImageWriter::write_image_to_memory(image_writer_png, art2img::ImageFormat::PNG, palette,
-                                                     tile, pixel_data.data(), pixel_data.size(),
-                                                     options)) {
+    if (!art2img::ImageWriter::write_image_to_memory(image_writer_png, art2img::ImageFormat::PNG,
+                                                     palette, tile, pixel_data.data(),
+                                                     pixel_data.size(), options)) {
       std::cerr << "Failed to write PNG to memory using ImageWriter" << std::endl;
       return 1;
     }
@@ -74,20 +75,20 @@ int main(int argc, char** argv) {
       std::cerr << "In-memory PNG buffer is empty" << std::endl;
       return 1;
     }
-    
+
     // Also compare with ImageWriter output
     if (image_writer_png.empty()) {
       std::cerr << "ImageWriter PNG buffer is empty" << std::endl;
       return 1;
     }
-    
+
     if (memory_png != disk_png) {
       std::cerr << "Mismatch between in-memory and on-disk PNG outputs" << std::endl;
       std::cerr << "  In-memory size: " << memory_png.size() << " bytes" << std::endl;
       std::cerr << "  On-disk size:   " << disk_png.size() << " bytes" << std::endl;
       return 1;
     }
-    
+
     // Verify ImageWriter output matches direct module usage
     if (memory_png != image_writer_png) {
       std::cerr << "Mismatch between direct module usage and ImageWriter outputs" << std::endl;
@@ -97,8 +98,7 @@ int main(int argc, char** argv) {
 
     std::cout << "PNG memory regression test passed (" << memory_png.size() << " bytes)"
               << std::endl;
-    std::cout << "ImageWriter output size: " << image_writer_png.size() << " bytes"
-              << std::endl;
+    std::cout << "ImageWriter output size: " << image_writer_png.size() << " bytes" << std::endl;
     return 0;
   } catch (const std::exception& ex) {
     std::cerr << "Exception: " << ex.what() << std::endl;

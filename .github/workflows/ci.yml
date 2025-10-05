@@ -40,7 +40,7 @@ jobs:
 
       - name: Build Windows x86 project
         run: |
-          make windows
+          make windows-x86
 
       - name: Build Windows x64 project
         run: |

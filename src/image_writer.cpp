@@ -1,6 +1,4 @@
 #include "image_writer.hpp"
-#include "image_processor.hpp"
-#include "file_operations.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -8,6 +6,9 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+
+#include "file_operations.hpp"
+#include "image_processor.hpp"
 
 namespace art2img {
 
@@ -105,9 +106,6 @@ bool ImageWriter::write_png_to_memory(std::vector<uint8_t>& output, const Palett
   return !output.empty();
 }
 
-
-
-
 // TGA Implementation
 
 bool ImageWriter::write_tga_to_file(const std::filesystem::path& filename, const Palette& palette,
@@ -122,9 +120,9 @@ bool ImageWriter::write_tga_to_file(const std::filesystem::path& filename, const
   }
 
   // Write TGA file using file_operations
-  return file_operations::write_tga_file(filename, palette,
-                                        std::vector<uint8_t>(pixel_data, pixel_data + pixel_data_size),
-                                        tile.width, tile.height);
+  return file_operations::write_tga_file(
+      filename, palette, std::vector<uint8_t>(pixel_data, pixel_data + pixel_data_size), tile.width,
+      tile.height);
 }
 
 bool ImageWriter::write_tga_to_memory(std::vector<uint8_t>& output, const Palette& palette,
@@ -142,12 +140,11 @@ bool ImageWriter::write_tga_to_memory(std::vector<uint8_t>& output, const Palett
   }
 
   // Encode TGA to memory using file_operations
-  output = file_operations::encode_tga_to_memory(palette,
-                                                std::vector<uint8_t>(pixel_data, pixel_data + pixel_data_size),
-                                                tile.width, tile.height);
+  output = file_operations::encode_tga_to_memory(
+      palette, std::vector<uint8_t>(pixel_data, pixel_data + pixel_data_size), tile.width,
+      tile.height);
   return !output.empty();
 }
-
 
 // BMP Implementation
 
@@ -163,9 +160,9 @@ bool ImageWriter::write_bmp_to_file(const std::filesystem::path& filename, const
   }
 
   // Write BMP file using file_operations
-  return file_operations::write_bmp_file(filename, palette,
-                                        std::vector<uint8_t>(pixel_data, pixel_data + pixel_data_size),
-                                        tile.width, tile.height, options);
+  return file_operations::write_bmp_file(
+      filename, palette, std::vector<uint8_t>(pixel_data, pixel_data + pixel_data_size), tile.width,
+      tile.height, options);
 }
 
 bool ImageWriter::write_bmp_to_memory(std::vector<uint8_t>& output, const Palette& palette,
@@ -183,9 +180,9 @@ bool ImageWriter::write_bmp_to_memory(std::vector<uint8_t>& output, const Palett
   }
 
   // Encode BMP to memory using file_operations
-  output = file_operations::encode_bmp_to_memory(palette,
-                                                std::vector<uint8_t>(pixel_data, pixel_data + pixel_data_size),
-                                                tile.width, tile.height, options);
+  output = file_operations::encode_bmp_to_memory(
+      palette, std::vector<uint8_t>(pixel_data, pixel_data + pixel_data_size), tile.width,
+      tile.height, options);
   return !output.empty();
 }
 
