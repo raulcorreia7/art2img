@@ -19,13 +19,13 @@ readonly PROJECT_ROOT="$(detect_project_root)"
 readonly BUILD_DIR="$(detect_build_dir)"
 
 # Detect which Windows build directory to use
-if [[ -d "${BUILD_DIR}/windows-x86-release" ]]; then
-    readonly WINDOWS_BUILD_DIR="${BUILD_DIR}/windows-x86-release"
-elif [[ -d "${BUILD_DIR}/windows-release" ]]; then
-    readonly WINDOWS_BUILD_DIR="${BUILD_DIR}/windows-release"
+if [[ -d "${BUILD_DIR}/windows-x86" ]]; then
+    readonly WINDOWS_BUILD_DIR="${BUILD_DIR}/windows-x86"
+elif [[ -d "${BUILD_DIR}/windows" ]]; then
+    readonly WINDOWS_BUILD_DIR="${BUILD_DIR}/windows"
 else
     # Fallback to default
-    readonly WINDOWS_BUILD_DIR="${BUILD_DIR}/windows-release"
+    readonly WINDOWS_BUILD_DIR="${BUILD_DIR}/windows"
 fi
 
 readonly WINDOWS_BIN_DIR="${WINDOWS_BUILD_DIR}/bin"
