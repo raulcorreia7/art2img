@@ -17,20 +17,30 @@ source "$SCRIPT_DIR/test_common.sh"
 # -----------------------------------------------------------------------------
 readonly PROJECT_ROOT="$(detect_project_root)"
 
-# Use provided build directory or detect it
-if [[ -n "$1" ]]; then
-    readonly BUILD_DIR="$1"
-else
-    readonly BUILD_DIR="$(detect_build_dir)"
+# Parse arguments: optional "functional-only" flag followed by build directories
+FUNCTIONAL_ONLY="false"
+ARGS=("$@")
+
+if [[ "${ARGS[0]:-}" == "functional-only" ]]; then
+    FUNCTIONAL_ONLY="functional-only"
+    ARGS=("${ARGS[@]:1}")
 fi
 
-# Use provided Windows build directory or detect it
-if [[ -n "$2" ]]; then
-    readonly WINDOWS_BUILD_DIR="$2"
+# Use provided build directory or detect it
+if [[ -n "${ARGS[0]:-}" ]]; then
+    BUILD_DIR="${ARGS[0]}"
 else
-    # Default to the build directory passed as first parameter
-    readonly WINDOWS_BUILD_DIR="${BUILD_DIR}"
+    BUILD_DIR="$(detect_build_dir)"
 fi
+
+# Use provided Windows build directory or default to BUILD_DIR
+if [[ -n "${ARGS[1]:-}" ]]; then
+    WINDOWS_BUILD_DIR="${ARGS[1]}"
+else
+    WINDOWS_BUILD_DIR="${BUILD_DIR}"
+fi
+
+readonly FUNCTIONAL_ONLY BUILD_DIR WINDOWS_BUILD_DIR
 
 readonly WINDOWS_BIN_DIR="${WINDOWS_BUILD_DIR}/bin"
 readonly MAIN_BIN="${WINDOWS_BIN_DIR}/art2img.exe"
@@ -49,8 +59,6 @@ readonly TRANSP_OUTPUT_DIR="${OUTPUT_DIR}/ci_transparency"
 readonly NO_TRANSP_OUTPUT_DIR="${OUTPUT_DIR}/ci_no_transparency"
 
 # Test configuration
-readonly FUNCTIONAL_ONLY="${1:-false}"
-
 # -----------------------------------------------------------------------------
 # Validation functions
 # -----------------------------------------------------------------------------
@@ -240,7 +248,10 @@ execute_test_suite() {
     fi
     
     create_test_summary "$total_tests" "$passed_tests" "$((total_tests - passed_tests))" "Windows Test Suite"
+    local summary_status=$?
+
     echo "$tile_count"
+    return $summary_status
 }
 
 # -----------------------------------------------------------------------------
