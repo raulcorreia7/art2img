@@ -1,6 +1,4 @@
 # Build artifacts
-bin/
-obj/
 build/
 build-*/
 *.exe
@@ -9,6 +7,8 @@ build-*/
 *.so
 *.dll
 *.lib
+
+
 
 # IDE files
 .vscode/
@@ -27,17 +27,10 @@ Thumbs.db
 # Log files
 *.log
 
-# Test outputs (keep test assets but not generated outputs)
-tests/output/
-tests/tests/output/
-build-tests/
-Testing/
-tests/Testing/
-test-package/
-test-release/
-art2img-linux-x86_64-1.0.0.tar.gz
+# Test outputs
+test_output/
+final_test/
 
-# Project Files
-cmake-build*/
+# Dependencies
 _fetch/
-.agents/
+.cpm/
