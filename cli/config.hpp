@@ -1,7 +1,20 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <string>
+
+enum class OptionTranslationErrorCode {
+  None = 0,
+  InvalidFormat,
+  AnimationConflict,
+  PaletteConflict,
+};
+
+struct OptionTranslationError {
+  OptionTranslationErrorCode code = OptionTranslationErrorCode::None;
+  std::string message;
+};
 
 struct CliOptions {
   std::string input_path;
@@ -27,3 +40,14 @@ struct ProcessingOptions {
   bool enable_parallel = true;
   std::size_t max_threads = 0;
 };
+
+struct OptionTranslationResult {
+  std::optional<ProcessingOptions> options;
+  std::optional<OptionTranslationError> error;
+
+  [[nodiscard]] bool success() const {
+    return options.has_value() && !error.has_value();
+  }
+};
+
+OptionTranslationResult translate_to_processing_options(const CliOptions& cli_options);

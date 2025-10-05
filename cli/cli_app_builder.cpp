@@ -23,8 +23,7 @@ constexpr const char* kDefaultFooter =
     "\nFor modders: Use -F for transparency and -m for animation data.";
 }  // namespace
 
-CliAppBuilder::CliAppBuilder()
-    : banner_{default_banner()}, footer_{default_footer()} {}
+CliAppBuilder::CliAppBuilder() : banner_{default_banner()}, footer_{default_footer()} {}
 
 CliAppBuilder& CliAppBuilder::with_banner(std::string banner) {
   if (!banner.empty()) {
@@ -77,8 +76,12 @@ std::unique_ptr<CLI::App> CliAppBuilder::build(CliOptions& options) const {
   return app;
 }
 
-std::string CliAppBuilder::default_banner() { return kDefaultBanner; }
+std::string CliAppBuilder::default_banner() {
+  return kDefaultBanner;
+}
 
-std::string CliAppBuilder::default_footer() { return kDefaultFooter; }
+std::string CliAppBuilder::default_footer() {
+  return kDefaultFooter;
+}
 
 }  // namespace art2img
