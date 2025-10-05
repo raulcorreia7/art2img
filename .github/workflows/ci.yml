@@ -18,7 +18,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Cache CPM dependencies
+      - name: Setup CPM dependencies cache
         uses: actions/cache@v3
         with:
           path: |
@@ -28,14 +28,14 @@ jobs:
           restore-keys: |
             cpm-${{ runner.os }}-linux-
 
-      - name: Cache build files
+      - name: Setup build cache
         uses: actions/cache@v3
         with:
           path: |
-            build/**
-            !build/**/CMakeCache.txt
-            !build/**/CMakeFiles/**
-          key: build-${{ runner.os }}-linux-${{ github.sha }}
+            build/**/CMakeCache.txt
+            build/**/CMakeFiles/**
+            build/**/cmake_install.cmake
+          key: build-${{ runner.os }}-linux-${{ hashFiles('**/CMakeLists.txt', '**/src/**', '**/include/**', '**/cli/**') }}
           restore-keys: |
             build-${{ runner.os }}-linux-
 
@@ -46,29 +46,40 @@ jobs:
             build-essential \
             clang \
             lld \
-            pkg-config
+            pkg-config \
+            cmake \
+            ninja-build
 
-      - name: Build Linux release configuration
+      - name: Configure CMake
         run: |
-          make linux-release
+          cmake -B build/linux \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DBUILD_TESTS=ON \
+                -DBUILD_DIAGNOSTIC=ON \
+                -DBUILD_SHARED_LIBS=OFF \
+                -G Ninja
 
-      - name: Test Linux release binaries
+      - name: Build Linux binaries
         run: |
-          ./scripts/test_generic.sh linux build/linux-release
+          cmake --build build/linux --parallel $(nproc)
+
+      - name: Run tests
+        run: |
+          cd build/linux && ctest --output-on-failure
 
   # Windows x86 build and test
   windows-x86-build:
     name: Windows x86 Build and Test
     runs-on: windows-latest
     env:
-      WINDOWS_X86_RELEASE_DIR: build/windows-x86-release
+      WINDOWS_X86_RELEASE_DIR: build/windows-x86
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Cache CPM dependencies
+      - name: Setup CPM dependencies cache
         uses: actions/cache@v3
         with:
           path: |
@@ -78,62 +89,56 @@ jobs:
           restore-keys: |
             cpm-${{ runner.os }}-win32-
 
-      - name: Cache build files
+      - name: Setup build cache
         uses: actions/cache@v3
         with:
           path: |
-            build/**
-            !build/**/CMakeCache.txt
-            !build/**/CMakeFiles/**
-          key: build-${{ runner.os }}-win32-${{ github.sha }}
+            build/**/CMakeCache.txt
+            build/**/CMakeFiles/**
+            build/**/cmake_install.cmake
+          key: build-${{ runner.os }}-win32-${{ hashFiles('**/CMakeLists.txt', '**/src/**', '**/include/**', '**/cli/**') }}
           restore-keys: |
             build-${{ runner.os }}-win32-
-
-      - name: Install dependencies
-        shell: pwsh
-        run: |
-          # Install required packages for Windows build
-          # Using vcpkg or other package managers if needed
 
       - name: Setup MinGW-w64 for Windows x86 build
         uses: egor-tensin/setup-mingw@v2.2.0
         with:
           platform: x86
 
-      - name: Install Git Bash (includes basic Unix tools)
-        uses: crazy-max/ghaction-chocolatey@v3
-        with:
-          args: install git -y
-
-      - name: Setup Bats for Windows
+      - name: Configure CMake for Windows x86
+        shell: bash
         run: |
-          git clone https://github.com/bats-core/bats-core.git
-          cd bats-core
-          ./install.sh $env:GITHUB_WORKSPACE/bats
-          echo "$env:GITHUB_WORKSPACE/bats/bin" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-        shell: pwsh
+          cmake -B build/windows-x86 \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/cmake/windows-x86-toolchain.cmake" \
+                -DBUILD_TESTS=ON \
+                -DBUILD_DIAGNOSTIC=ON \
+                -DBUILD_SHARED_LIBS=OFF \
+                -G "MinGW Makefiles"
 
-      - name: Build Windows x86 release configuration
+      - name: Build Windows x86 binaries
+        shell: bash
         run: |
-          make windows-x86-release
+          cmake --build build/windows-x86 --parallel
 
-      - name: Test Windows x86 release binaries
+      - name: Display artifacts
+        shell: bash
         run: |
-          ./scripts/test_generic.sh windows "$WINDOWS_X86_RELEASE_DIR"
+          find build/windows-x86 -name "*.exe" -type f
 
   # Windows x64 build and test
   windows-x64-build:
     name: Windows x64 Build and Test
     runs-on: windows-latest
     env:
-      WINDOWS_RELEASE_DIR: build/windows-release
+      WINDOWS_RELEASE_DIR: build/windows-x64
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Cache CPM dependencies
+      - name: Setup CPM dependencies cache
         uses: actions/cache@v3
         with:
           path: |
@@ -143,44 +148,91 @@ jobs:
           restore-keys: |
             cpm-${{ runner.os }}-win64-
 
-      - name: Cache build files
+      - name: Setup build cache
         uses: actions/cache@v3
         with:
           path: |
-            build/**
-            !build/**/CMakeCache.txt
-            !build/**/CMakeFiles/**
-          key: build-${{ runner.os }}-win64-${{ github.sha }}
+            build/**/CMakeCache.txt
+            build/**/CMakeFiles/**
+            build/**/cmake_install.cmake
+          key: build-${{ runner.os }}-win64-${{ hashFiles('**/CMakeLists.txt', '**/src/**', '**/include/**', '**/cli/**') }}
           restore-keys: |
             build-${{ runner.os }}-win64-
-
-      - name: Install dependencies
-        shell: pwsh
-        run: |
-          # Install required packages for Windows build
 
       - name: Setup MinGW-w64 for Windows x64 build
         uses: egor-tensin/setup-mingw@v2.2.0
         with:
           platform: x64
 
-      - name: Install Git Bash (includes basic Unix tools)
-        uses: crazy-max/ghaction-chocolatey@v3
+      - name: Configure CMake for Windows x64
+        shell: bash
+        run: |
+          cmake -B build/windows-x64 \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/cmake/windows-toolchain.cmake" \
+                -DBUILD_TESTS=ON \
+                -DBUILD_DIAGNOSTIC=ON \
+                -DBUILD_SHARED_LIBS=OFF \
+                -G "MinGW Makefiles"
+
+      - name: Build Windows x64 binaries
+        shell: bash
+        run: |
+          cmake --build build/windows-x64 --parallel
+
+      - name: Display artifacts
+        shell: bash
+        run: |
+          find build/windows-x64 -name "*.exe" -type f
+
+  # macOS build and test
+  macos-build:
+    name: macOS Build and Test
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          args: install git -y
+          fetch-depth: 0
 
-      - name: Setup Bats for Windows
-        run: |
-          git clone https://github.com/bats-core/bats-core.git
-          cd bats-core
-          ./install.sh $env:GITHUB_WORKSPACE/bats
-          echo "$env:GITHUB_WORKSPACE/bats/bin" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-        shell: pwsh
+      - name: Setup CPM dependencies cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/CPM
+            ~/AppData/Local/Temp/CPM
+          key: cpm-${{ runner.os }}-macos-${{ hashFiles('**/CMakeLists.txt') }}
+          restore-keys: |
+            cpm-${{ runner.os }}-macos-
 
-      - name: Build Windows x64 release configuration
-        run: |
-          make windows-release
+      - name: Setup build cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            build/**/CMakeCache.txt
+            build/**/CMakeFiles/**
+            build/**/cmake_install.cmake
+          key: build-${{ runner.os }}-macos-${{ hashFiles('**/CMakeLists.txt', '**/src/**', '**/include/**', '**/cli/**') }}
+          restore-keys: |
+            build-${{ runner.os }}-macos-
 
-      - name: Test Windows x64 release binaries
+      - name: Install dependencies
         run: |
-          ./scripts/test_generic.sh windows "$WINDOWS_RELEASE_DIR"
+          brew install cmake ninja
+
+      - name: Configure CMake
+        run: |
+          cmake -B build/macos \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DBUILD_TESTS=ON \
+                -DBUILD_DIAGNOSTIC=ON \
+                -DBUILD_SHARED_LIBS=OFF \
+                -G Ninja
+
+      - name: Build macOS binaries
+        run: |
+          cmake --build build/macos --parallel $(sysctl -n hw.ncpu)
+
+      - name: Run tests
+        run: |
+          cd build/macos && ctest --output-on-failure
