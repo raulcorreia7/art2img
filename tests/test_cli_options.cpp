@@ -31,7 +31,7 @@ struct Argv {
 };
 }  // namespace
 
-TEST_CASE("CLI parser assigns defaults with required input") {
+TEST_CASE("CLI parser assigns correct default values when only required input parameter is provided") {
   CliOptions options;
   auto app = make_cli_app(options);
 
@@ -48,7 +48,7 @@ TEST_CASE("CLI parser assigns defaults with required input") {
   CHECK(options.merge_anim == false);
 }
 
-TEST_CASE("CLI parser accepts fully specified options") {
+TEST_CASE("CLI parser correctly parses all command-line options and flags") {
   CliOptions options;
   auto app = make_cli_app(options);
 
@@ -66,7 +66,7 @@ TEST_CASE("CLI parser accepts fully specified options") {
   CHECK(options.merge_anim == true);
 }
 
-TEST_CASE("CLI parser rejects missing required input") {
+TEST_CASE("CLI parser throws required field error when input path is not provided") {
   CliOptions options;
   auto app = make_cli_app(options);
 
@@ -74,7 +74,7 @@ TEST_CASE("CLI parser rejects missing required input") {
   CHECK_THROWS_AS(app->parse(args.argc(), args.data()), CLI::RequiredError);
 }
 
-TEST_CASE("CLI parser validates format option") {
+TEST_CASE("CLI parser validates image format and rejects unsupported formats") {
   CliOptions options;
   auto app = make_cli_app(options);
 

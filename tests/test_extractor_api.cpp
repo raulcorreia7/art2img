@@ -7,8 +7,8 @@
 #include "extractor_api.hpp"
 #include "test_helpers.hpp"
 
-TEST_CASE("ExtractorAPI construction") {
-  SUBCASE("Default construction") {
+TEST_CASE("ExtractorAPI construction - initial state and multiple instances") {
+  SUBCASE("Default construction loads default palette but no ART file") {
     art2img::ExtractorAPI extractor;
 
     CHECK(!extractor.is_art_loaded());
@@ -16,7 +16,7 @@ TEST_CASE("ExtractorAPI construction") {
     CHECK_EQ(extractor.get_tile_count(), 0);
   }
 
-  SUBCASE("Multiple instances") {
+  SUBCASE("Multiple extractor instances maintain independent state with default palette") {
     art2img::ExtractorAPI extractor1;
     art2img::ExtractorAPI extractor2;
 
@@ -27,13 +27,13 @@ TEST_CASE("ExtractorAPI construction") {
   }
 }
 
-TEST_CASE("ExtractorAPI ART file loading") {
+TEST_CASE("ExtractorAPI ART file loading - from files and memory") {
   if (!has_test_asset("TILES000.ART")) {
     MESSAGE("TILES000.ART not found, skipping ART loading tests");
     return;
   }
 
-  SUBCASE("Load ART from file") {
+  SUBCASE("Successfully load ART file from filesystem path") {
     art2img::ExtractorAPI extractor;
     const auto art_path = test_asset_path("TILES000.ART");
 
@@ -42,14 +42,14 @@ TEST_CASE("ExtractorAPI ART file loading") {
     CHECK_GT(extractor.get_tile_count(), 0);
   }
 
-  SUBCASE("Load invalid ART file") {
+  SUBCASE("Throw ArtException when loading non-existent ART file") {
     art2img::ExtractorAPI extractor;
 
     CHECK_THROWS_AS(extractor.load_art_file("nonexistent.art"), art2img::ArtException);
     CHECK(!extractor.is_art_loaded());
   }
 
-  SUBCASE("Load ART from memory") {
+  SUBCASE("Successfully load ART file from memory buffer") {
     auto art_data = load_test_asset("TILES000.ART");
     art2img::ExtractorAPI extractor;
 
@@ -58,7 +58,7 @@ TEST_CASE("ExtractorAPI ART file loading") {
     CHECK_GT(extractor.get_tile_count(), 0);
   }
 
-  SUBCASE("Load invalid ART from memory") {
+  SUBCASE("Gracefully handle invalid ART data from memory") {
     art2img::ExtractorAPI extractor;
 
     CHECK(!extractor.load_art_from_memory(nullptr, 0));
