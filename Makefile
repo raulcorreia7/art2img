@@ -36,10 +36,10 @@ test: build
 
 # Test Windows build (requires Wine)
 test-windows: windows
-	@./scripts/test_windows.sh
+	@./scripts/test_windows.sh build/windows
 
 test-windows-x86: windows-x86
-	@./scripts/test_windows.sh
+	@./scripts/test_windows.sh build/windows-x86 build/windows-x86
 
 # Install to system
 install: build
