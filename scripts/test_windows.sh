@@ -17,7 +17,18 @@ source "$SCRIPT_DIR/test_common.sh"
 # -----------------------------------------------------------------------------
 readonly PROJECT_ROOT="$(detect_project_root)"
 readonly BUILD_DIR="$(detect_build_dir)"
-readonly WINDOWS_BIN_DIR="${BUILD_DIR}/windows-release/bin"
+
+# Detect which Windows build directory to use
+if [[ -d "${BUILD_DIR}/windows-x86-release" ]]; then
+    readonly WINDOWS_BUILD_DIR="${BUILD_DIR}/windows-x86-release"
+elif [[ -d "${BUILD_DIR}/windows-release" ]]; then
+    readonly WINDOWS_BUILD_DIR="${BUILD_DIR}/windows-release"
+else
+    # Fallback to default
+    readonly WINDOWS_BUILD_DIR="${BUILD_DIR}/windows-release"
+fi
+
+readonly WINDOWS_BIN_DIR="${WINDOWS_BUILD_DIR}/bin"
 readonly MAIN_BIN="${WINDOWS_BIN_DIR}/art2img.exe"
 readonly TEST_BIN="${WINDOWS_BIN_DIR}/art2img_tests.exe"
 
