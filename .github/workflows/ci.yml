@@ -59,7 +59,6 @@ jobs:
     env:
       WINEDEBUG: -all
       WINEDLLOVERRIDES: mscoree,mshtml=
-      WINEPREFIX: ${{ runner.temp }}/wine-prefix-x86
       WINDOWS_X86_RELEASE_DIR: build/windows-x86-release
     steps:
       - name: Checkout repository
@@ -102,6 +101,11 @@ jobs:
             winbind \
             xvfb
 
+      - name: Set Wine prefix path
+        run: |
+          echo "WINEPREFIX=${RUNNER_TEMP}/wine-prefix-x86" >> "$GITHUB_ENV"
+          mkdir -p "${RUNNER_TEMP}/wine-prefix-x86"
+
       - name: Initialize Wine prefix
         run: |
           mkdir -p "$WINEPREFIX"
@@ -113,7 +117,7 @@ jobs:
 
       - name: Test Windows x86 release binaries
         run: |
-          ./scripts/test_windows.sh "$WINDOWS_X86_RELEASE_DIR"
+          xvfb-run -a ./scripts/test_windows.sh "$WINDOWS_X86_RELEASE_DIR"
 
   # Windows x64 build and test
   windows-x64-build:
@@ -122,7 +126,6 @@ jobs:
     env:
       WINEDEBUG: -all
       WINEDLLOVERRIDES: mscoree,mshtml=
-      WINEPREFIX: ${{ runner.temp }}/wine-prefix-x64
       WINDOWS_RELEASE_DIR: build/windows-release
     steps:
       - name: Checkout repository
@@ -165,6 +168,11 @@ jobs:
             winbind \
             xvfb
 
+      - name: Set Wine prefix path
+        run: |
+          echo "WINEPREFIX=${RUNNER_TEMP}/wine-prefix-x64" >> "$GITHUB_ENV"
+          mkdir -p "${RUNNER_TEMP}/wine-prefix-x64"
+
       - name: Initialize Wine prefix
         run: |
           mkdir -p "$WINEPREFIX"
@@ -176,4 +184,4 @@ jobs:
 
       - name: Test Windows x64 release binaries
         run: |
-          ./scripts/test_windows.sh "$WINDOWS_RELEASE_DIR"
+          xvfb-run -a ./scripts/test_windows.sh "$WINDOWS_RELEASE_DIR"
