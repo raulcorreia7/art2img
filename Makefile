@@ -17,7 +17,7 @@ CMAKE_BASE_FLAGS := -DBUILD_TESTS=ON
 CMAKE_RELEASE_FLAGS := $(CMAKE_BASE_FLAGS) -DCMAKE_BUILD_TYPE=Release -DBUILD_DIAGNOSTIC=ON -DBUILD_SHARED_LIBS=OFF
 
 # Main targets
-.PHONY: all build test clean install format help
+.PHONY: all build test clean install format fmt fmt-check lint help
 .PHONY: windows windows-x86 test-windows doctor
 .PHONY: linux-release windows-release windows-x86-release
 
@@ -27,7 +27,7 @@ all: build
 # Build for Linux
 build:
 	@mkdir -p $(BUILD_DIR)
-	@cd $(BUILD_DIR) && cmake .. -DCMAKE_BUILD_TYPE=Release
+	@cd $(BUILD_DIR) && cmake .. -DCMAKE_BUILD_TYPE=Release $(CMAKE_BASE_FLAGS)
 	@cmake --build $(BUILD_DIR) --parallel $(JOBS)
 
 # Build for Windows x64 (cross-compilation)
@@ -74,12 +74,25 @@ install: build
 	@cd $(BUILD_DIR) && cmake --install . --prefix /usr/local
 
 # Code formatting
-format:
-	@find include src tests cli -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" | xargs clang-format -i --style=file
+fmt:
+	@mkdir -p $(BUILD_DIR)
+	@cd $(BUILD_DIR) && cmake .. -DCMAKE_BUILD_TYPE=Release $(CMAKE_BASE_FLAGS)
+	@cmake --build $(BUILD_DIR) --target clang-format
+
+format: fmt
+
+fmt-check:
+	@mkdir -p $(BUILD_DIR)
+	@cd $(BUILD_DIR) && cmake .. -DCMAKE_BUILD_TYPE=Release $(CMAKE_BASE_FLAGS)
+	@cmake --build $(BUILD_DIR) --target clang-format-dry-run
 
 # Check code formatting (dry run)
-format-check:
-	@find include src tests cli -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" | xargs clang-format --style=file --dry-run -Werror || (echo "Code formatting issues found. Run 'make format' to fix." && exit 1)
+format-check: fmt-check
+
+lint:
+	@mkdir -p $(BUILD_DIR)
+	@cd $(BUILD_DIR) && cmake .. -DCMAKE_BUILD_TYPE=Release $(CMAKE_BASE_FLAGS)
+	@cmake --build $(BUILD_DIR) --target clang-tidy
 
 # Clean build directory
 clean:
@@ -99,8 +112,9 @@ help:
 	@echo "  make test-windows - Test Windows build (requires Wine)"
 	@echo "  make install      - Install to system"
 	@echo "  make clean        - Remove build directory"
-	@echo "  make format       - Format source code"
-	@echo "  make format-check - Check source code formatting"
+	@echo "  make fmt          - Format source code"
+	@echo "  make fmt-check    - Check source code formatting"
+	@echo "  make lint         - Run clang-tidy analysis"
 	@echo "  make doctor       - Check system dependencies"
 
 # Doctor script - verify system dependencies

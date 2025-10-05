@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.14)
 project(art2img VERSION 1.0.0 LANGUAGES CXX)
 
+# Always generate compile_commands.json to support tooling such as clang-tidy
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Enable compile_commands.json generation" FORCE)
+
 # Set default parallel build jobs to use all available CPUs if not explicitly set
 if(NOT DEFINED CMAKE_BUILD_PARALLEL_LEVEL)
     include(ProcessorCount)
@@ -294,27 +297,98 @@ install(FILES include/extractor_api.hpp
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-# Add clang-format target
+# Collect project source files for tooling integrations
+set(ART2IMG_TOOLING_SOURCE_GLOBS
+    ${CMAKE_SOURCE_DIR}/include/*.hpp
+    ${CMAKE_SOURCE_DIR}/include/*.h
+    ${CMAKE_SOURCE_DIR}/include/*.cpp
+    ${CMAKE_SOURCE_DIR}/include/*.c
+    ${CMAKE_SOURCE_DIR}/src/*.hpp
+    ${CMAKE_SOURCE_DIR}/src/*.h
+    ${CMAKE_SOURCE_DIR}/src/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/*.c
+    ${CMAKE_SOURCE_DIR}/cli/*.hpp
+    ${CMAKE_SOURCE_DIR}/cli/*.h
+    ${CMAKE_SOURCE_DIR}/cli/*.cpp
+    ${CMAKE_SOURCE_DIR}/cli/*.cc
+    ${CMAKE_SOURCE_DIR}/cli/*.cxx
+    ${CMAKE_SOURCE_DIR}/tests/*.hpp
+    ${CMAKE_SOURCE_DIR}/tests/*.h
+    ${CMAKE_SOURCE_DIR}/tests/*.cpp
+    ${CMAKE_SOURCE_DIR}/tests/*.c
+)
+
+file(GLOB_RECURSE ART2IMG_ALL_TOOLING_SOURCES
+    CONFIGURE_DEPENDS
+    ${ART2IMG_TOOLING_SOURCE_GLOBS}
+)
+
+file(GLOB_RECURSE ART2IMG_ALL_TRANSLATION_UNITS
+    CONFIGURE_DEPENDS
+    ${CMAKE_SOURCE_DIR}/src/*.c
+    ${CMAKE_SOURCE_DIR}/src/*.cc
+    ${CMAKE_SOURCE_DIR}/src/*.cxx
+    ${CMAKE_SOURCE_DIR}/src/*.cpp
+    ${CMAKE_SOURCE_DIR}/cli/*.c
+    ${CMAKE_SOURCE_DIR}/cli/*.cc
+    ${CMAKE_SOURCE_DIR}/cli/*.cxx
+    ${CMAKE_SOURCE_DIR}/cli/*.cpp
+    ${CMAKE_SOURCE_DIR}/tests/*.c
+    ${CMAKE_SOURCE_DIR}/tests/*.cc
+    ${CMAKE_SOURCE_DIR}/tests/*.cxx
+    ${CMAKE_SOURCE_DIR}/tests/*.cpp
+)
+
+# Add clang-format targets
 find_program(CLANG_FORMAT_EXE NAMES clang-format)
 if(CLANG_FORMAT_EXE)
-    # Get all C++ source and header files in the project
-    file(GLOB_RECURSE ALL_CXX_SOURCE_FILES
-        include/*.hpp include/*.h include/*.cpp include/*.c
-        src/*.hpp src/*.h src/*.cpp src/*.c
-        cli/*.hpp cli/*.h cli/*.cpp cli/*.cc cli/*.cxx
-        tests/*.hpp tests/*.h tests/*.cpp tests/*.c
-    )
-
     add_custom_target(clang-format
-        COMMAND ${CLANG_FORMAT_EXE} -i ${ALL_CXX_SOURCE_FILES}
+        COMMAND ${CLANG_FORMAT_EXE} -i ${ART2IMG_ALL_TOOLING_SOURCES}
         COMMENT "Formatting all C++ source files with clang-format"
         VERBATIM
     )
 
     add_custom_target(clang-format-dry-run
-        COMMAND ${CLANG_FORMAT_EXE} --dry-run --Werror ${ALL_CXX_SOURCE_FILES}
+        COMMAND ${CLANG_FORMAT_EXE} --dry-run --Werror ${ART2IMG_ALL_TOOLING_SOURCES}
         COMMENT "Checking formatting of all C++ source files with clang-format"
         VERBATIM
+    )
+else()
+    add_custom_target(clang-format
+        COMMAND ${CMAKE_COMMAND} -E echo "clang-format not found; install clang-format to enable formatting support."
+        COMMAND ${CMAKE_COMMAND} -E false
+        COMMENT "clang-format not available"
+    )
+
+    add_custom_target(clang-format-dry-run
+        COMMAND ${CMAKE_COMMAND} -E echo "clang-format not found; install clang-format to enable formatting support."
+        COMMAND ${CMAKE_COMMAND} -E false
+        COMMENT "clang-format not available"
+    )
+endif()
+
+# Add clang-tidy lint target
+find_program(RUN_CLANG_TIDY_EXE NAMES run-clang-tidy run-clang-tidy.py)
+find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+if(RUN_CLANG_TIDY_EXE)
+    add_custom_target(clang-tidy
+        COMMAND ${RUN_CLANG_TIDY_EXE} -quiet -p ${CMAKE_BINARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Running clang-tidy analysis"
+        VERBATIM
+    )
+elseif(CLANG_TIDY_EXE)
+    add_custom_target(clang-tidy
+        COMMAND ${CLANG_TIDY_EXE} --quiet -p ${CMAKE_BINARY_DIR} ${ART2IMG_ALL_TRANSLATION_UNITS}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Running clang-tidy analysis"
+        VERBATIM
+    )
+else()
+    add_custom_target(clang-tidy
+        COMMAND ${CMAKE_COMMAND} -E echo "clang-tidy not found; install clang-tidy to enable linting support."
+        COMMAND ${CMAKE_COMMAND} -E false
+        COMMENT "clang-tidy not available"
     )
 endif()
 
