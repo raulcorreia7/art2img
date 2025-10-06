@@ -34,3 +34,7 @@ final_test/
 # Dependencies
 _fetch/
 .cpm/
+.bin
+*.png
+*.bpm
+*.tga
