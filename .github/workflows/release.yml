@@ -399,6 +399,7 @@ jobs:
           ./art2img --help
           \`\`\`
 
+          ### Windows
           \`\`\`powershell
           Expand-Archive art2img-windows-x64-*.zip
           .\art2img.exe --help
