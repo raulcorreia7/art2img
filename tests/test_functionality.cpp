@@ -189,7 +189,11 @@ TEST_CASE("Palette scaling preserves 6-bit components and Build-style BGR output
 }
 
 TEST_CASE("CLI help documents Duke Nukem 3D palette usage") {
+#ifdef _WIN32
+  const auto binary = std::filesystem::path("bin") / "art2img.exe";
+#else
   const auto binary = std::filesystem::path("bin") / "art2img";
+#endif
   REQUIRE(std::filesystem::exists(binary));
 
   const auto help_text = run_help_command(binary);
