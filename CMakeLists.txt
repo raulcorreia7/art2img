@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(art2img VERSION 1.0.0 LANGUAGES CXX)
+project(art2img VERSION 0.1.0 LANGUAGES CXX)
 
 # Always generate compile_commands.json to support tooling such as clang-tidy
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Enable compile_commands.json generation" FORCE)
