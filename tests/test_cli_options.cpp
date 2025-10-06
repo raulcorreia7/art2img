@@ -1,6 +1,6 @@
-#include <CLI/CLI.hpp>
 #include <doctest/doctest.h>
 
+#include <CLI/CLI.hpp>
 #include <initializer_list>
 #include <memory>
 #include <string>
@@ -26,12 +26,17 @@ struct Argv {
     }
   }
 
-  int argc() const { return static_cast<int>(argv.size()); }
-  const char* const* data() const { return argv.data(); }
+  int argc() const {
+    return static_cast<int>(argv.size());
+  }
+  const char* const* data() const {
+    return argv.data();
+  }
 };
 }  // namespace
 
-TEST_CASE("CLI parser assigns correct default values when only required input parameter is provided") {
+TEST_CASE(
+    "CLI parser assigns correct default values when only required input parameter is provided") {
   CliOptions options;
   auto app = make_cli_app(options);
 
@@ -52,8 +57,9 @@ TEST_CASE("CLI parser correctly parses all command-line options and flags") {
   CliOptions options;
   auto app = make_cli_app(options);
 
-  Argv args{"art2img", "art_dir", "-o", "out", "-p", "custom.pal", "-f", "tga", "--no-fix-transparency",
-            "-q", "-n", "-m"};
+  Argv args{
+      "art2img", "art_dir", "-o", "out", "-p", "custom.pal", "-f", "tga", "--no-fix-transparency",
+      "-q",      "-n",      "-m"};
   REQUIRE_NOTHROW(app->parse(args.argc(), args.data()));
 
   CHECK(options.input_path == "art_dir");

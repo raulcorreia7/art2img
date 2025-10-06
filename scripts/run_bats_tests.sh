@@ -56,23 +56,33 @@ else
     fi
 fi
 
+# Determine build type based on platform and environment
+BUILD_TYPE="${BUILD_TYPE:-linux-x64}"
+if [[ "$PLATFORM" == "windows" ]]; then
+    BUILD_TYPE="mingw-windows-x64"
+elif [[ "$PLATFORM" == "macos" ]]; then
+    BUILD_TYPE="macos-x64"
+fi
+
 # Check if build directory exists
-if [[ ! -d "$PROJECT_ROOT/build" ]] && [[ ! -d "$PROJECT_ROOT/build/linux-release" ]] && [[ ! -d "$PROJECT_ROOT/build/windows-release" ]] && [[ ! -d "$PROJECT_ROOT/build/windows-x86-release" ]]; then
+if [[ ! -d "$PROJECT_ROOT/build" ]] && [[ ! -d "$PROJECT_ROOT/build/linux-x64" ]] && [[ ! -d "$PROJECT_ROOT/build/linux-x64-release" ]] && [[ ! -d "$PROJECT_ROOT/build/mingw-windows-x64" ]] && [[ ! -d "$PROJECT_ROOT/build/mingw-windows-x64-release" ]] && [[ ! -d "$PROJECT_ROOT/build/mingw-windows-x86" ]] && [[ ! -d "$PROJECT_ROOT/build/mingw-windows-x86-release" ]]; then
     echo "Error: Build directory not found. Please build the project first."
     echo "Run: cd $PROJECT_ROOT && make build"
     exit 1
 fi
 
-echo "Running Bats tests for art2img..."
+echo "Running integration tests for art2img..."
 echo "Project root: $PROJECT_ROOT"
 echo "Test directory: $PROJECT_ROOT/tests/bats"
 echo "Bats command: $BATS_CMD"
 echo "Platform: $PLATFORM"
+echo "Build type: $BUILD_TYPE"
 echo ""
 
-# Run all bats tests from the new location with pretty output and verbose run
+# Run all integration tests from the bats tests with pretty output and verbose run
 # Set TERM to avoid tput errors in CI environments
-TERM=dumb "$BATS_CMD" "$PROJECT_ROOT/tests/bats" -p --verbose-run
+# Pass BUILD_TYPE to tests to ensure they output to the correct directory
+BUILD_TYPE="$BUILD_TYPE" TERM=dumb "$BATS_CMD" "$PROJECT_ROOT/tests/bats" -p --verbose-run
 
 echo ""
 echo "Bats tests completed."

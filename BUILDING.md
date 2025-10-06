@@ -20,17 +20,42 @@ make all
 ```bash
 make all          # Build for Linux (default)
 make build        # Build for Linux
-make windows      # Cross-compile for Windows x64
-make windows-x86  # Cross-compile for Windows x86
+make mingw-windows      # Cross-compile for Windows x64 using MinGW
+make mingw-windows-x86  # Cross-compile for Windows x86 using MinGW
 make linux-release       # Release build + tests for Linux
-make windows-release     # Release build for Windows x64
-make windows-x86-release # Release build for Windows x86
+make mingw-windows-release     # Release build for Windows x64 using MinGW
+make mingw-windows-x86-release # Release build for Windows x86 using MinGW
 make test         # Run tests on Linux
 make test-windows # Test Windows x64 build (requires Wine)
 make test-windows-x86 # Test Windows x86 build (requires Wine)
 make clean        # Clean build directory
 make install      # Install to system
 make doctor       # Check host dependencies
+```
+
+### Direct Script Usage
+The build system uses dedicated scripts for each platform and cross-compilation target:
+
+```bash
+# Build for Linux natively
+./scripts/build/native/linux.sh
+
+# Cross-compile for Windows x64 from Linux (MinGW)
+./scripts/build/cross/mingw-windows64.sh
+
+# Cross-compile for Windows x86 from Linux (MinGW)
+./scripts/build/cross/mingw-windows32.sh
+```
+
+Additionally, the following Makefile targets are available for cross-compilation:
+
+```bash
+make mingw-windows          # Cross-compile for Windows x64 using MinGW
+make mingw-windows-x86      # Cross-compile for Windows x86 using MinGW
+make mingw-windows-release  # Release build for Windows x64 using MinGW
+make mingw-windows-x86-release # Release build for Windows x86 using MinGW
+make test-windows           # Test Windows x64 build (requires Wine)
+make test-windows-x86       # Test Windows x86 build (requires Wine)
 ```
 
 ### CMake Direct
@@ -42,7 +67,7 @@ cmake --build . --parallel
 
 ## 🖥️ Cross-Platform
 
-### Windows (Cross-compilation)
+### Windows (Cross-compilation from Linux)
 ```bash
 make windows-release
 # or configure manually
@@ -51,12 +76,8 @@ cmake ../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../../cmake/window
 cmake --build . --parallel
 ```
 
-### Windows (Native)
-```bash
-# Use Visual Studio or MinGW
-mkdir build && cd build
-cmake .. -G "MinGW Makefiles"
-cmake --build . --parallel
+### Windows (Native - requires Windows system)
+Native Windows builds (not cross-compilation) would require building on Windows with Visual Studio, MSYS2, or similar Windows development environments.
 ```
 
 ## 🧪 Testing

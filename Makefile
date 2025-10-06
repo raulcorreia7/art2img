@@ -1,102 +1,88 @@
 # Makefile for art2img - Simplified and focused
 # Supports Linux development and Windows cross-compilation
+# Delegates to platform-specific build scripts
 
 # Configuration
 BUILD_DIR ?= build
 JOBS ?= $(shell nproc)
 VERSION ?= $(shell cmake -P cmake/print_version.cmake)
 
-WINDOWS_TOOLCHAIN_X64 := cmake/windows-toolchain.cmake
-WINDOWS_TOOLCHAIN_X86 := cmake/windows-x86-toolchain.cmake
+# Run integration tests for different platforms
+test-intg: build
+	@BUILD_TYPE=linux ./scripts/run_bats_tests.sh
 
-LINUX_RELEASE_DIR := $(BUILD_DIR)/linux-release
-WINDOWS_RELEASE_DIR := $(BUILD_DIR)/windows-release
-WINDOWS_X86_RELEASE_DIR := $(BUILD_DIR)/windows-x86-release
+test-intg-windows: mingw-windows
+	@BUILD_TYPE=mingw-windows ./scripts/run_bats_tests.sh
 
-CMAKE_BASE_FLAGS := -DBUILD_TESTS=ON
-CMAKE_RELEASE_FLAGS := $(CMAKE_BASE_FLAGS) -DCMAKE_BUILD_TYPE=Release -DBUILD_DIAGNOSTIC=ON -DBUILD_SHARED_LIBS=OFF
+test-intg-windows-x86: mingw-windows-x86
+	@BUILD_TYPE=mingw-windows-x86 ./scripts/run_bats_tests.sh
 
-# Run bats tests
-test-bats:
-	@./scripts/run_bats_tests.sh
+test-intg-release: linux-x64-release
+	@BUILD_TYPE=linux-x64-release ./scripts/run_bats_tests.sh
 
 # Main targets
 .PHONY: all build test clean install format fmt fmt-check lint help
-.PHONY: windows windows-x86 test-windows doctor test-bats
-.PHONY: linux-release windows-release windows-x86-release
+.PHONY: mingw-windows mingw-windows-x86 test-windows doctor test-bats
+.PHONY: linux-x64-release windows-x64-release windows-x86-release
 
 # Default target - build for Linux
 all: build
 
-# Build for Linux
+# Build for Linux using dedicated script
 build:
-	@mkdir -p $(BUILD_DIR)
-	@cd $(BUILD_DIR) && cmake .. -DCMAKE_BUILD_TYPE=Release $(CMAKE_BASE_FLAGS)
-	@cmake --build $(BUILD_DIR) --parallel $(JOBS)
+	@./scripts/build/native/linux.sh --build-dir $(BUILD_DIR) -j $(JOBS)
 
-# Build for Windows x64 (cross-compilation)
-windows:
-	@mkdir -p $(BUILD_DIR)/windows
-	@cd $(BUILD_DIR)/windows && cmake ../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../../$(WINDOWS_TOOLCHAIN_X64) -DBUILD_SHARED_LIBS=OFF
-	@cmake --build $(BUILD_DIR)/windows --parallel $(JOBS)
+# Build for Windows x64 (cross-compilation from Linux using MinGW) using dedicated script
+mingw-windows:
+	@./scripts/build/cross/mingw-windows64.sh --build-dir $(BUILD_DIR) -j $(JOBS)
 
-# Build for Windows x86 (cross-compilation)
-windows-x86:
-	@mkdir -p $(BUILD_DIR)/windows-x86
-	@cd $(BUILD_DIR)/windows-x86 && cmake ../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../../$(WINDOWS_TOOLCHAIN_X86) -DBUILD_SHARED_LIBS=OFF
-	@cmake --build $(BUILD_DIR)/windows-x86 --parallel $(JOBS)
+# Build for Windows x86 (cross-compilation from Linux using MinGW) using dedicated script
+mingw-windows-x86:
+	@./scripts/build/cross/mingw-windows32.sh --build-dir $(BUILD_DIR) -j $(JOBS)
 
-linux-release:
-	@mkdir -p $(LINUX_RELEASE_DIR)
-	@cd $(LINUX_RELEASE_DIR) && cmake ../.. $(CMAKE_RELEASE_FLAGS)
-	@cmake --build $(LINUX_RELEASE_DIR) --parallel $(JOBS)
-	@cd $(LINUX_RELEASE_DIR) && ctest --output-on-failure
+# Release builds using the dedicated scripts
+linux-x64-release:
+	@./scripts/build/native/linux.sh --build-dir $(BUILD_DIR)/linux-x64-release --build-type Release --use-direct-path -j $(JOBS)
+	@cd $(BUILD_DIR)/linux-x64-release && ctest --output-on-failure
 
-windows-release:
-	@mkdir -p $(WINDOWS_RELEASE_DIR)
-	@cd $(WINDOWS_RELEASE_DIR) && cmake ../.. $(CMAKE_RELEASE_FLAGS) -DCMAKE_TOOLCHAIN_FILE=../../$(WINDOWS_TOOLCHAIN_X64)
-	@cmake --build $(WINDOWS_RELEASE_DIR) --parallel $(JOBS)
+mingw-windows-x64-release:
+	@./scripts/build/cross/mingw-windows64.sh --build-dir $(BUILD_DIR)/mingw-windows-x64-release --build-type Release -j $(JOBS)
 
-windows-x86-release:
-	@mkdir -p $(WINDOWS_X86_RELEASE_DIR)
-	@cd $(WINDOWS_X86_RELEASE_DIR) && cmake ../.. $(CMAKE_RELEASE_FLAGS) -DCMAKE_TOOLCHAIN_FILE=../../$(WINDOWS_TOOLCHAIN_X86)
-	@cmake --build $(WINDOWS_X86_RELEASE_DIR) --parallel $(JOBS)
+mingw-windows-x86-release:
+	@./scripts/build/cross/mingw-windows32.sh --build-dir $(BUILD_DIR)/mingw-windows-x86-release --build-type Release -j $(JOBS)
 
 # Run tests on Linux
 test: build
-	@cd $(BUILD_DIR) && ctest --output-on-failure
+	@cd $(BUILD_DIR)/linux-x64 && ctest --output-on-failure
 
 # Test Windows build (requires Wine)
-test-windows: windows
-	@./scripts/test_windows.sh build/windows
+test-windows: mingw-windows
+	@./scripts/test_windows.sh $(BUILD_DIR)/mingw-windows-x64
 
-test-windows-x86: windows-x86
-	@./scripts/test_windows.sh build/windows-x86 build/windows-x86
+test-windows-x86: mingw-windows-x86
+	@./scripts/test_windows.sh $(BUILD_DIR)/mingw-windows-x86
 
-# Install to system
+# Install to system (from Linux build)
 install: build
-	@cd $(BUILD_DIR) && cmake --install . --prefix /usr/local
+	@cd $(BUILD_DIR)/linux-x64 && cmake --install . --prefix /usr/local
 
-# Code formatting
+# Code formatting using the Linux build
 fmt:
-	@mkdir -p $(BUILD_DIR)
-	@cd $(BUILD_DIR) && cmake .. -DCMAKE_BUILD_TYPE=Release $(CMAKE_BASE_FLAGS)
-	@cmake --build $(BUILD_DIR) --target clang-format
+	@./scripts/build/native/linux.sh --build-dir $(BUILD_DIR) --build-type Release
+	@cd $(BUILD_DIR)/linux-x64 && cmake --build . --target clang-format
 
 format: fmt
 
 fmt-check:
-	@mkdir -p $(BUILD_DIR)
-	@cd $(BUILD_DIR) && cmake .. -DCMAKE_BUILD_TYPE=Release $(CMAKE_BASE_FLAGS)
-	@cmake --build $(BUILD_DIR) --target clang-format-dry-run
+	@./scripts/build/native/linux.sh --build-dir $(BUILD_DIR) --build-type Release
+	@cd $(BUILD_DIR)/linux-x64 && cmake --build . --target clang-format-dry-run
 
 # Check code formatting (dry run)
 format-check: fmt-check
 
 lint:
-	@mkdir -p $(BUILD_DIR)
-	@cd $(BUILD_DIR) && cmake .. -DCMAKE_BUILD_TYPE=Release $(CMAKE_BASE_FLAGS)
-	@cmake --build $(BUILD_DIR) --target clang-tidy
+	@./scripts/build/native/linux.sh --build-dir $(BUILD_DIR) --build-type Release
+	@cd $(BUILD_DIR)/linux-x64 && cmake --build . --target clang-tidy
 
 # Clean build directory
 clean:
@@ -107,12 +93,16 @@ help:
 	@echo "art2img - Build Commands"
 	@echo "  make all          - Build for Linux (default)"
 	@echo "  make build        - Build for Linux"
-	@echo "  make windows      - Cross-compile for Windows x64"
-	@echo "  make windows-x86  - Cross-compile for Windows x86"
-	@echo "  make linux-release       - Build + test release configuration for Linux"
-	@echo "  make windows-release     - Build release configuration for Windows x64"
-	@echo "  make windows-x86-release - Build release configuration for Windows x86"
+	@echo "  make mingw-windows      - Cross-compile for Windows x64 using MinGW"
+	@echo "  make mingw-windows-x86  - Cross-compile for Windows x86 using MinGW"
+	@echo "  make linux-x64-release       - Build + test release configuration for Linux x64"
+	@echo "  make mingw-windows-x64-release     - Build release configuration for Windows x64 using MinGW"
+	@echo "  make mingw-windows-x86-release - Build release configuration for Windows x86 using MinGW"
 	@echo "  make test         - Run tests on Linux"
+	@echo "  make test-intg         - Run integration tests for Linux"
+	@echo "  make test-intg-windows - Run integration tests for Windows (cross-compiled)"
+	@echo "  make test-intg-windows-x86 - Run integration tests for Windows x86 (cross-compiled)"
+	@echo "  make test-intg-release   - Run integration tests for Linux release build"
 	@echo "  make test-windows - Test Windows build (requires Wine)"
 	@echo "  make install      - Install to system"
 	@echo "  make clean        - Remove build directory"

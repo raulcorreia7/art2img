@@ -460,16 +460,16 @@ ProcessingResult process_single_art_file(const ProcessingOptions& options,
 
 /// Process all ART files in a directory
 CliProcessResult process_art_directory(const CliOptions& cli_options,
-                                      const ProcessingOptions& options) {
+                                       const ProcessingOptions& options) {
   CliProcessResult cli_result;
 
-    if (options.verbose) {
+  if (options.verbose) {
     art2img::ColorGuard cyan(art2img::ColorOutput::CYAN);
     std::cout << "Processing ART files in directory: " << cli_options.input_path
               << art2img::ColorOutput::reset() << std::endl;
   }
 
-    if (options.merge_animation_data) {
+  if (options.merge_animation_data) {
     std::string merged_ini_path =
         (std::filesystem::path(options.output_dir) / "animdata.ini").string();
     std::ofstream merged_file(merged_ini_path);
@@ -490,7 +490,7 @@ CliProcessResult process_art_directory(const CliOptions& cli_options,
     }
   }
 
-    // Collect all ART files
+  // Collect all ART files
   std::vector<std::string> art_files;
   try {
     for (const auto& entry : std::filesystem::directory_iterator(cli_options.input_path)) {
@@ -515,7 +515,7 @@ CliProcessResult process_art_directory(const CliOptions& cli_options,
     return cli_result;
   }
 
-    if (!cli_options.quiet) {
+  if (!cli_options.quiet) {
     art2img::ColorGuard cyan(art2img::ColorOutput::CYAN);
     std::cout << "Found " << art_files.size() << " ART files to process"
               << art2img::ColorOutput::reset() << std::endl;
@@ -585,8 +585,7 @@ CliProcessResult process_art_directory(const CliOptions& cli_options,
 
 /// Wrapper function to call process_single_art_file with command line options
 CliProcessResult process_single_art_file_wrapper(const CliOptions& cli_options,
-                                                const ProcessingOptions& options) {
-
+                                                 const ProcessingOptions& options) {
   auto processing_result = process_single_art_file(options, cli_options.input_path, "", false);
 
   CliProcessResult cli_result;
@@ -598,8 +597,7 @@ CliProcessResult process_single_art_file_wrapper(const CliOptions& cli_options,
     } else if (processing_result.failed_count > 0) {
       std::ostringstream oss;
       oss << "Processed " << processing_result.processed_count << " tile(s) with "
-          << processing_result.failed_count << " failure(s) in '" << cli_options.input_path
-          << "'.";
+          << processing_result.failed_count << " failure(s) in '" << cli_options.input_path << "'.";
       cli_result.error_message = oss.str();
     } else {
       cli_result.error_message =

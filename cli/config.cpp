@@ -8,9 +8,8 @@
 
 namespace {
 [[nodiscard]] std::string to_lower_copy(std::string value) {
-  std::transform(value.begin(), value.end(), value.begin(), [](unsigned char ch) {
-    return static_cast<char>(std::tolower(ch));
-  });
+  std::transform(value.begin(), value.end(), value.begin(),
+                 [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
   return value;
 }
 
@@ -40,10 +39,9 @@ OptionTranslationResult translate_to_processing_options(const CliOptions& cli_op
   static constexpr std::array allowed_formats{"png", "tga", "bmp"};
 
   const std::string normalized_format = to_lower_copy(cli_options.format);
-  const bool format_supported = std::any_of(allowed_formats.begin(), allowed_formats.end(),
-                                            [&](const std::string_view candidate) {
-                                              return candidate == normalized_format;
-                                            });
+  const bool format_supported =
+      std::any_of(allowed_formats.begin(), allowed_formats.end(),
+                  [&](const std::string_view candidate) { return candidate == normalized_format; });
 
   if (!format_supported) {
     return make_error(OptionTranslationErrorCode::InvalidFormat,

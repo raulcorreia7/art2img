@@ -21,9 +21,13 @@ public:
   StreamRedirect(const StreamRedirect&) = delete;
   StreamRedirect& operator=(const StreamRedirect&) = delete;
 
-  ~StreamRedirect() { stream_.rdbuf(original_buf_); }
+  ~StreamRedirect() {
+    stream_.rdbuf(original_buf_);
+  }
 
-  [[nodiscard]] std::string str() const { return buffer_.str(); }
+  [[nodiscard]] std::string str() const {
+    return buffer_.str();
+  }
 
 private:
   std::ostream& stream_;
@@ -45,7 +49,9 @@ public:
     }
   }
 
-  const std::filesystem::path& path() const { return path_; }
+  const std::filesystem::path& path() const {
+    return path_;
+  }
 
 private:
   std::filesystem::path path_;
@@ -53,12 +59,11 @@ private:
 
 std::filesystem::path make_temp_directory(const std::string& prefix) {
   static std::atomic<uint64_t> counter{0};
-  const auto timestamp = static_cast<uint64_t>(
-      std::chrono::steady_clock::now().time_since_epoch().count());
+  const auto timestamp =
+      static_cast<uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count());
   auto base = std::filesystem::temp_directory_path();
-  auto temp_dir =
-      base / (prefix + "-" + std::to_string(timestamp) + "-" +
-              std::to_string(counter.fetch_add(1, std::memory_order_relaxed)));
+  auto temp_dir = base / (prefix + "-" + std::to_string(timestamp) + "-" +
+                          std::to_string(counter.fetch_add(1, std::memory_order_relaxed)));
   std::filesystem::create_directories(temp_dir);
   return temp_dir;
 }
@@ -76,8 +81,7 @@ TEST_CASE("load_palette_with_fallback warns when palette file cannot be located"
 
   CHECK_NE(output.find("Warning: Cannot locate palette file 'nonexistent_palette.dat'"),
            std::string::npos);
-  CHECK_NE(output.find("Using built-in Duke Nukem 3D palette (256 colors)"),
-           std::string::npos);
+  CHECK_NE(output.find("Using built-in Duke Nukem 3D palette (256 colors)"), std::string::npos);
 }
 
 TEST_CASE("load_palette_with_fallback informs when palette path is omitted") {
@@ -91,8 +95,7 @@ TEST_CASE("load_palette_with_fallback informs when palette path is omitted") {
 
   CHECK_NE(output.find("Info: No palette file specified, using default Duke Nukem 3D palette"),
            std::string::npos);
-  CHECK_NE(output.find("Using built-in Duke Nukem 3D palette (256 colors)"),
-           std::string::npos);
+  CHECK_NE(output.find("Using built-in Duke Nukem 3D palette (256 colors)"), std::string::npos);
 }
 
 TEST_CASE("load_palette_with_fallback surfaces palette loading exceptions before fallback") {
@@ -115,7 +118,6 @@ TEST_CASE("load_palette_with_fallback surfaces palette loading exceptions before
   CHECK_NE(output.find("Falling back to default palette..."), std::string::npos);
   CHECK_NE(output.find("Warning: Cannot open palette file '" + palette_dir.string() + "'"),
            std::string::npos);
-
 }
 
 TEST_CASE("process_sequential_impl warns when animation data output fails") {
@@ -145,5 +147,4 @@ TEST_CASE("process_sequential_impl warns when animation data output fails") {
   CHECK(result.processed_count > 0);
   CHECK_NE(errors.find("Warning: Failed to write animation data for " + art_path.string()),
            std::string::npos);
-
 }
