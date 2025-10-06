@@ -334,17 +334,19 @@ jobs:
           See README.md for full documentation.
           EOF
 
-          # Create archive
-          tar -czf art2img-macos-x86_64-$VERSION.tar.gz -C release/macos-x86_64 .
+          # Create ZIP archive
+          cd release/macos-x86_64
+          zip -r ../art2img-macos-x86_64-$VERSION.zip .
+          cd ../..
 
-          echo "Package created: art2img-macos-x86_64-$VERSION.tar.gz"
+          echo "Package created: art2img-macos-x86_64-$VERSION.zip"
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
           name: art2img-macos-x86_64
           path: |
-            art2img-macos-x86_64-*.tar.gz
+            art2img-macos-x86_64-*.zip
           retention-days: 30
 
   # Release job - run on release
@@ -387,7 +389,7 @@ jobs:
           - **x86_64**: \`art2img-windows-x64-*.zip\`
 
           ### macOS
-          - **x86_64**: \`art2img-macos-x86_64-*.tar.gz\`
+          - **x86_64**: \`art2img-macos-x86_64-*.zip\`
 
           ## Installation
 
@@ -397,13 +399,14 @@ jobs:
           ./art2img --help
           \`\`\`
 
+          \`\`\`powershell
           Expand-Archive art2img-windows-x64-*.zip
           .\art2img.exe --help
           \`\`\`
 
           ### macOS
           \`\`\`bash
-          tar -xzf art2img-macos-x86_64-*.tar.gz
+          unzip art2img-macos-x86_64-*.zip
           ./art2img --help
           \`\`\`
 

@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>art2img</h1>
+  <h1>art2img v0.1.0</h1>
   <p><strong>Convert Duke Nukem 3D ART files to modern image formats</strong></p>
 </div>
 
