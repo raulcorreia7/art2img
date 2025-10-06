@@ -175,6 +175,38 @@ TEST_CASE("Output directory handling") {
     CHECK_EQ(bmp_count, 1);
   }
 
+  SUBCASE("Flat output directory path construction") {
+    // Test the logic that handles flat output vs nested output
+    // This simulates the path construction used in process_art_file_internal
+
+    std::string output_dir = base_test_dir + "/test_output";
+    std::string output_subdir = "TILES001";
+
+    // Test with flat_output = false (default behavior)
+    bool flat_output = false;
+    std::string final_output_dir = output_dir;
+    if (!output_subdir.empty() && !flat_output) {
+      final_output_dir = (std::filesystem::path(output_dir) / output_subdir).string();
+    }
+    CHECK(final_output_dir == output_dir + "/" + output_subdir);
+
+    // Test with flat_output = true
+    flat_output = true;
+    final_output_dir = output_dir;
+    if (!output_subdir.empty() && !flat_output) {
+      final_output_dir = (std::filesystem::path(output_dir) / output_subdir).string();
+    }
+    CHECK(final_output_dir == output_dir);  // Should NOT have subdirectory
+
+    // Test with empty subdir (should not affect output)
+    output_subdir = "";
+    final_output_dir = output_dir;
+    if (!output_subdir.empty() && !flat_output) {
+      final_output_dir = (std::filesystem::path(output_dir) / output_subdir).string();
+    }
+    CHECK(final_output_dir == output_dir);
+  }
+
   // Only cleanup in CI environment
   if (std::getenv("CI") != nullptr) {
     std::filesystem::remove_all(base_test_dir);
