@@ -14,10 +14,8 @@ setup() {
     : "${WINDOWS_TOOLCHAIN:=cmake/windows-toolchain.cmake}"
     : "${TEST_ASSETS_DIR:=tests/assets}"
     WINDOWS_BIN_DIR="${BUILD_DIR}/windows-release/bin"
-    
-    # Binary paths
-    MAIN_BIN="${WINDOWS_BIN_DIR}/art2img.exe"
-    TEST_BIN="${WINDOWS_BIN_DIR}/art2img_tests.exe"
+    MAIN_BIN="$(find_binary_path "$WINDOWS_BIN_DIR" "art2img")"
+    TEST_BIN="$(find_binary_path "$WINDOWS_BIN_DIR" "art2img_tests")"
     
     # Test assets
     PALETTE_FILE="${TEST_ASSETS_DIR}/PALETTE.DAT"

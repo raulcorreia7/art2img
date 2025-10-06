@@ -6,6 +6,8 @@
 #include <cstdio>
 #include <filesystem>
 #include <string>
+#include <string_view>
+#include <system_error>
 #include <vector>
 
 #include "art_file.hpp"
@@ -68,6 +70,46 @@ std::string run_help_command(const std::filesystem::path& binary) {
   pclose(pipe);
 #endif
   return output;
+}
+
+std::vector<std::filesystem::path> find_binaries(std::string_view stem) {
+  const auto bin_dir = std::filesystem::path("bin");
+  std::vector<std::filesystem::path> matches;
+
+  if (!std::filesystem::exists(bin_dir)) {
+    INFO("bin directory missing: " << std::filesystem::absolute(bin_dir).string());
+    return matches;
+  }
+
+  std::error_code ec;
+  std::filesystem::recursive_directory_iterator it(
+      bin_dir, std::filesystem::directory_options::follow_directory_symlink, ec);
+  if (ec) {
+    INFO("Failed to iterate bin directory: " << ec.message());
+    return matches;
+  }
+
+  for (; it != std::filesystem::recursive_directory_iterator(); it.increment(ec)) {
+    if (ec) {
+      INFO("Iteration error: " << ec.message());
+      ec.clear();
+      continue;
+    }
+
+    const auto& entry = *it;
+    if (!entry.is_regular_file(ec)) {
+      ec.clear();
+      continue;
+    }
+
+    const auto& path = entry.path();
+    const auto extension = path.extension().string();
+    if (path.stem() == stem && (extension.empty() || extension == ".exe")) {
+      matches.push_back(path);
+    }
+  }
+
+  return matches;
 }
 
 }  // namespace
@@ -189,12 +231,17 @@ TEST_CASE("Palette scaling preserves 6-bit components and Build-style BGR output
 }
 
 TEST_CASE("CLI help documents Duke Nukem 3D palette usage") {
-#ifdef _WIN32
-  const auto binary = std::filesystem::path("bin") / "art2img.exe";
-#else
-  const auto binary = std::filesystem::path("bin") / "art2img";
-#endif
-  REQUIRE(std::filesystem::exists(binary));
+  const auto binaries = find_binaries("art2img");
+  if (binaries.empty()) {
+    INFO("No art2img binary located under bin/ - verify build completed successfully");
+  } else {
+    for (const auto& candidate : binaries) {
+      INFO("CLI candidate path: " << candidate.string());
+    }
+  }
+
+  REQUIRE_FALSE(binaries.empty());
+  const auto& binary = binaries.front();
 
   const auto help_text = run_help_command(binary);
   REQUIRE_FALSE(help_text.empty());
