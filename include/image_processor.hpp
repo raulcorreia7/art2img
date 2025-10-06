@@ -41,12 +41,17 @@ void apply_premultiplication(std::vector<uint8_t>& rgba_data);
 void apply_matte_hygiene(std::vector<uint8_t>& rgba_data, int width, int height);
 
 /**
- * @brief Check if a color is magenta (used for transparency)
+ * @brief Check if a color is the Build Engine transparency color (252, 0, 252)
+ *
+ * The Build Engine uses a specific magenta color (252, 0, 252) for transparency,
+ * which is slightly different from the general magenta detection.
+ * This function is used for PNG and TGA formats with alpha channel support.
+ * For BMP files, this exact color should be preserved rather than converted to black.
  *
  * @param r Red component
  * @param g Green component
  * @param b Blue component
- * @return true if the color is magenta
+ * @return true if the color is the Build Engine transparency magenta
  * @return false otherwise
  */
 constexpr bool is_build_engine_magenta(uint8_t r, uint8_t g, uint8_t b) {

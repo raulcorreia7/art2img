@@ -153,7 +153,7 @@ TEST_CASE("Integration tests - Complete pipeline from ART loading to image extra
 
     // Extract all tiles as BMP
     auto bmp_results =
-        extractor.extract_all_tiles(art2img::ImageFormat::BMP, art2img::ImageWriter::Options());
+        extractor.extract_all_tiles(art2img::ImageFormat::BMP);
     CHECK_EQ(bmp_results.size(), extractor.get_tile_count());
 
     size_t bmp_success_count = 0;
@@ -232,8 +232,7 @@ TEST_CASE("Integration tests - Complete pipeline from ART loading to image extra
 
       // Extract via ImageView
       art2img::ImageView image_view{&art_view, i};
-      auto image_data =
-          image_view.extract_to_image(art2img::ImageFormat::BMP, art2img::ImageWriter::Options());
+      auto image_data = image_view.extract_to_bmp();
 
       REQUIRE(extractor_result.success);
       CHECK_EQ(extractor_result.image_data.size(), image_data.size());

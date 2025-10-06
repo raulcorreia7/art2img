@@ -50,7 +50,7 @@ struct BmpFileHeader {
   uint32_t bfSize{0};       // Total file size
   uint16_t bfReserved1{0};
   uint16_t bfReserved2{0};
-  uint32_t bfOffBits{54};  // Offset to pixel data (54 for 32-bit)
+  uint32_t bfOffBits{54};  // Offset to pixel data (54 for 24-bit)
 };
 
 struct BmpInfoHeader {
@@ -58,7 +58,7 @@ struct BmpInfoHeader {
   int32_t biWidth{0};
   int32_t biHeight{0};
   uint16_t biPlanes{1};
-  uint16_t biBitCount{32};        // 32 bits per pixel
+  uint16_t biBitCount{24};        // 24 bits per pixel
   uint32_t biCompression{0};      // BI_RGB = 0 (no compression)
   uint32_t biSizeImage{0};        // Can be 0 for uncompressed
   int32_t biXPelsPerMeter{2835};  // ~72 DPI
@@ -67,20 +67,31 @@ struct BmpInfoHeader {
   uint32_t biClrImportant{0};
 };
 
+// Unified BMP header generation
+struct BmpHeaders {
+  std::vector<uint8_t> file_header;
+  std::vector<uint8_t> info_header;
+  uint32_t row_size;
+  uint32_t pixel_data_size;
+};
+
+BmpHeaders create_bmp_headers(int width, int height);
+
 bool write_bmp_file(const std::filesystem::path& filename, const Palette& palette,
-                    const std::vector<uint8_t>& pixel_data, int width, int height,
-                    const ImageWriter::Options& options);
+                    const std::vector<uint8_t>& pixel_data, int width, int height);
 
 std::vector<uint8_t> encode_bmp_to_memory(const Palette& palette,
                                           const std::vector<uint8_t>& pixel_data, int width,
-                                          int height, const ImageWriter::Options& options);
+                                          int height);
+
+// Helper functions for direct ART to BMP conversion
+void write_bmp_pixels_direct(std::ostream& output, const Palette& palette,
+                             const std::vector<uint8_t>& pixel_data, int width, int height,
+                             const BmpHeaders& headers);
 
 // Helper functions
 TgaHeader create_tga_header(uint16_t width, uint16_t height);
 void write_little_endian_uint16(uint16_t value, std::vector<uint8_t>& buffer, size_t offset);
-std::vector<uint32_t> convert_to_bgra(const Palette& palette,
-                                      const std::vector<uint8_t>& pixel_data, int width, int height,
-                                      const ImageWriter::Options& options);
 
 }  // namespace file_operations
 }  // namespace art2img

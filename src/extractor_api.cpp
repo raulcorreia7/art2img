@@ -278,12 +278,16 @@ bool ImageView::save_to_tga(const std::filesystem::path& path) const {
   return save_to_image(path, ImageFormat::TGA);
 }
 
-bool ImageView::save_to_bmp(const std::filesystem::path& path, ImageWriter::Options options) const {
-  return save_to_image(path, ImageFormat::BMP, options);
+bool ImageView::save_to_bmp(const std::filesystem::path& path) const {
+  return save_to_image(path, ImageFormat::BMP);
 }
 
 std::vector<uint8_t> ImageView::extract_to_tga() const {
   return extract_to_image(ImageFormat::TGA);
+}
+
+std::vector<uint8_t> ImageView::extract_to_bmp() const {
+  return extract_to_image(ImageFormat::BMP);
 }
 
 bool ExtractorAPI::write_animation_data(const std::string& art_file_path,

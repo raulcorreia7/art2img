@@ -8,7 +8,7 @@ Authoritative, minimal contract for autonomous work. Optimize for simple, clean,
 ```bash
 make setup
 make all
-````
+```
 
 ---
 
@@ -26,7 +26,7 @@ Concise repo survey:
 * Dependency health (versions, cadence, licenses, advisories, upgrade candidates)
 * Quality signals (lint/format state, test count/coverage, CI duration/cache hits, flaky/slow tests)
 * Hotspots (complex modules, duplication clusters, dependency cycles, perf/portability risks)
-* Code quality heuristics (composability, coupling, simplicity). Favor “organic” APIs that are easy to read/use
+* Code quality heuristics (composability, coupling, simplicity). Favor "organic" APIs that are easy to read/use
 * Risks/unknowns and immediate low-risk wins
 
 Output: print summary to console and write `REVIEW_NOTES.md` at repo root.
@@ -47,7 +47,7 @@ Deterministic plan and atomic tasks:
 Minimal, reversible diffs:
 
 * Execute plan steps in order; update tests with code in the same change
-* Prefer stable, community-reviewed libraries; follow upstream install docs; integrate latest stable, then lock with the ecosystem’s lockfile
+* Prefer stable, community-reviewed libraries; follow upstream install docs; integrate latest stable, then lock with the ecosystem's lockfile
 * Multi-file edits: use agentic batch edits; if unavailable use non-interactive pipelines (search → filter → edit → verify) with `rg/find/xargs/sed/awk` or PowerShell equivalents
 * Keep edits scoped; avoid opportunistic refactors unless they remove risk or unlock the task
 
@@ -94,7 +94,7 @@ Confirm objectives/acceptance criteria met, diffs are scoped and reversible, no 
 * `sed`, `awk` (gawk), `cut`, `tr`, `sort -u`, `uniq`, `comm`, `paste`
 * `grep -RIn` as a fallback when `rg` is unavailable
 * `jq` / `yq` for JSON/YAML
-* `entr` for “on change, run …”
+* `entr` for "on change, run …"
 * `diff -u`, `patch` for generating/applying surgical changes
 
 **Windows equivalents**
@@ -132,17 +132,17 @@ Expose canonical dev/build/test commands in `README`. Use multi-stage Dockerfile
 
 **Primary language**
 
-* Enforce the ecosystem’s formatter/linter; keep checks fast
+* Enforce the ecosystem's formatter/linter; keep checks fast
 * Public APIs typed or interface-annotated, clear, simple, modular, stable.
-* Prefer simple, composable, “boring” patterns; add abstraction only when it reduces net complexity
+* Prefer simple, composable, "boring" patterns; add abstraction only when it reduces net complexity
 
 **Design Patterns**
 * Use a KISS/YAGNI/goldielocks approach.
 * Keep a balanced use of the remaining Software Engineering Patterns, but reevalute the previous directives to weight them.
 * Lean on clean, modular, organic, easy to use contracts. Promote Composing versus Inheritance (goldielocks).
 
-** MCPs usage **
-* try to find and use all mcp available tools.
+**MCPs usage**
+* Try to find and use all MCP available tools.
 * If the context7 MCP is available, Always use context7 when I need code generation, setup or configuration steps, or library/API documentation. This means you should automatically use the Context7 MCP tools to resolve library id and get library docs without me having to explicitly ask.
 * If serena is available, reads its instructions, and try to activate the project and use its tools.
 
@@ -167,7 +167,7 @@ Expose canonical dev/build/test commands in `README`. Use multi-stage Dockerfile
 
 ## Dependencies and Locking
 
-Adopt → lock → verify. Use the platform’s lockfile and reproducible installs (example for Python with `uv` shown elsewhere). Prefer maintained, popular libs; document upgrade/removal paths. Validate you’re on a stable release unless pinned for a reason.
+Adopt → lock → verify. Use the platform's lockfile and reproducible installs (example for Python with `uv` shown elsewhere). Prefer maintained, popular libs; document upgrade/removal paths. Validate you're on a stable release unless pinned for a reason.
 
 ---
 
@@ -195,28 +195,3 @@ Adopt → lock → verify. Use the platform’s lockfile and reproducible instal
 * Periodically audit dependencies; prefer latest stable when safe
 
 ---
-
-## Project-Specific Information for Agents
-
-### Repository Overview
-This project is a modern C++20 tool to convert Duke Nukem 3D ART files to PNG, TGA, or BMP images.
-
-### Key Components
-- `cli/main.cpp` - Command line interface
-- `include/extractor_api.hpp` - Main library API
-- `src/` - Implementation files
-- `tests/` - Test suite using doctest
-
-### Build Commands
-```bash
-make all          # Build everything
-make build        # Build release version
-make debug        # Build debug version
-make test         # Run tests
-```
-
-### Project Architecture
-- Zero-copy processing with ArtView and ImageView structures
-- RAII for resource management
-- std::filesystem for path handling
-- Modern C++20 features throughout

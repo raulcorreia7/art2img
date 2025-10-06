@@ -63,11 +63,11 @@ private:
   // BMP operations
   static bool write_bmp_to_file(const std::filesystem::path& filename, const Palette& palette,
                                 const ArtFile::Tile& tile, const uint8_t* pixel_data,
-                                size_t pixel_data_size, const Options& options);
+                                size_t pixel_data_size);
 
   static bool write_bmp_to_memory(std::vector<uint8_t>& output, const Palette& palette,
                                   const ArtFile::Tile& tile, const uint8_t* pixel_data,
-                                  size_t pixel_data_size, const Options& options);
+                                  size_t pixel_data_size);
 };
 
 }  // namespace art2img

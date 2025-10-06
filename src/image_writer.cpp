@@ -30,7 +30,7 @@ bool ImageWriter::write_image(const std::filesystem::path& filename, ImageFormat
   case ImageFormat::TGA:
     return write_tga_to_file(filename, palette, tile, pixel_data, pixel_data_size);
   case ImageFormat::BMP:
-    return write_bmp_to_file(filename, palette, tile, pixel_data, pixel_data_size, options);
+    return write_bmp_to_file(filename, palette, tile, pixel_data, pixel_data_size);
   default:
     throw ArtException("Unsupported image format: " + std::to_string(static_cast<int>(format)));
   }
@@ -55,7 +55,7 @@ bool ImageWriter::write_image_to_memory(std::vector<uint8_t>& output, ImageForma
   case ImageFormat::TGA:
     return write_tga_to_memory(output, palette, tile, pixel_data, pixel_data_size);
   case ImageFormat::BMP:
-    return write_bmp_to_memory(output, palette, tile, pixel_data, pixel_data_size, options);
+    return write_bmp_to_memory(output, palette, tile, pixel_data, pixel_data_size);
   default:
     std::cerr << "Error: Unsupported image format" << std::endl;
     return false;
@@ -150,7 +150,7 @@ bool ImageWriter::write_tga_to_memory(std::vector<uint8_t>& output, const Palett
 
 bool ImageWriter::write_bmp_to_file(const std::filesystem::path& filename, const Palette& palette,
                                     const ArtFile::Tile& tile, const uint8_t* pixel_data,
-                                    size_t pixel_data_size, const Options& options) {
+                                    size_t pixel_data_size) {
   if (tile.is_empty()) {
     return true;  // Skip empty tiles
   }
@@ -162,12 +162,12 @@ bool ImageWriter::write_bmp_to_file(const std::filesystem::path& filename, const
   // Write BMP file using file_operations
   return file_operations::write_bmp_file(
       filename, palette, std::vector<uint8_t>(pixel_data, pixel_data + pixel_data_size), tile.width,
-      tile.height, options);
+      tile.height);
 }
 
 bool ImageWriter::write_bmp_to_memory(std::vector<uint8_t>& output, const Palette& palette,
                                       const ArtFile::Tile& tile, const uint8_t* pixel_data,
-                                      size_t pixel_data_size, const Options& options) {
+                                      size_t pixel_data_size) {
   output.clear();
 
   if (tile.is_empty()) {
@@ -182,7 +182,7 @@ bool ImageWriter::write_bmp_to_memory(std::vector<uint8_t>& output, const Palett
   // Encode BMP to memory using file_operations
   output = file_operations::encode_bmp_to_memory(
       palette, std::vector<uint8_t>(pixel_data, pixel_data + pixel_data_size), tile.width,
-      tile.height, options);
+      tile.height);
   return !output.empty();
 }
 

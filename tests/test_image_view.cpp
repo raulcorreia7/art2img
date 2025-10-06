@@ -253,7 +253,7 @@ TEST_CASE("ImageView image saving") {
 
   SUBCASE("Save to BMP with default options") {
     std::string filename = "test_tile.bmp";
-    REQUIRE(image_view.save_to_bmp(filename, art2img::ImageWriter::Options()));
+    REQUIRE(image_view.save_to_bmp(filename));
     CHECK(std::filesystem::exists(filename));
     CHECK_GT(std::filesystem::file_size(filename), 0);
 
@@ -271,11 +271,8 @@ TEST_CASE("ImageView image saving") {
   }
 
   SUBCASE("Save to BMP with custom options") {
-    art2img::ImageWriter::Options options;
-    options.fix_transparency = false;
-
     std::string filename = "test_tile_custom.bmp";
-    REQUIRE(image_view.save_to_bmp(filename, options));
+    REQUIRE(image_view.save_to_bmp(filename));
     CHECK(std::filesystem::exists(filename));
     CHECK_GT(std::filesystem::file_size(filename), 0);
 
@@ -293,8 +290,7 @@ TEST_CASE("ImageView image saving") {
   }
 
   SUBCASE("Extract to BMP memory") {
-    auto bmp_data =
-        image_view.extract_to_image(art2img::ImageFormat::BMP, art2img::ImageWriter::Options());
+    auto bmp_data = image_view.extract_to_bmp();
     CHECK_GT(bmp_data.size(), 0);
 
     // BMP files should have headers, so minimum size should be > 54 bytes
@@ -307,10 +303,7 @@ TEST_CASE("ImageView image saving") {
   }
 
   SUBCASE("Extract to BMP memory with options") {
-    art2img::ImageWriter::Options options;
-    options.fix_transparency = true;
-
-    auto bmp_data = image_view.extract_to_image(art2img::ImageFormat::BMP, options);
+    auto bmp_data = image_view.extract_to_bmp();
     CHECK_GT(bmp_data.size(), 0);
 
     // Check BMP file signature
