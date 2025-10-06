@@ -52,7 +52,7 @@ jobs:
 
       - name: Configure CMake
         run: |
-          cmake -B build/linux \
+          cmake -B build/linux-x64 \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DBUILD_TESTS=ON \
                 -DBUILD_DIAGNOSTIC=ON \
@@ -61,11 +61,11 @@ jobs:
 
       - name: Build Linux binaries
         run: |
-          cmake --build build/linux --parallel $(nproc)
+          cmake --build build/linux-x64 --parallel $(nproc)
 
       - name: Run tests
         run: |
-          cd build/linux && ctest --output-on-failure
+          cd build/linux-x64 && ctest --output-on-failure
 
   # Windows native build and test
   windows-build:
@@ -101,7 +101,7 @@ jobs:
       - name: Configure CMake for Windows
         shell: pwsh
         run: |
-          cmake -B build/windows `
+          cmake -B build/windows-x64 `
                 -DCMAKE_BUILD_TYPE=Release `
                 -DBUILD_TESTS=ON `
                 -DBUILD_DIAGNOSTIC=ON `
@@ -111,12 +111,12 @@ jobs:
       - name: Build Windows binaries
         shell: pwsh
         run: |
-          cmake --build build/windows --parallel
+          cmake --build build/windows-x64 --parallel
 
       - name: Run tests
         shell: pwsh
         run: |
-          cd build/windows
+          cd build/windows-x64
           ctest --output-on-failure
 
   # macOS build and test
@@ -156,7 +156,7 @@ jobs:
 
       - name: Configure CMake
         run: |
-          cmake -B build/macos \
+          cmake -B build/macos-x64 \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DBUILD_TESTS=ON \
                 -DBUILD_DIAGNOSTIC=ON \
@@ -165,8 +165,8 @@ jobs:
 
       - name: Build macOS binaries
         run: |
-          cmake --build build/macos --parallel $(sysctl -n hw.ncpu)
+          cmake --build build/macos-x64 --parallel $(sysctl -n hw.ncpu)
 
       - name: Run tests
         run: |
-          cd build/macos && ctest --output-on-failure
+          cd build/macos-x64 && ctest --output-on-failure

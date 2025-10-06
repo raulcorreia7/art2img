@@ -63,7 +63,7 @@ jobs:
 
       - name: Configure CMake
         run: |
-          cmake -B build/linux \
+          cmake -B build/linux-x64 \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DBUILD_TESTS=OFF \
                 -DBUILD_DIAGNOSTIC=ON \
@@ -72,20 +72,20 @@ jobs:
 
       - name: Build Linux binaries
         run: |
-          cmake --build build/linux --parallel $(nproc)
+          cmake --build build/linux-x64 --parallel $(nproc)
 
       - name: Verify binaries
         run: |
-          file build/linux/bin/art2img | grep -q "ELF" && echo "Linux binary verified"
-          file build/linux/bin/art2img_diagnostic | grep -q "ELF" && echo "Linux diagnostic verified"
+          file build/linux-x64/bin/art2img | grep -q "ELF" && echo "Linux binary verified"
+          file build/linux-x64/bin/art2img_diagnostic | grep -q "ELF" && echo "Linux diagnostic verified"
 
       - name: Create package
         run: |
           mkdir -p release/linux-x86_64
           
           # Copy binaries
-          cp build/linux/bin/art2img release/linux-x86_64/art2img
-          cp build/linux/bin/art2img_diagnostic release/linux-x86_64/art2img_diagnostic
+          cp build/linux-x64/bin/art2img release/linux-x86_64/art2img
+          cp build/linux-x64/bin/art2img_diagnostic release/linux-x86_64/art2img_diagnostic
           
           # Copy documentation
           cp README.md release/linux-x86_64/
@@ -161,7 +161,7 @@ jobs:
       - name: Configure CMake for Windows
         shell: pwsh
         run: |
-          cmake -B build/windows `
+          cmake -B build/windows-x64 `
                 -DCMAKE_BUILD_TYPE=Release `
                 -DBUILD_TESTS=OFF `
                 -DBUILD_DIAGNOSTIC=ON `
@@ -171,12 +171,12 @@ jobs:
       - name: Build Windows binaries
         shell: pwsh
         run: |
-          cmake --build build/windows --parallel
+          cmake --build build/windows-x64 --parallel
 
       - name: Verify binaries
         shell: pwsh
         run: |
-          $output = Get-Command build\windows\bin\art2img.exe -ErrorAction SilentlyContinue
+          $output = Get-Command build\windows-x64\bin\art2img.exe -ErrorAction SilentlyContinue
           if ($output) {
             Write-Host "Windows binary verified"
           } else {
@@ -190,8 +190,8 @@ jobs:
           New-Item -ItemType Directory -Path "release\windows-x64" -Force
           
           # Copy binaries
-          Copy-Item "build\windows\bin\art2img.exe" -Destination "release\windows-x64\"
-          Copy-Item "build\windows\bin\art2img_diagnostic.exe" -Destination "release\windows-x64\"
+          Copy-Item "build\windows-x64\bin\art2img.exe" -Destination "release\windows-x64\"
+          Copy-Item "build\windows-x64\bin\art2img_diagnostic.exe" -Destination "release\windows-x64\"
           
           # Copy documentation
           Copy-Item "README.md" -Destination "release\windows-x64\"
@@ -264,7 +264,7 @@ jobs:
 
       - name: Configure CMake
         run: |
-          cmake -B build/macos \
+          cmake -B build/macos-x64 \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DBUILD_TESTS=OFF \
                 -DBUILD_DIAGNOSTIC=ON \
@@ -273,12 +273,12 @@ jobs:
 
       - name: Build macOS binaries
         run: |
-          cmake --build build/macos --parallel $(sysctl -n hw.ncpu)
+          cmake --build build/macos-x64 --parallel $(sysctl -n hw.ncpu)
 
       - name: Verify binaries
         run: |
-          file build/macos/bin/art2img | grep -q "Mach-O" && echo "macOS binary verified"
-          file build/macos/bin/art2img_diagnostic | grep -q "Mach-O" && echo "macOS diagnostic verified"
+          file build/macos-x64/bin/art2img | grep -q "Mach-O" && echo "macOS binary verified"
+          file build/macos-x64/bin/art2img_diagnostic | grep -q "Mach-O" && echo "macOS diagnostic verified"
 
       - name: Create macOS package
         run: |
@@ -288,8 +288,8 @@ jobs:
           mkdir -p release/macos-x86_64
           
           # Copy binaries
-          cp build/macos/bin/art2img release/macos-x86_64/art2img
-          cp build/macos/bin/art2img_diagnostic release/macos-x86_64/art2img_diagnostic
+          cp build/macos-x64/bin/art2img release/macos-x86_64/art2img
+          cp build/macos-x64/bin/art2img_diagnostic release/macos-x86_64/art2img_diagnostic
           
           # Copy documentation
           cp README.md release/macos-x86_64/
