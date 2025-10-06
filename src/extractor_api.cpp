@@ -291,53 +291,38 @@ std::vector<uint8_t> ImageView::extract_to_bmp() const {
 }
 
 bool ExtractorAPI::write_animation_data(const std::string& art_file_path,
-                                        const std::string& output_dir) const {
+                                        const std::string& output_dir, const std::string& format, const std::string& anim_format) const {
   if (!is_art_loaded() || !art_file_) {
     return false;
   }
 
-  std::string filename = output_dir + "/animdata.ini";
-  std::ofstream file(filename, std::ios::app);  // Append mode
+  std::string filename;
+  std::ios_base::openmode mode = std::ios::app;  // Append by default
+
+  if (anim_format == "json") {
+    filename = output_dir + "/animation.json";
+  } else {
+    filename = output_dir + "/animdata.ini";
+  }
+
+  std::ofstream file(filename, mode);
 
   if (!file.is_open()) {
     return false;
   }
 
-  // Write header for this ART file
-  file << "; Animation data from \"" << art_file_path << "\"\n"
-       << "; Extracted by art2img\n"
-       << "\n";
-
-  // Get the art file header and tiles
-  const auto& tiles = art_file_->tiles();
-  const auto& header = art_file_->header();
-
-  for (uint32_t i = 0; i < tiles.size(); ++i) {
-    const auto& tile = tiles[i];
-
-    if (tile.anim_data != 0) {
-      // Check if tile has meaningful animation data
-      if (tile.anim_frames() != 0 || tile.anim_type() != 0 || tile.anim_speed() != 0) {
-        file << "[tile" << std::setw(4) << std::setfill('0') << (i + header.start_tile)
-             << ".tga -> tile" << std::setw(4) << std::setfill('0')
-             << (i + header.start_tile + tile.anim_frames()) << ".tga]\n";
-        file << "   AnimationType=" << get_animation_type_string(tile.anim_type()) << "\n";
-        file << "   AnimationSpeed=" << tile.anim_speed() << "\n";
-        file << "\n";
-      }
-
-      file << "[tile" << std::setw(4) << std::setfill('0') << (i + header.start_tile) << ".tga]\n";
-      file << "   XCenterOffset=" << static_cast<int>(tile.x_offset()) << "\n";
-      file << "   YCenterOffset=" << static_cast<int>(tile.y_offset()) << "\n";
-      file << "   OtherFlags=" << tile.other_flags() << "\n";
-      file << "\n";
-    }
+  std::string content;
+  if (anim_format == "json") {
+    content = generate_animation_json_content(art_file_path, format);
+  } else {
+    content = generate_animation_ini_content(art_file_path, format);
   }
 
+  file << content;
   return true;
 }
 
-std::string ExtractorAPI::generate_animation_ini_content(const std::string& art_file_path) const {
+std::string ExtractorAPI::generate_animation_ini_content(const std::string& art_file_path, const std::string& format) const {
   std::ostringstream content;
 
   // Write header for this ART file
@@ -360,15 +345,15 @@ std::string ExtractorAPI::generate_animation_ini_content(const std::string& art_
       // Check if tile has meaningful animation data
       if (tile.anim_frames() != 0 || tile.anim_type() != 0 || tile.anim_speed() != 0) {
         content << "[tile" << std::setw(4) << std::setfill('0') << (i + header.start_tile)
-                << ".tga -> tile" << std::setw(4) << std::setfill('0')
-                << (i + header.start_tile + tile.anim_frames()) << ".tga]\n";
+                << "." << format << " -> tile" << std::setw(4) << std::setfill('0')
+                << (i + header.start_tile + tile.anim_frames()) << "." << format << "]\n";
         content << "   AnimationType=" << get_animation_type_string(tile.anim_type()) << "\n";
         content << "   AnimationSpeed=" << tile.anim_speed() << "\n";
         content << "\n";
       }
 
       content << "[tile" << std::setw(4) << std::setfill('0') << (i + header.start_tile)
-              << ".tga]\n";
+              << "." << format << "]\n";
       content << "   XCenterOffset=" << static_cast<int>(tile.x_offset()) << "\n";
       content << "   YCenterOffset=" << static_cast<int>(tile.y_offset()) << "\n";
       content << "   OtherFlags=" << tile.other_flags() << "\n";
@@ -392,6 +377,73 @@ std::string ExtractorAPI::get_animation_type_string(uint32_t anim_type) const {
   default:
     return "unknown";
   }
+}
+
+std::string ExtractorAPI::generate_animation_json_content(const std::string& art_file_path, const std::string& format) const {
+  std::ostringstream content;
+
+  // Write header for this ART file
+  content << "{\n";
+  content << "  \"art_file\": \"" << art_file_path << "\",\n";
+  content << "  \"tiles\": [\n";
+
+  // Get the art file header and tiles
+  if (!is_art_loaded() || !art_file_) {
+    content << "  ]\n}";
+    return content.str();
+  }
+
+  const auto& tiles = art_file_->tiles();
+  const auto& header = art_file_->header();
+
+  bool first_tile = true;
+  for (uint32_t i = 0; i < tiles.size(); ++i) {
+    const auto& tile = tiles[i];
+
+    if (tile.anim_data != 0) {
+      if (!first_tile) {
+        content << ",\n";
+      }
+      first_tile = false;
+
+      const uint32_t tile_index = i + header.start_tile;
+
+      content << "    {\n";
+      content << "      \"tile\": " << tile_index << ",\n";
+      content << "      \"file\": \"tile" << std::setw(4) << std::setfill('0') << tile_index << "." << format << "\"";
+
+      bool has_animation = tile.anim_frames() != 0 || tile.anim_type() != 0 || tile.anim_speed() != 0;
+      bool has_offsets = tile.x_offset() != 0 || tile.y_offset() != 0;
+      bool has_other_flags = tile.other_flags() != 0;
+
+      if (has_animation) {
+        content << ",\n";
+        content << "      \"animation\": {\n";
+        content << "        \"frames\": " << tile.anim_frames() << ",\n";
+        content << "        \"type\": \"" << get_animation_type_string(tile.anim_type()) << "\",\n";
+        content << "        \"speed\": " << tile.anim_speed() << "\n";
+        content << "      }";
+      }
+
+      if (has_offsets) {
+        content << ",\n";
+        content << "      \"offsets\": {\n";
+        content << "        \"x\": " << static_cast<int>(tile.x_offset()) << ",\n";
+        content << "        \"y\": " << static_cast<int>(tile.y_offset()) << "\n";
+        content << "      }";
+      }
+
+      if (has_other_flags) {
+        content << ",\n";
+        content << "      \"other_flags\": " << tile.other_flags();
+      }
+
+      content << "\n    }";
+    }
+  }
+
+  content << "\n  ]\n}";
+  return content.str();
 }
 
 }  // namespace art2img

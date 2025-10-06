@@ -1,3 +1,11 @@
+/**
+ * @file extractor_api.hpp
+ * @brief Main ART file extraction API
+ *
+ * This file defines the primary API for extracting images from Build engine
+ * ART files with support for multiple formats and parallel processing.
+ */
+
 #pragma once
 
 #include <filesystem>
@@ -12,40 +20,54 @@
 
 namespace art2img {
 
-// Forward declarations
+/// @brief Forward declarations
 struct ArtView;
 struct ImageView;
 
+/**
+ * @struct ExtractionResult
+ * @brief Result structure for tile extraction operations
+ */
 struct ExtractionResult {
-  bool success;
-  std::string error_message;
-  std::vector<uint8_t> image_data;
-  std::string format;  // "png", "tga", or "bmp"
-  uint32_t tile_index;
-  uint16_t width;
-  uint16_t height;
+  bool success;                     ///< Whether extraction was successful
+  std::string error_message;        ///< Error description if extraction failed
+  std::vector<uint8_t> image_data;  ///< Extracted image data
+  std::string format;               ///< Image format ("png", "tga", or "bmp")
+  uint32_t tile_index;              ///< Index of the extracted tile
+  uint16_t width;                   ///< Width of the extracted image
+  uint16_t height;                  ///< Height of the extracted image
 
   // Animation data
-  uint32_t anim_frames;
-  uint32_t anim_type;
-  int8_t x_offset;
-  int8_t y_offset;
-  uint32_t anim_speed;
-  uint32_t other_flags;
+  uint32_t anim_frames;             ///< Number of animation frames
+  uint32_t anim_type;               ///< Type of animation
+  int8_t x_offset;                  ///< X offset for animation
+  int8_t y_offset;                  ///< Y offset for animation
+  uint32_t anim_speed;              ///< Animation speed
+  uint32_t other_flags;             ///< Additional animation flags
 };
 
-// Zero-copy view structures for parallel processing
+/**
+ * @struct ArtView
+ * @brief Zero-copy view structure for parallel ART file processing
+ */
 struct ArtView {
-  const uint8_t* art_data;           // Pointer to original ART memory
-  size_t art_size;                   // Size of ART data
-  const Palette* palette;            // Palette for color conversion
-  ArtFile::Header header;            // ART file header
-  std::vector<ArtFile::Tile> tiles;  // Tile metadata
+  const uint8_t* art_data;           ///< Pointer to original ART memory
+  size_t art_size;                   ///< Size of ART data
+  const Palette* palette;            ///< Palette for color conversion
+  ArtFile::Header header;            ///< ART file header
+  std::vector<ArtFile::Tile> tiles;  ///< Tile metadata
 
   // On-demand ImageView creation
-  size_t image_count() const {
+  /// @brief Get number of tiles in this view
+  /// @return Number of tiles
+  size_t image_count() const noexcept {
     return tiles.size();
   }
+
+  /// @brief Get tile by index
+  /// @param tile_index Index of the tile
+  /// @return Reference to the tile
+  /// @throws ArtException if tile_index is out of range
   const ArtFile::Tile& get_tile(uint32_t tile_index) const {
     if (tile_index >= tiles.size()) {
       throw ArtException("Tile index out of range");
@@ -53,22 +75,37 @@ struct ArtView {
     return tiles[tile_index];
   }
 
-  uint32_t get_start_tile_index() const {
+  /// @brief Get the starting tile index
+  /// @return Starting tile index
+  uint32_t get_start_tile_index() const noexcept {
     return header.start_tile;
   }
-  uint32_t get_end_tile_index() const {
+
+  /// @brief Get the ending tile index
+  /// @return Ending tile index
+  uint32_t get_end_tile_index() const noexcept {
     return header.end_tile;
   }
-  uint32_t get_num_tiles() const {
+
+  /// @brief Get total number of tiles
+  /// @return Number of tiles
+  uint32_t get_num_tiles() const noexcept {
     return header.num_tiles;
   }
 };
 
+/**
+ * @struct ImageView
+ * @brief View structure for individual tile image data
+ */
 struct ImageView {
-  const ArtView* parent = nullptr;  // Parent ArtView
-  uint32_t tile_index = 0;          // Index of this tile
+  const ArtView* parent = nullptr;  ///< Parent ArtView
+  uint32_t tile_index = 0;          ///< Index of this tile
 
   // Direct memory access
+  /// @brief Get pointer to pixel data
+  /// @return Pointer to pixel data, or nullptr for empty tiles
+  /// @throws ArtException if tile data extends beyond buffer bounds
   const uint8_t* pixel_data() const {
     const auto& tile = require_tile();
     if (tile.is_empty()) {
@@ -80,16 +117,25 @@ struct ImageView {
     return parent->art_data + tile.offset;
   }
 
+  /// @brief Get image width
+  /// @return Width of the image in pixels
+  /// @throws ArtException if parent or tile index is invalid
   uint16_t width() const {
     const auto& tile = require_tile();
     return tile.width;
   }
 
+  /// @brief Get image height
+  /// @return Height of the image in pixels
+  /// @throws ArtException if parent or tile index is invalid
   uint16_t height() const {
     const auto& tile = require_tile();
     return tile.height;
   }
 
+  /// @brief Get total pixel count
+  /// @return Number of pixels in the image
+  /// @throws ArtException if parent or tile index is invalid
   size_t size() const {
     const auto& tile = require_tile();
     return static_cast<size_t>(tile.width) * tile.height;
@@ -176,13 +222,13 @@ public:
       ImageWriter::Options options = ImageWriter::Options());
 
   // Accessors
-  bool is_art_loaded() const {
+  bool is_art_loaded() const noexcept {
     return art_file_ != nullptr;
   }
-  bool is_palette_loaded() const {
+  bool is_palette_loaded() const noexcept {
     return palette_ != nullptr;
   }
-  uint32_t get_tile_count() const {
+  uint32_t get_tile_count() const noexcept {
     return art_file_ ? static_cast<uint32_t>(art_file_->tiles().size()) : 0;
   }
 
@@ -190,8 +236,9 @@ public:
   ArtView get_art_view() const;
 
   // Animation data handling
-  bool write_animation_data(const std::string& art_file_path, const std::string& output_dir) const;
-  std::string generate_animation_ini_content(const std::string& art_file_path) const;
+  bool write_animation_data(const std::string& art_file_path, const std::string& output_dir, const std::string& format = "png", const std::string& anim_format = "ini") const;
+  std::string generate_animation_ini_content(const std::string& art_file_path, const std::string& format = "png") const;
+  std::string generate_animation_json_content(const std::string& art_file_path, const std::string& format = "png") const;
 
 private:
   std::unique_ptr<ArtFile> art_file_;

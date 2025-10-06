@@ -48,6 +48,17 @@ OptionTranslationResult translate_to_processing_options(const CliOptions& cli_op
                       "Unsupported output format: " + cli_options.format);
   }
 
+  static constexpr std::array allowed_anim_formats{"ini", "json"};
+  const std::string normalized_anim_format = to_lower_copy(cli_options.anim_format);
+  const bool anim_format_supported =
+      std::any_of(allowed_anim_formats.begin(), allowed_anim_formats.end(),
+                  [&](const std::string_view candidate) { return candidate == normalized_anim_format; });
+
+  if (!anim_format_supported) {
+    return make_error(OptionTranslationErrorCode::InvalidFormat,
+                      "Unsupported animation format: " + cli_options.anim_format);
+  }
+
   if (cli_options.merge_anim && cli_options.no_anim) {
     return make_error(OptionTranslationErrorCode::AnimationConflict,
                       "Cannot merge animation data when animation export is disabled");
@@ -63,10 +74,12 @@ OptionTranslationResult translate_to_processing_options(const CliOptions& cli_op
   options.palette_file = trimmed_palette;
   options.output_dir = cli_options.output_dir.empty() ? std::string{"."} : cli_options.output_dir;
   options.format = normalized_format;
+  options.anim_format = to_lower_copy(cli_options.anim_format);
   options.fix_transparency = cli_options.fix_transparency;
   options.verbose = !cli_options.quiet;
   options.dump_animation = !cli_options.no_anim;
   options.merge_animation_data = cli_options.merge_anim;
+  options.flat_output = cli_options.flat_output;
 
   OptionTranslationResult result;
   result.options = std::move(options);

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <future>
 #include <iostream>
@@ -64,9 +65,9 @@ TileResult export_tile(const TileProcessingContext& context, uint32_t local_inde
 
 void log_tile_failure(const TileResult& tile_result) {
   art2img::ColorGuard yellow(art2img::ColorOutput::YELLOW, std::cerr);
-  std::cerr << "Warning: Failed to process tile " << tile_result.tile_index << ": "
-            << tile_result.error_message << std::endl;
-  std::cerr << "This may be due to file permissions or disk space issues." << std::endl;
+  std::cerr << std::format("Warning: Failed to process tile {}: {}\n",
+                           tile_result.tile_index, tile_result.error_message);
+  std::cerr << "This may be due to file permissions or disk space issues.\n";
 }
 
 void log_progress_if_needed(const ProcessingOptions& options, std::size_t completed,
@@ -76,8 +77,8 @@ void log_progress_if_needed(const ProcessingOptions& options, std::size_t comple
   }
 
   art2img::ColorGuard cyan(art2img::ColorOutput::CYAN);
-  std::cout << "Progress: " << completed << "/" << total_tiles << " tiles processed"
-            << art2img::ColorOutput::reset() << std::endl;
+  std::cout << std::format("Progress: {}/{} tiles processed{}",
+                           completed, total_tiles, art2img::ColorOutput::reset()) << std::endl;
 }
 
 void handle_tile_result(const TileResult& tile_result, ProcessingResult& summary,
@@ -126,12 +127,13 @@ void log_processing_summary(const ProcessingOptions& options, const ProcessingRe
 
   if (result.failed_count == 0) {
     art2img::ColorGuard green(art2img::ColorOutput::GREEN);
-    std::cout << "Tile processing complete: " << result.processed_count << " successful"
-              << art2img::ColorOutput::reset() << std::endl;
+    std::cout << std::format("Tile processing complete: {} successful{}",
+                             result.processed_count, art2img::ColorOutput::reset()) << std::endl;
   } else {
     art2img::ColorGuard yellow(art2img::ColorOutput::YELLOW);
-    std::cout << "Tile processing complete: " << result.processed_count << " successful, "
-              << result.failed_count << " failed" << art2img::ColorOutput::reset() << std::endl;
+    std::cout << std::format("Tile processing complete: {} successful, {} failed{}",
+                             result.processed_count, result.failed_count,
+                             art2img::ColorOutput::reset()) << std::endl;
   }
 }
 
@@ -143,7 +145,13 @@ void write_animation_data_if_requested(art2img::ExtractorAPI& extractor,
     return;
   }
 
-  if (!extractor.write_animation_data(art_file_path, options.output_dir) && !is_directory_mode) {
+  std::string anim_format = options.anim_format;
+  if (is_directory_mode && options.merge_animation_data && options.anim_format == "json") {
+    // Force INI format for merging in directory mode
+    anim_format = "ini";
+  }
+
+  if (!extractor.write_animation_data(art_file_path, options.output_dir, options.format, anim_format) && !is_directory_mode) {
     std::cerr << "Warning: Failed to write animation data for " << art_file_path << std::endl;
   }
 }
@@ -167,8 +175,7 @@ LoadedArtData load_art_and_palette_composable(const ProcessingOptions& options,
     auto extractor = std::make_unique<art2img::ExtractorAPI>();
     if (!extractor->load_art_file(art_file_path)) {
       result.error_message = "Failed to load ART file: " + art_file_path;
-      result.error_message +=
-          " (Please check that the file exists and is a valid Duke Nukem 3D ART file)";
+      result.error_message += " (Please check that the file exists and is a valid Build engine ART file)";
       return result;
     }
 
@@ -231,7 +238,7 @@ TileResult process_single_tile_composable(const art2img::ImageView& image_view,
 
   // Construct output filename
   std::string tile_filename =
-      output_dir + "/tile" + std::to_string(tile_index) + "." + options.format;
+      std::format("{}/tile{}.{}", output_dir, tile_index, options.format);
 
   // Save based on format using streamlined function
   result.success =
@@ -239,7 +246,7 @@ TileResult process_single_tile_composable(const art2img::ImageView& image_view,
   result.output_path = tile_filename;
 
   if (!result.success) {
-    result.error_message = "Failed to save tile " + std::to_string(tile_index);
+    result.error_message = std::format("Failed to save tile {}", tile_index);
   }
 
   return result;
@@ -267,7 +274,7 @@ ProcessingResult process_art_file_internal(const ProcessingOptions& options,
     }
 
     std::string final_output_dir = options.output_dir;
-    if (!output_subdir.empty()) {
+    if (!output_subdir.empty() && !options.flat_output) {
       final_output_dir = (std::filesystem::path(final_output_dir) / output_subdir).string();
     }
 
@@ -470,6 +477,13 @@ CliProcessResult process_art_directory(const CliOptions& cli_options,
   }
 
   if (options.merge_animation_data) {
+    // For now, only support merging for INI format
+    if (options.anim_format == "json") {
+      art2img::ColorGuard yellow(art2img::ColorOutput::YELLOW, std::cerr);
+      std::cerr << "Warning: JSON format is not supported for merged animation data in directory mode. Using INI format instead.\n"
+                << art2img::ColorOutput::reset() << std::endl;
+    }
+
     std::string merged_ini_path =
         (std::filesystem::path(options.output_dir) / "animdata.ini").string();
     std::ofstream merged_file(merged_ini_path);
@@ -535,7 +549,7 @@ CliProcessResult process_art_directory(const CliOptions& cli_options,
                 << std::endl;
     }
 
-    const std::string subdir = std::filesystem::path(art_file).stem().string();
+    const std::string subdir = options.flat_output ? "" : std::filesystem::path(art_file).stem().string();
     auto file_result = process_single_art_file(options, art_file, subdir, true);
 
     if (file_result.success) {

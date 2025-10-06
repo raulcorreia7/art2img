@@ -8,7 +8,7 @@ namespace art2img {
 
 namespace {
 constexpr const char* kDefaultBanner =
-    "art2img - Duke Nukem 3D ART File Converter\n"
+    "art2img - Build Engine ART File Converter\n"
     "Convert ART files to PNG, TGA, or BMP with transparency support.\n"
     "GPL v2 License - See LICENSE file for complete terms.";
 
@@ -19,8 +19,7 @@ constexpr const char* kDefaultFooter =
     "  art2img art/ -o images/            # Convert all ART files\n"
     "  art2img tiles.art -p custom.pal    # Use custom palette\n"
     "  art2img tiles.art --no-fix-transparency  # Disable transparency\n"
-    "  art2img art/ -m -o game/           # Merge animation data\n"
-    "\nFor modders: Use -F for transparency and -m for animation data.";
+    "  art2img art/ -m -o game/           # Merge animation data\n";
 }  // namespace
 
 CliAppBuilder::CliAppBuilder() : banner_{default_banner()}, footer_{default_footer()} {}
@@ -51,12 +50,15 @@ std::unique_ptr<CLI::App> CliAppBuilder::build(CliOptions& options) const {
       ->default_val(".");
 
   app->add_option("-p,--palette", options.palette_file,
-                  "Custom palette file (defaults to built-in Duke Nukem 3D palette)")
+                  "Custom palette file (defaults to built-in Build engine palette)")
       ->type_name("FILE");
 
   app->add_option("-f,--format", options.format, "Output format: tga, png, or bmp")
       ->default_val("png")
       ->check(CLI::IsMember({"tga", "png", "bmp"}));
+  app->add_option("--anim-format", options.anim_format, "Animation data format: ini or json")
+      ->default_val("ini")
+      ->check(CLI::IsMember({"ini", "json"}));
 
   app->add_flag("-F,--fix-transparency,!--no-fix-transparency", options.fix_transparency,
                 "Enable magenta transparency fix (default: enabled)");
@@ -66,6 +68,8 @@ std::unique_ptr<CLI::App> CliAppBuilder::build(CliOptions& options) const {
                 "Merge all animation data into a single file (directory mode)");
   app->add_flag("--parallel,!--no-parallel", options.enable_parallel,
                 "Enable parallel tile export (default: enabled)");
+  app->add_flag("--flat-output", options.flat_output,
+                "Output files directly to directory without TILESxxx/ subdirectories");
   app->add_option("-j,--jobs", options.max_threads,
                   "Maximum number of worker threads to use (0 = auto)")
       ->check(CLI::NonNegativeNumber)

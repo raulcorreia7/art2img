@@ -11,6 +11,9 @@ enum class OptionTranslationErrorCode {
   PaletteConflict,
 };
 
+enum class OutputFormat { PNG, TGA, BMP };
+enum class AnimationFormat { INI, JSON };
+
 struct OptionTranslationError {
   OptionTranslationErrorCode code = OptionTranslationErrorCode::None;
   std::string message;
@@ -21,11 +24,13 @@ struct CliOptions {
   std::string output_dir = ".";
   std::string palette_file;
   std::string format = "png";
+  std::string anim_format = "ini";
   bool fix_transparency = true;
   bool quiet = false;
   bool no_anim = false;
   bool merge_anim = false;
   bool enable_parallel = true;
+  bool flat_output = false;
   std::size_t max_threads = 0;
 };
 
@@ -33,11 +38,13 @@ struct ProcessingOptions {
   std::string palette_file;
   std::string output_dir;
   std::string format = "png";
+  std::string anim_format = "ini";
   bool fix_transparency = true;
   bool verbose = false;
   bool dump_animation = true;
   bool merge_animation_data = false;
   bool enable_parallel = true;
+  bool flat_output = false;
   std::size_t max_threads = 0;
 };
 
