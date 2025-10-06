@@ -391,4 +391,30 @@ TEST_CASE("Integration tests - Animation data") {
       }
     }
   }
+
+  SUBCASE("Animation format generation") {
+    // Test both INI and JSON animation format generation
+    std::string ini_content = extractor.generate_animation_ini_content("test.art", "png");
+    std::string json_content = extractor.generate_animation_json_content("test.art", "png");
+
+    // Both should be non-empty
+    CHECK_FALSE(ini_content.empty());
+    CHECK_FALSE(json_content.empty());
+
+    // INI content should contain format reference
+    CHECK(ini_content.find("test.art") != std::string::npos);
+    CHECK(ini_content.find(".png") != std::string::npos);
+
+    // JSON content should be valid JSON structure
+    CHECK(json_content.find("test.art") != std::string::npos);
+    CHECK(json_content.find(".png") != std::string::npos);
+    CHECK(json_content.find("tiles") != std::string::npos);
+
+    // Test with different formats
+    std::string tga_ini = extractor.generate_animation_ini_content("test.art", "tga");
+    std::string tga_json = extractor.generate_animation_json_content("test.art", "tga");
+
+    CHECK(tga_ini.find(".tga") != std::string::npos);
+    CHECK(tga_json.find(".tga") != std::string::npos);
+  }
 }
