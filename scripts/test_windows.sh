@@ -13,6 +13,24 @@ set -e
 BUILD_DIR="${1:-build/windows}"
 BINARY_DIR="${2:-$BUILD_DIR}"
 
+find_binary() {
+    local search_root="$1"
+    local basename="$2"
+
+    if [[ ! -d "$search_root" ]]; then
+        return 1
+    fi
+
+    mapfile -t matches < <(find "$search_root" -type f \( -name "$basename" -o -name "$basename.exe" \) 2>/dev/null)
+
+    if [[ ${#matches[@]} -gt 0 ]]; then
+        printf '%s\n' "${matches[0]}"
+        return 0
+    fi
+
+    return 1
+}
+
 echo "Testing Windows build..."
 echo "Build directory: $BUILD_DIR"
 echo "Binary directory: $BINARY_DIR"
@@ -28,17 +46,18 @@ if ! command -v wine >/dev/null 2>&1; then
     exit 1
 fi
 
-# Check if Windows binaries exist
-MAIN_BIN="$BINARY_DIR/bin/art2img.exe"
-TEST_BIN="$BINARY_DIR/bin/art2img_tests.exe"
+# Locate Windows binaries (supports single and multi-config generators)
+BIN_ROOT="$BINARY_DIR/bin"
+MAIN_BIN="$(find_binary "$BIN_ROOT" "art2img")"
+TEST_BIN="$(find_binary "$BIN_ROOT" "art2img_tests")"
 
-if [[ ! -f "$MAIN_BIN" ]]; then
-    echo "Error: Windows executable not found at $MAIN_BIN"
+if [[ -z "$MAIN_BIN" ]]; then
+    echo "Error: Windows executable not found under $BIN_ROOT"
     exit 1
 fi
 
-if [[ ! -f "$TEST_BIN" ]]; then
-    echo "Error: Windows test executable not found at $TEST_BIN"
+if [[ -z "$TEST_BIN" ]]; then
+    echo "Error: Windows test executable not found under $BIN_ROOT"
     exit 1
 fi
 

@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   release:
     types: [published]
   workflow_dispatch:
@@ -82,15 +82,15 @@ jobs:
       - name: Create package
         run: |
           mkdir -p release/linux-x86_64
-          
+
           # Copy binaries
           cp build/linux-x64/bin/art2img release/linux-x86_64/art2img
           cp build/linux-x64/bin/art2img_diagnostic release/linux-x86_64/art2img_diagnostic
-          
+
           # Copy documentation
           cp README.md release/linux-x86_64/
           cp LICENSE release/linux-x86_64/ 2>/dev/null || echo "No LICENSE file found"
-          
+
           # Create platform-specific README
           cat > release/linux-x86_64/README.txt << EOF
           art2img ${{ env.VERSION }} - linux-x86_64
@@ -106,10 +106,10 @@ jobs:
 
           See README.md for full documentation.
           EOF
-          
+
           # Create archive
           tar -czf art2img-linux-x86_64-${{ env.VERSION }}.tar.gz -C release/linux-x86_64 .
-          
+
           echo "Package created: art2img-linux-x86_64-${{ env.VERSION }}.tar.gz"
 
       - name: Upload artifacts
@@ -171,16 +171,39 @@ jobs:
       - name: Build Windows binaries
         shell: pwsh
         run: |
-          cmake --build build/windows-x64 --parallel
+          cmake --build build/windows-x64 --config Release --parallel
+
+      - name: Resolve Windows binary paths
+        shell: pwsh
+        run: |
+          $cli = Get-ChildItem -Path build\windows-x64\bin -Recurse -Filter art2img.exe | Select-Object -First 1
+          if (-not $cli) {
+            Write-Host "art2img.exe not found in build\\windows-x64\\bin"
+            exit 1
+          }
+
+          $diagnostic = Get-ChildItem -Path build\windows-x64\bin -Recurse -Filter art2img_diagnostic.exe | Select-Object -First 1
+          if (-not $diagnostic) {
+            Write-Host "art2img_diagnostic.exe not found in build\\windows-x64\\bin"
+            exit 1
+          }
+
+          "CLI_BINARY=$($cli.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "DIAGNOSTIC_BINARY=$($diagnostic.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Verify binaries
         shell: pwsh
         run: |
-          $output = Get-Command build\windows-x64\bin\art2img.exe -ErrorAction SilentlyContinue
-          if ($output) {
-            Write-Host "Windows binary verified"
+          if (Test-Path "$env:CLI_BINARY") {
+            Write-Host "Windows CLI binary verified"
           } else {
-            Write-Host "Windows binary verification failed"
+            Write-Host "Windows CLI binary verification failed"
+            exit 1
+          }
+          if (Test-Path "$env:DIAGNOSTIC_BINARY") {
+            Write-Host "Windows diagnostic binary verified"
+          } else {
+            Write-Host "Windows diagnostic binary verification failed"
             exit 1
           }
 
@@ -188,15 +211,15 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path "release\windows-x64" -Force
-          
+
           # Copy binaries
-          Copy-Item "build\windows-x64\bin\art2img.exe" -Destination "release\windows-x64\"
-          Copy-Item "build\windows-x64\bin\art2img_diagnostic.exe" -Destination "release\windows-x64\"
-          
+          Copy-Item "$env:CLI_BINARY" -Destination "release\windows-x64\"
+          Copy-Item "$env:DIAGNOSTIC_BINARY" -Destination "release\windows-x64\"
+
           # Copy documentation
           Copy-Item "README.md" -Destination "release\windows-x64\"
           Copy-Item "LICENSE" -Destination "release\windows-x64\" -ErrorAction SilentlyContinue
-          
+
           # Create platform-specific README
           $content = @"
           art2img ${{ env.VERSION }} - windows-x64
@@ -213,10 +236,10 @@ jobs:
           See README.md for full documentation.
           "@
           $content | Out-File -FilePath "release\windows-x64\README.txt" -Encoding UTF8
-          
+
           # Create ZIP archive (PowerShell 5.1+)
           Compress-Archive -Path "release\windows-x64\*" -DestinationPath "art2img-windows-x64-${{ env.VERSION }}.zip"
-          
+
           Write-Host "Package created: art2img-windows-x64-${{ env.VERSION }}.zip"
 
       - name: Upload artifacts
@@ -284,17 +307,17 @@ jobs:
         run: |
           VERSION=$(cmake -P cmake/print_version.cmake)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          
+
           mkdir -p release/macos-x86_64
-          
+
           # Copy binaries
           cp build/macos-x64/bin/art2img release/macos-x86_64/art2img
           cp build/macos-x64/bin/art2img_diagnostic release/macos-x86_64/art2img_diagnostic
-          
+
           # Copy documentation
           cp README.md release/macos-x86_64/
           cp LICENSE release/macos-x86_64/ 2>/dev/null || echo "No LICENSE file found"
-          
+
           # Create platform-specific README
           cat > release/macos-x86_64/README.txt << EOF
           art2img $VERSION - macos-x86_64
@@ -310,10 +333,10 @@ jobs:
 
           See README.md for full documentation.
           EOF
-          
+
           # Create archive
           tar -czf art2img-macos-x86_64-$VERSION.tar.gz -C release/macos-x86_64 .
-          
+
           echo "Package created: art2img-macos-x86_64-$VERSION.tar.gz"
 
       - name: Upload macOS artifacts

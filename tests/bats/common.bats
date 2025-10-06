@@ -6,6 +6,27 @@
 
 # Load BATS support libraries (if available)
 # This ensures proper support for testing functionality
+find_binary_path() {
+    local search_root="$1"
+    local stem="$2"
+
+    if [[ ! -d "$search_root" ]]; then
+        echo ""
+        return 1
+    fi
+
+    local match
+    match=$(find "$search_root" -type f \( -name "$stem" -o -name "$stem.exe" \) -print -quit 2>/dev/null)
+
+    if [[ -n "$match" ]]; then
+        printf '%s' "$match"
+        return 0
+    fi
+
+    echo ""
+    return 1
+}
+
 setup() {
     # Project root detection
     PROJECT_ROOT="$(cd "$(dirname "${BATS_TEST_FILENAME}")/../.." && pwd)"
@@ -43,20 +64,9 @@ setup() {
     BUILD_DIR="${PROJECT_ROOT}/build/${BUILD_SUBDIR}"
     
     # Set platform-specific paths
-    case "$PLATFORM" in
-        "windows")
-            # Windows-specific paths (using Wine)
-            BINARY_DIR="${BUILD_DIR}/bin"
-            MAIN_BIN="${BINARY_DIR}/art2img.exe"
-            TEST_BIN="${BINARY_DIR}/art2img_tests.exe"
-            ;;
-        *)
-            # Unix-like systems (Linux, macOS)
-            BINARY_DIR="${BUILD_DIR}/bin"
-            MAIN_BIN="${BINARY_DIR}/art2img"
-            TEST_BIN="${BINARY_DIR}/art2img_tests"
-            ;;
-    esac
+    BINARY_DIR="${BUILD_DIR}/bin"
+    MAIN_BIN="$(find_binary_path "$BINARY_DIR" "art2img")"
+    TEST_BIN="$(find_binary_path "$BINARY_DIR" "art2img_tests")"
     
     # Test assets directory
     TEST_ASSETS_DIR="${PROJECT_ROOT}/tests/assets"

@@ -111,13 +111,13 @@ jobs:
       - name: Build Windows binaries
         shell: pwsh
         run: |
-          cmake --build build/windows-x64 --parallel
+          cmake --build build/windows-x64 --config Release --parallel
 
       - name: Run tests
         shell: pwsh
         run: |
           cd build/windows-x64
-          ctest --output-on-failure
+          ctest --output-on-failure -C Release
 
   # macOS build and test
   macos-build:
