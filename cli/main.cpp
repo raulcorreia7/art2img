@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
     // Print banner if not quiet
     if (processing_options.verbose) {
       art2img::ColorGuard cyan(art2img::ColorOutput::CYAN);
-      std::cout << "art2img v" << ART2IMG_VERSION << " - Duke Nukem 3D ART File Converter"
+      std::cout << "art2img v" << ART2IMG_VERSION << " - Build Engine ART File Converter"
                 << std::endl;
       std::cout << "=============================================" << std::endl;
       std::cout << std::endl;

@@ -1,32 +1,27 @@
 <div align="center">
   <h1>art2img v0.2.0</h1>
-  <p><strong>Convert Duke Nukem 3D ART files to modern image formats</strong></p>
+  <p><strong>Convert Build engine ART files to modern image formats</strong></p>
 </div>
 
-A professional tool for game modders to convert Duke Nukem 3D ART files to PNG, TGA, or BMP with transparency and animation support.
+Convert Build engine ART files (Duke Nukem 3D, Blood, etc.) to PNG, TGA, or BMP with transparency and animation support.
 
-## Quick Start for Modders
-
-After building (see below), run:
+## Quick Start
 
 ```bash
-# Basic conversion (Linux/Mac)
+# Basic conversion
 ./art2img tiles.art
 
-# Basic conversion (Windows)
-./art2img.exe tiles.art
-
-# Convert to specific format with output directory
+# Convert to TGA with output directory
 ./art2img tiles.art -f tga -o output/
 
 # Convert all ART files in a directory
 ./art2img art/ -o images/
 
-# For games with transparency (Green Slime, etc.)
-./art2img tiles.art -F  # Enable transparency fix
+# Enable transparency fix
+./art2img tiles.art -F
 
 # Extract animation data
-./art2img art/ -m -o game/  # Merge animation data
+./art2img art/ -m -o game/
 ```
 
 ## Command-Line Options
@@ -52,18 +47,8 @@ OPTIONS:
   -m,     --merge-anim        Merge all animation data into a single file (directory mode) 
           --parallel, --no-parallel{false} 
                               Enable parallel tile export (default: enabled) 
-  -j,     --jobs UINT:NONNEGATIVE [0]  
-                              Maximum number of worker threads to use (0 = auto) 
-
-Examples: 
-art2img tiles.art # Convert single ART file 
-art2img tiles.art -f tga -o out/ # Convert to TGA with output dir 
-art2img art/ -o images/ # Convert all ART files 
-art2img tiles.art -p custom.pal # Use custom palette 
-art2img tiles.art --no-fix-transparency # Disable transparency 
-art2img art/ -m -o game/ # Merge animation data 
-
-For modders: Use -F for transparency and -m for animation data.
+  -j,     --jobs UINT:NONNEGATIVE [0]
+                              Maximum number of worker threads to use (0 = auto)
 ```
 
 ## Building the Project
@@ -76,7 +61,6 @@ For modders: Use -F for transparency and -m for animation data.
 ```bash
 make all                    # Build release version for your platform
 make build                  # Build for Linux x64
-make debug                  # Build debug version for Linux x64
 make mingw-windows          # Cross-compile for Windows x64 using MinGW
 make mingw-windows-x86      # Cross-compile for Windows x86 using MinGW
 make test                   # Run tests on Linux
@@ -88,9 +72,7 @@ make clean                  # Clean build directory
 # Install MinGW cross-compilers
 sudo apt-get install g++-mingw-w64-x86-64 g++-mingw-w64-i686
 
-# Build for Windows
-make mingw-windows          # x64 version
-make mingw-windows-x86      # x86 version
+# Build as usual using mingw-windows commands
 ```
 
 ## License

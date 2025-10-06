@@ -95,7 +95,7 @@ jobs:
           cat > release/linux-x86_64/README.txt << EOF
           art2img ${{ env.VERSION }} - linux-x86_64
 
-          Multi-threaded ART to image converter for Duke Nukem 3D assets.
+          Multi-threaded ART to image converter for Build engine assets.
 
           Binaries:
           - art2img - Main converter
@@ -224,7 +224,7 @@ jobs:
           $content = @"
           art2img ${{ env.VERSION }} - windows-x64
 
-          Multi-threaded ART to image converter for Duke Nukem 3D assets.
+          Multi-threaded ART to image converter for Build engine assets.
 
           Binaries:
           - art2img.exe - Main converter
@@ -322,7 +322,7 @@ jobs:
           cat > release/macos-x86_64/README.txt << EOF
           art2img $VERSION - macos-x86_64
 
-          Multi-threaded ART to image converter for Duke Nukem 3D assets.
+          Multi-threaded ART to image converter for Build engine assets.
 
           Binaries:
           - art2img - Main converter
@@ -378,7 +378,7 @@ jobs:
           cat > release-notes.md << EOF
           # art2img ${{ env.TAG_NAME }}
 
-          Multi-threaded ART to image converter for Duke Nukem 3D assets with support for multiple platforms and architectures.
+          Multi-threaded ART to image converter for Build engine assets with support for multiple platforms and architectures.
 
           ## Downloads
 
