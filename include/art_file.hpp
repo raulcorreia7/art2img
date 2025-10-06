@@ -1,3 +1,12 @@
+/**
+ * @file art_file.hpp
+ * @brief ART file parsing and manipulation utilities
+ *
+ * This file defines the ArtFile class which provides APIs for reading and
+ * processing Build engine ART files with support for both file-based and
+ * memory-based operations.
+ */
+
 #pragma once
 
 #include <cstdint>
@@ -10,8 +19,18 @@
 
 namespace art2img {
 
+/**
+ * @class ArtFile
+ * @brief Represents an ART file from Build engine games
+ *
+ * This class provides comprehensive functionality for reading ART files,
+ * including support for parsing headers, tile metadata, and pixel data.
+ * It supports both file-based and memory-based operations with zero-copy
+ * memory access for efficient processing.
+ */
 class ArtFile {
 public:
+  /** @brief ART file header structure */
   struct Header {
     uint32_t version;
     uint32_t start_tile;
@@ -77,27 +96,27 @@ public:
   bool read_tile_data(uint32_t index, std::vector<uint8_t>& buffer);
 
   // Accessors
-  const Header& header() const {
+  const Header& header() const noexcept {
     return header_;
   }
-  const std::vector<Tile>& tiles() const {
+  const std::vector<Tile>& tiles() const noexcept {
     return tiles_;
   }
-  bool is_open() const {
+  bool is_open() const noexcept {
     return file_.is_open() || !data_.empty();
   }
-  const std::filesystem::path& filename() const {
+  const std::filesystem::path& filename() const noexcept {
     return filename_;
   }
 
   // Memory data access for zero-copy operations
-  const uint8_t* data() const {
+  const uint8_t* data() const noexcept {
     return data_.data();
   }
-  size_t data_size() const {
+  size_t data_size() const noexcept {
     return data_.size();
   }
-  bool has_data() const {
+  bool has_data() const noexcept {
     return !data_.empty();
   }
 

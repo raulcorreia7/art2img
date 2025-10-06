@@ -10,7 +10,7 @@
 
 namespace art2img {
 
-enum class ImageFormat { PNG, TGA, BMP };
+enum class ImageFormat : uint8_t { PNG, TGA, BMP };
 
 class ImageWriter {
 public:
