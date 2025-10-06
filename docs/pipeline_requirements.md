@@ -13,6 +13,8 @@ The pipeline requires the following system dependencies to be installed in the r
 - `g++-mingw-w64-x86-64`: MinGW cross-compiler for Windows x64
 - `wine`: To run Windows binaries during testing
 - `zip`: For packaging operations
+- `clang-format`: For code formatting checks
+- `clang-tidy`: For static analysis (if available)
 
 ## Build Targets Supported in Pipeline
 
@@ -20,9 +22,11 @@ The pipeline uses the following make targets:
 
 - `make build`: Builds the Linux version
 - `make test`: Runs Linux unit tests
-- `make windows`: Cross-compiles for Windows x64
-- `make windows-x86`: Cross-compiles for Windows x86
+- `make mingw-windows`: Cross-compiles for Windows x64
+- `make mingw-windows-x86`: Cross-compiles for Windows x86
 - `make test-windows`: Runs Windows cross-compiled tests using Wine
+- `make fmt-check`: Checks code formatting compliance
+- `make lint`: Runs static analysis (if clang-tidy is available)
 
 ## Wine Configuration
 
@@ -41,3 +45,9 @@ The pipeline uses the following make targets:
 - The CMake build system handles cross-compilation for Windows using MinGW
 - Test asset paths are resolved correctly for both native and cross-compiled environments
 - The Windows test script properly handles path differences when running under Wine
+
+## Code Quality Checks
+
+- The pipeline runs formatting checks using clang-format
+- Static analysis is performed using clang-tidy when available
+- All checks must pass before merging pull requests

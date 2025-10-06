@@ -189,219 +189,167 @@ void write_little_endian_uint16(uint16_t value, std::vector<uint8_t>& buffer, si
 }
 
 // BMP Implementation
+
+BmpHeaders create_bmp_headers(int width, int height) {
+  BmpHeaders headers;
+  
+  // Calculate row size (24-bit BMP: 3 bytes per pixel, padded to 4-byte boundary)
+  headers.row_size = ((width * 3 + 3) / 4) * 4;  // 24-bit rows padded to 4-byte boundary
+  headers.pixel_data_size = headers.row_size * height;
+  uint32_t file_size = 54 + headers.pixel_data_size;  // 54 bytes for headers
+  
+  // Create BMP file header (14 bytes)
+  headers.file_header = std::vector<uint8_t>(14);
+  headers.file_header[0] = 'B';
+  headers.file_header[1] = 'M';  // Signature
+  headers.file_header[2] = static_cast<uint8_t>(file_size & 0xFF);
+  headers.file_header[3] = static_cast<uint8_t>((file_size >> 8) & 0xFF);
+  headers.file_header[4] = static_cast<uint8_t>((file_size >> 16) & 0xFF);
+  headers.file_header[5] = static_cast<uint8_t>((file_size >> 24) & 0xFF);  // File size
+  headers.file_header[6] = 0;
+  headers.file_header[7] = 0;  // Reserved
+  headers.file_header[8] = 0;
+  headers.file_header[9] = 0;  // Reserved
+  headers.file_header[10] = 54;
+  headers.file_header[11] = 0;
+  headers.file_header[12] = 0;
+  headers.file_header[13] = 0;  // Offset to pixel data (54 bytes)
+  
+  // Create BMP info header (40 bytes)
+  headers.info_header = std::vector<uint8_t>(40);
+  headers.info_header[0] = 40;
+  headers.info_header[1] = 0;
+  headers.info_header[2] = 0;
+  headers.info_header[3] = 0;  // Info header size
+  headers.info_header[4] = static_cast<uint8_t>(width & 0xFF);
+  headers.info_header[5] = static_cast<uint8_t>((width >> 8) & 0xFF);
+  headers.info_header[6] = static_cast<uint8_t>((width >> 16) & 0xFF);
+  headers.info_header[7] = static_cast<uint8_t>((width >> 24) & 0xFF);  // Width
+  headers.info_header[8] = static_cast<uint8_t>(height & 0xFF);
+  headers.info_header[9] = static_cast<uint8_t>((height >> 8) & 0xFF);
+  headers.info_header[10] = static_cast<uint8_t>((height >> 16) & 0xFF);
+  headers.info_header[11] = static_cast<uint8_t>((height >> 24) & 0xFF);  // Height
+  headers.info_header[12] = 1;
+  headers.info_header[13] = 0;  // Planes
+  headers.info_header[14] = 24;
+  headers.info_header[15] = 0;  // Bits per pixel (24-bit)
+  headers.info_header[16] = 0;
+  headers.info_header[17] = 0;
+  headers.info_header[18] = 0;
+  headers.info_header[19] = 0;  // Compression (BI_RGB = 0)
+  headers.info_header[20] = static_cast<uint8_t>(headers.pixel_data_size & 0xFF);
+  headers.info_header[21] = static_cast<uint8_t>((headers.pixel_data_size >> 8) & 0xFF);
+  headers.info_header[22] = static_cast<uint8_t>((headers.pixel_data_size >> 16) & 0xFF);
+  headers.info_header[23] = static_cast<uint8_t>((headers.pixel_data_size >> 24) & 0xFF);  // Image size
+  headers.info_header[24] = 0x13;
+  headers.info_header[25] = 0x0B;
+  headers.info_header[26] = 0x00;
+  headers.info_header[27] = 0x00;  // X pixels per meter (~72 DPI)
+  headers.info_header[28] = 0x13;
+  headers.info_header[29] = 0x0B;
+  headers.info_header[30] = 0x00;
+  headers.info_header[31] = 0x00;  // Y pixels per meter (~72 DPI)
+  headers.info_header[32] = 0;
+  headers.info_header[33] = 0;
+  headers.info_header[34] = 0;
+  headers.info_header[35] = 0;  // Colors used (0 = default)
+  headers.info_header[36] = 0;
+  headers.info_header[37] = 0;
+  headers.info_header[38] = 0;
+  headers.info_header[39] = 0;  // Important colors (0 = all)
+  
+  return headers;
+}
+
+void write_bmp_pixels_direct(std::ostream& output, const Palette& palette,
+                             const std::vector<uint8_t>& pixel_data, int width, int height,
+                             const BmpHeaders& headers) {
+  // Get palette BGR data
+  const std::vector<uint8_t> palette_bgr = palette.get_bgr_data();
+  
+  // Write pixel data row by row (BMP is bottom-up)
+  for (int y = 0; y < height; ++y) {
+    // BMP stores rows bottom-to-top, so we process from bottom row
+    // For vertical flip, we need to process from the opposite end
+    int flipped_y = height - 1 - y;
+    
+    // Write pixels for this row
+    for (int x = 0; x < width; ++x) {
+      // Get pixel index from ART format (column-major storage)
+      // Apply vertical flip by using flipped_y instead of y
+      uint8_t pixel_index = pixel_data[flipped_y + x * height];
+      
+      // Get BGR values from palette
+      uint8_t b = palette_bgr[pixel_index * 3 + 0];  // BGR Blue
+      uint8_t g = palette_bgr[pixel_index * 3 + 1];  // BGR Green
+      uint8_t r = palette_bgr[pixel_index * 3 + 2];  // BGR Red
+      
+      // Preserve Build Engine transparency color (252, 0, 252)
+      if (image_processor::is_build_engine_magenta(r, g, b)) {
+        r = 252;
+        g = 0;
+        b = 252;
+      }
+      
+      // Write BGR pixel data directly to output
+      output.put(static_cast<char>(b));  // Blue
+      output.put(static_cast<char>(g));  // Green
+      output.put(static_cast<char>(r));  // Red
+    }
+    
+    // Add padding bytes if needed
+    uint32_t padding = headers.row_size - (width * 3);
+    for (uint32_t p = 0; p < padding; ++p) {
+      output.put(0);  // Pad with zeros
+    }
+  }
+}
+
 bool write_bmp_file(const std::filesystem::path& filename, const Palette& palette,
-                    const std::vector<uint8_t>& pixel_data, int width, int height,
-                    const ImageWriter::Options& options) {
+                    const std::vector<uint8_t>& pixel_data, int width, int height) {
   std::ofstream file(filename, std::ios::binary);
   if (!file.is_open()) {
     std::cerr << "Error: Cannot create file '" << filename.string() << "'" << std::endl;
     return false;
   }
-
-  // Convert indexed data to 32-bit BGRA pixels (BMP format is bottom-up)
-  std::vector<uint32_t> bgra_pixels = convert_to_bgra(palette, pixel_data, width, height, options);
-
-  // Calculate file size and headers
-  uint32_t row_size = ((width * 32 + 31) / 32) * 4;  // 32-bit rows padded to 4-byte boundary
-  uint32_t pixel_data_size_bytes = row_size * height;
-  uint32_t file_size = 54 + pixel_data_size_bytes;  // 54 bytes for headers
-
-  // Write BMP file header (14 bytes)
-  uint8_t file_header[14] = {
-      'B',
-      'M',  // Signature
-      static_cast<uint8_t>(file_size & 0xFF),
-      static_cast<uint8_t>((file_size >> 8) & 0xFF),
-      static_cast<uint8_t>((file_size >> 16) & 0xFF),
-      static_cast<uint8_t>((file_size >> 24) & 0xFF),  // File size
-      0,
-      0,  // Reserved
-      0,
-      0,  // Reserved
-      54,
-      0,
-      0,
-      0  // Offset to pixel data (54 bytes)
-  };
-  file.write(reinterpret_cast<const char*>(file_header), 14);
-
-  // Write BMP info header (40 bytes)
-  uint8_t info_header[40] = {
-      40,
-      0,
-      0,
-      0,  // Info header size
-      static_cast<uint8_t>(width & 0xFF),
-      static_cast<uint8_t>((width >> 8) & 0xFF),
-      static_cast<uint8_t>((width >> 16) & 0xFF),
-      static_cast<uint8_t>((width >> 24) & 0xFF),  // Width
-      static_cast<uint8_t>(height & 0xFF),
-      static_cast<uint8_t>((height >> 8) & 0xFF),
-      static_cast<uint8_t>((height >> 16) & 0xFF),
-      static_cast<uint8_t>((height >> 24) & 0xFF),  // Height
-      1,
-      0,  // Planes
-      32,
-      0,  // Bits per pixel
-      0,
-      0,
-      0,
-      0,  // Compression (BI_RGB = 0)
-      static_cast<uint8_t>(pixel_data_size_bytes & 0xFF),
-      static_cast<uint8_t>((pixel_data_size_bytes >> 8) & 0xFF),
-      static_cast<uint8_t>((pixel_data_size_bytes >> 16) & 0xFF),
-      static_cast<uint8_t>((pixel_data_size_bytes >> 24) & 0xFF),  // Image size
-      0x13,
-      0x0B,
-      0x00,
-      0x00,  // X pixels per meter (~72 DPI)
-      0x13,
-      0x0B,
-      0x00,
-      0x00,  // Y pixels per meter (~72 DPI)
-      0,
-      0,
-      0,
-      0,  // Colors used
-      0,
-      0,
-      0,
-      0  // Important colors
-  };
-  file.write(reinterpret_cast<const char*>(info_header), 40);
-
-  // Write pixel data (already in BGRA format)
-  file.write(reinterpret_cast<const char*>(bgra_pixels.data()), pixel_data_size_bytes);
-
+  
+  // Create unified headers
+  BmpHeaders headers = create_bmp_headers(width, height);
+  
+  // Write headers
+  file.write(reinterpret_cast<const char*>(headers.file_header.data()), headers.file_header.size());
+  file.write(reinterpret_cast<const char*>(headers.info_header.data()), headers.info_header.size());
+  
+  // Write pixel data directly
+  write_bmp_pixels_direct(file, palette, pixel_data, width, height, headers);
+  
   return file.good();
 }
 
 std::vector<uint8_t> encode_bmp_to_memory(const Palette& palette,
                                           const std::vector<uint8_t>& pixel_data, int width,
-                                          int height, const ImageWriter::Options& options) {
+                                          int height) {
   std::vector<uint8_t> output;
-
-  // Convert indexed data to 32-bit BGRA pixels (BMP format is bottom-up)
-  std::vector<uint32_t> bgra_pixels = convert_to_bgra(palette, pixel_data, width, height, options);
-
-  // Calculate file size and headers
-  uint32_t row_size = ((width * 32 + 31) / 32) * 4;  // 32-bit rows padded to 4-byte boundary
-  uint32_t pixel_data_size_bytes = row_size * height;
-  uint32_t file_size = 54 + pixel_data_size_bytes;  // 54 bytes for headers
-
+  
+  // Create unified headers
+  BmpHeaders headers = create_bmp_headers(width, height);
+  
   // Reserve space for the output buffer
-  output.reserve(file_size);
-
-  // Create and write BMP file header (14 bytes)
-  uint8_t file_header[14] = {
-      'B',
-      'M',  // Signature
-      static_cast<uint8_t>(file_size & 0xFF),
-      static_cast<uint8_t>((file_size >> 8) & 0xFF),
-      static_cast<uint8_t>((file_size >> 16) & 0xFF),
-      static_cast<uint8_t>((file_size >> 24) & 0xFF),  // File size
-      0,
-      0,  // Reserved
-      0,
-      0,  // Reserved
-      54,
-      0,
-      0,
-      0  // Offset to pixel data (54 bytes)
-  };
-  output.insert(output.end(), file_header, file_header + 14);
-
-  // Create and write BMP info header (40 bytes)
-  uint8_t info_header[40] = {
-      40,
-      0,
-      0,
-      0,  // Info header size
-      static_cast<uint8_t>(width & 0xFF),
-      static_cast<uint8_t>((width >> 8) & 0xFF),
-      static_cast<uint8_t>((width >> 16) & 0xFF),
-      static_cast<uint8_t>((width >> 24) & 0xFF),  // Width
-      static_cast<uint8_t>(height & 0xFF),
-      static_cast<uint8_t>((height >> 8) & 0xFF),
-      static_cast<uint8_t>((height >> 16) & 0xFF),
-      static_cast<uint8_t>((height >> 24) & 0xFF),  // Height
-      1,
-      0,  // Planes
-      32,
-      0,  // Bits per pixel
-      0,
-      0,
-      0,
-      0,  // Compression (BI_RGB = 0)
-      static_cast<uint8_t>(pixel_data_size_bytes & 0xFF),
-      static_cast<uint8_t>((pixel_data_size_bytes >> 8) & 0xFF),
-      static_cast<uint8_t>((pixel_data_size_bytes >> 16) & 0xFF),
-      static_cast<uint8_t>((pixel_data_size_bytes >> 24) & 0xFF),  // Image size
-      0x13,
-      0x0B,
-      0x00,
-      0x00,  // X pixels per meter (~72 DPI)
-      0x13,
-      0x0B,
-      0x00,
-      0x00,  // Y pixels per meter (~72 DPI)
-      0,
-      0,
-      0,
-      0,  // Colors used
-      0,
-      0,
-      0,
-      0  // Important colors
-  };
-  output.insert(output.end(), info_header, info_header + 40);
-
-  // Write pixel data to output (already in BGRA format)
-  output.insert(output.end(), reinterpret_cast<const uint8_t*>(bgra_pixels.data()),
-                reinterpret_cast<const uint8_t*>(bgra_pixels.data()) + pixel_data_size_bytes);
-
+  output.reserve(54 + headers.pixel_data_size);
+  
+  // Write headers
+  output.insert(output.end(), headers.file_header.begin(), headers.file_header.end());
+  output.insert(output.end(), headers.info_header.begin(), headers.info_header.end());
+  
+  // Write pixel data to a stringstream and then copy to output
+  std::ostringstream pixel_stream(std::ios::binary);
+  write_bmp_pixels_direct(pixel_stream, palette, pixel_data, width, height, headers);
+  
+  // Get the pixel data and append to output
+  std::string pixel_data_str = pixel_stream.str();
+  output.insert(output.end(), pixel_data_str.begin(), pixel_data_str.end());
+  
   return output;
-}
-
-std::vector<uint32_t> convert_to_bgra(const Palette& palette,
-                                      const std::vector<uint8_t>& pixel_data, int width, int height,
-                                      const ImageWriter::Options& options) {
-  // Convert indexed data to 32-bit BGRA pixels (BMP format is bottom-up)
-  const std::vector<uint8_t> palette_bgr = palette.get_bgr_data();
-  std::vector<uint32_t> bgra_pixels(width * height);
-
-  // Process pixels from bottom to top (BMP format requirement)
-  for (uint32_t y = 0; y < static_cast<uint32_t>(height); ++y) {
-    uint32_t src_y = static_cast<uint32_t>(height) - 1 - y;  // Flip vertically
-    const uint8_t* src_row = &pixel_data[src_y * width];
-    uint32_t* dst_row = &bgra_pixels[y * width];
-
-    for (uint32_t x = 0; x < static_cast<uint32_t>(width); ++x) {
-      uint8_t pixel_index = src_row[x];
-
-      // Get BGR values from palette (24-bit)
-      uint8_t b8 = palette_bgr[pixel_index * 3 + 0];  // BGR Blue
-      uint8_t g8 = palette_bgr[pixel_index * 3 + 1];  // BGR Green
-      uint8_t r8 = palette_bgr[pixel_index * 3 + 2];  // BGR Red
-
-      // Handle transparency keying for index 255
-      uint8_t alpha = 255;
-      if (options.fix_transparency && pixel_index == 255) {
-        if (image_processor::is_build_engine_magenta(r8, g8, b8)) {
-          alpha = 0;  // Transparent
-        }
-      }
-
-      // Pack BGRA values into 32-bit integer (little-endian)
-      uint32_t bgra_value = (static_cast<uint32_t>(alpha) << 24) |
-                            (static_cast<uint32_t>(r8) << 16) | (static_cast<uint32_t>(g8) << 8) |
-                            (static_cast<uint32_t>(b8) << 0);
-
-      dst_row[x] = bgra_value;
-    }
-  }
-
-  return bgra_pixels;
 }
 
 }  // namespace file_operations

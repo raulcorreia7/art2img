@@ -106,8 +106,7 @@ TEST_CASE("BMP format basic functionality") {
 
   SUBCASE("Save to BMP with default options") {
     std::string filename = "test_tile_default.bmp";
-    art2img::ImageWriter::Options options;
-    REQUIRE(image_view.save_to_bmp(filename, options));
+    REQUIRE(image_view.save_to_bmp(filename));
     CHECK(std::filesystem::exists(filename));
     CHECK_GT(std::filesystem::file_size(filename), 0);
 
@@ -128,10 +127,7 @@ TEST_CASE("BMP format basic functionality") {
 
   SUBCASE("Save to BMP with custom options") {
     std::string filename = "test_tile_custom.bmp";
-    art2img::ImageWriter::Options options;
-    options.fix_transparency = false;
-
-    REQUIRE(image_view.save_to_bmp(filename, options));
+    REQUIRE(image_view.save_to_bmp(filename));
     CHECK(std::filesystem::exists(filename));
     CHECK_GT(std::filesystem::file_size(filename), 0);
 
@@ -151,8 +147,7 @@ TEST_CASE("BMP format basic functionality") {
   }
 
   SUBCASE("Extract to BMP memory") {
-    auto bmp_data =
-        image_view.extract_to_image(art2img::ImageFormat::BMP, art2img::ImageWriter::Options());
+    auto bmp_data = image_view.extract_to_bmp();
     CHECK_GT(bmp_data.size(), 0);
     CHECK(is_valid_bmp_signature(bmp_data));
 
@@ -161,10 +156,7 @@ TEST_CASE("BMP format basic functionality") {
   }
 
   SUBCASE("Extract to BMP memory with options") {
-    art2img::ImageWriter::Options options;
-    options.fix_transparency = true;
-
-    auto bmp_data = image_view.extract_to_image(art2img::ImageFormat::BMP, options);
+    auto bmp_data = image_view.extract_to_bmp();
     CHECK_GT(bmp_data.size(), 0);
     CHECK(is_valid_bmp_signature(bmp_data));
 
@@ -202,8 +194,7 @@ TEST_CASE("BMP format header validation") {
   art2img::ImageView image_view{&art_view, target_tile};
 
   SUBCASE("BMP file header structure") {
-    auto bmp_data =
-        image_view.extract_to_image(art2img::ImageFormat::BMP, art2img::ImageWriter::Options());
+    auto bmp_data = image_view.extract_to_bmp();
     REQUIRE_GT(bmp_data.size(), 54);  // Minimum BMP header size
 
     // Check file signature
@@ -228,8 +219,7 @@ TEST_CASE("BMP format header validation") {
 
   SUBCASE("BMP image dimensions") {
     art2img::ImageView image_view{&art_view, target_tile};
-    auto bmp_data =
-        image_view.extract_to_image(art2img::ImageFormat::BMP, art2img::ImageWriter::Options());
+    auto bmp_data = image_view.extract_to_bmp();
     REQUIRE_GT(bmp_data.size(), 54);
 
     // Get image dimensions
@@ -243,8 +233,7 @@ TEST_CASE("BMP format header validation") {
   }
 
   SUBCASE("BMP bit depth") {
-    auto bmp_data =
-        image_view.extract_to_image(art2img::ImageFormat::BMP, art2img::ImageWriter::Options());
+    auto bmp_data = image_view.extract_to_bmp();
     REQUIRE_GT(bmp_data.size(), 54);
 
     // Check bit depth (should be 32 for BGRA)
@@ -378,8 +367,7 @@ TEST_CASE("BMP format consistency with other formats") {
   SUBCASE("Image dimensions consistency") {
     // Extract the same tile in different formats
     auto png_data = image_view.extract_to_png(art2img::ImageWriter::Options());
-    auto bmp_data =
-        image_view.extract_to_image(art2img::ImageFormat::BMP, art2img::ImageWriter::Options());
+    auto bmp_data = image_view.extract_to_bmp();
 
     REQUIRE_GT(png_data.size(), 0);
     REQUIRE_GT(bmp_data.size(), 0);
@@ -401,10 +389,10 @@ TEST_CASE("BMP format consistency with other formats") {
   SUBCASE("Color data consistency") {
     art2img::ImageWriter::Options options;
     options.fix_transparency = false;  // Disable transparency for easier comparison
-
+    
     // Extract the same tile in different formats
     auto png_data = image_view.extract_to_png(options);
-    auto bmp_data = image_view.extract_to_image(art2img::ImageFormat::BMP, options);
+    auto bmp_data = image_view.extract_to_bmp();
 
     REQUIRE_GT(png_data.size(), 0);
     REQUIRE_GT(bmp_data.size(), 0);
@@ -430,8 +418,7 @@ TEST_CASE("ExtractorAPI BMP format support") {
   REQUIRE(extractor.load_palette_from_memory(palette_data.data(), palette_data.size()));
 
   SUBCASE("Extract single tile as BMP") {
-    auto result =
-        extractor.extract_tile(0, art2img::ImageFormat::BMP, art2img::ImageWriter::Options());
+    auto result = extractor.extract_tile(0, art2img::ImageFormat::BMP);
     CHECK(result.success);
     if (result.success) {
       CHECK_GT(result.image_data.size(), 0);
@@ -441,8 +428,7 @@ TEST_CASE("ExtractorAPI BMP format support") {
   }
 
   SUBCASE("Batch extract tiles as BMP") {
-    auto bmp_results =
-        extractor.extract_all_tiles(art2img::ImageFormat::BMP, art2img::ImageWriter::Options());
+    auto bmp_results = extractor.extract_all_tiles(art2img::ImageFormat::BMP);
     CHECK_EQ(bmp_results.size(), extractor.get_tile_count());
 
     size_t bmp_success_count = 0;
@@ -496,10 +482,9 @@ TEST_CASE("BMP format memory vs file consistency") {
     // Save to file
     std::string filename = "consistency_test.bmp";
     REQUIRE(image_view.save_to_bmp(filename));
-
+    
     // Extract to memory
-    auto memory_data =
-        image_view.extract_to_image(art2img::ImageFormat::BMP, art2img::ImageWriter::Options());
+    auto memory_data = image_view.extract_to_bmp();
 
     // Load file data
     std::ifstream file(filename, std::ios::binary);

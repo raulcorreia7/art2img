@@ -121,14 +121,14 @@ struct ImageView {
   bool save_to_png(const std::filesystem::path& path,
                    ImageWriter::Options options = ImageWriter::Options()) const;
   bool save_to_tga(const std::filesystem::path& path) const;
-  bool save_to_bmp(const std::filesystem::path& path,
-                   ImageWriter::Options options = ImageWriter::Options()) const;
+  bool save_to_bmp(const std::filesystem::path& path) const;
 
   // Image extraction to memory
   std::vector<uint8_t> extract_to_image(
       ImageFormat format, ImageWriter::Options options = ImageWriter::Options()) const;
   std::vector<uint8_t> extract_to_png(ImageWriter::Options options = ImageWriter::Options()) const;
   std::vector<uint8_t> extract_to_tga() const;
+  std::vector<uint8_t> extract_to_bmp() const;
 
 private:
   const ArtFile::Tile& require_tile() const {
