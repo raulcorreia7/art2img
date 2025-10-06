@@ -1,6 +1,6 @@
 # Build artifacts
-build/
-build-*/
+build/*
+!scripts/build
 *.exe
 *.o
 *.a

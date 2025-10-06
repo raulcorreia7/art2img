@@ -1,7 +1,6 @@
 #pragma once
 
 #include <CLI/CLI.hpp>
-
 #include <memory>
 #include <string>
 
@@ -10,7 +9,7 @@
 namespace art2img {
 
 class CliAppBuilder {
- public:
+public:
   CliAppBuilder();
 
   CliAppBuilder& with_banner(std::string banner);
@@ -18,13 +17,17 @@ class CliAppBuilder {
 
   [[nodiscard]] std::unique_ptr<CLI::App> build(CliOptions& options) const;
 
-  [[nodiscard]] const std::string& banner() const noexcept { return banner_; }
-  [[nodiscard]] const std::string& footer() const noexcept { return footer_; }
+  [[nodiscard]] const std::string& banner() const noexcept {
+    return banner_;
+  }
+  [[nodiscard]] const std::string& footer() const noexcept {
+    return footer_;
+  }
 
   static std::string default_banner();
   static std::string default_footer();
 
- private:
+private:
   std::string banner_;
   std::string footer_;
 };

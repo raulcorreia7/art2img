@@ -22,7 +22,7 @@ The pipeline uses the following make targets:
 - `make test`: Runs Linux unit tests
 - `make windows`: Cross-compiles for Windows x64
 - `make windows-x86`: Cross-compiles for Windows x86
-- `make test-windows`: Runs Windows tests using Wine
+- `make test-windows`: Runs Windows cross-compiled tests using Wine
 
 ## Wine Configuration
 

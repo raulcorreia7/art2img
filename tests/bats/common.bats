@@ -10,10 +10,10 @@ setup() {
     # Project root detection
     PROJECT_ROOT="$(cd "$(dirname "${BATS_TEST_FILENAME}")/../.." && pwd)"
     
-    # Set default build directory
-    : "${BUILD_DIR:=build}"
+    # Determine build type from environment or default to 'linux-x64'
+    BUILD_TYPE="${BUILD_TYPE:-linux-x64}"
     
-    # Detect platform
+    # Set platform
     if [[ -n "${1:-}" ]]; then
         PLATFORM="$1"
     elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]] || [[ "$RUNNER_OS" == "Windows" ]] || [[ -n "${WINDIR:-}" ]]; then
@@ -23,6 +23,24 @@ setup() {
     else
         PLATFORM="linux"
     fi
+    
+    # Set platform-specific build directory
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]] || [[ "$RUNNER_OS" == "Windows" ]] || [[ -n "${WINDIR:-}" ]]; then
+        if [[ "$BUILD_TYPE" == *"windows-x64"* ]]; then
+            BUILD_SUBDIR="mingw-windows-x64"
+        elif [[ "$BUILD_TYPE" == *"windows-x86"* ]]; then
+            BUILD_SUBDIR="mingw-windows-x86"
+        else
+            BUILD_SUBDIR="windows"
+        fi
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        BUILD_SUBDIR="macos-x64"
+    else
+        BUILD_SUBDIR="$BUILD_TYPE"
+    fi
+    
+    # Set the main build directory based on the build subdirectory
+    BUILD_DIR="${PROJECT_ROOT}/build/${BUILD_SUBDIR}"
     
     # Set platform-specific paths
     case "$PLATFORM" in
@@ -45,8 +63,8 @@ setup() {
     PALETTE_FILE="${TEST_ASSETS_DIR}/PALETTE.DAT"
     TEST_ART_FILE="${TEST_ASSETS_DIR}/TILES000.ART"
     
-    # Setup output directories
-    OUTPUT_DIR="${BATS_TEST_TMPDIR:-/tmp}/art2img_test_output_$$"
+    # Setup output directories in the proper build directory structure
+    OUTPUT_DIR="${PROJECT_ROOT}/build/${BUILD_SUBDIR}/test_output"
     mkdir -p "$OUTPUT_DIR"
 }
 
