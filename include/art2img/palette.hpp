@@ -24,7 +24,6 @@ public:
   // File-based operations
   bool load_from_file(const std::filesystem::path& filename);
   void load_build_engine_default();
-  void load_duke3d_default();  // Compatibility alias for load_build_engine_default()
   void load_blood_default();
 
   // Memory-based operations
