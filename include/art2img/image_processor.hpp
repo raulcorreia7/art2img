@@ -6,8 +6,6 @@
 #include <vector>
 
 #include "palette.hpp"
-#include "art_file.hpp"
-#include "image_writer.hpp"
 
 namespace art2img {
 
@@ -41,16 +39,3 @@ struct TileConversionOptions {
 
 }  // namespace art2img
 
-// Legacy compatibility namespace
-namespace image_processor {
-
-std::vector<uint8_t> convert_to_rgba(const art2img::Palette& palette, const art2img::ArtFile::Tile& tile,
-                                     const uint8_t* pixel_data, size_t pixel_data_size,
-                                     const art2img::ImageWriter::Options& options);
-
-constexpr bool is_build_engine_magenta(uint8_t r, uint8_t g, uint8_t b) {
-  // Magenta detection: r8≥250, b8≥250, g8≤5
-  return (r >= 250) && (b >= 250) && (g <= 5);
-}
-
-}  // namespace image_processor

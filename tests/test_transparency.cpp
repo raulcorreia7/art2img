@@ -49,7 +49,7 @@ TEST_CASE("Transparency processing - magenta pixel detection and alpha channel h
     options.enable_alpha = true;
 
     // Convert to RGBA directly
-    auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
+    auto rgba_data = image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
                                                                pixel_data.size(), options);
 
     REQUIRE_EQ(rgba_data.size(), 16);  // 2x2x4 = 16 bytes
@@ -67,7 +67,7 @@ TEST_CASE("Transparency processing - magenta pixel detection and alpha channel h
     options.enable_alpha = true;
 
     // Convert to RGBA directly
-    auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
+    auto rgba_data = image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
                                                                pixel_data.size(), options);
 
     REQUIRE_EQ(rgba_data.size(), 16);  // 2x2x4 = 16 bytes
