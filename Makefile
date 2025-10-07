@@ -8,6 +8,7 @@ JOBS ?= $(shell nproc)
 VERSION ?= $(shell cmake -P cmake/print_version.cmake)
 
 # Run integration tests for different platforms
+.PHONY: test-intg test-intg-windows test-intg-windows-x86 test-intg-release
 test-intg: build
 	@BUILD_TYPE=linux ./scripts/run_bats_tests.sh
 
@@ -21,9 +22,9 @@ test-intg-release: linux-x64-release
 	@BUILD_TYPE=linux-x64-release ./scripts/run_bats_tests.sh
 
 # Main targets
-.PHONY: all build test clean install format fmt fmt-check lint help
-.PHONY: mingw-windows mingw-windows-x86 test-windows doctor test-bats
-.PHONY: linux-x64-release windows-x64-release windows-x86-release
+.PHONY: all build test clean install format fmt fmt-check lint help doctor
+.PHONY: mingw-windows mingw-windows-x86 mingw-windows-x64-release mingw-windows-x86-release
+.PHONY: linux-x64-release release test-windows test-windows-x86
 
 # Default target - build for Linux
 all: build
@@ -50,6 +51,10 @@ mingw-windows-x64-release:
 
 mingw-windows-x86-release:
 	@./scripts/build/cross/mingw-windows32.sh --build-dir $(BUILD_DIR)/mingw-windows-x86-release --build-type Release -j $(JOBS)
+
+.PHONY: release
+release: linux-x64-release mingw-windows-x64-release
+
 
 # Run tests on Linux
 test: build
@@ -98,6 +103,7 @@ help:
 	@echo "  make linux-x64-release       - Build + test release configuration for Linux x64"
 	@echo "  make mingw-windows-x64-release     - Build release configuration for Windows x64 using MinGW"
 	@echo "  make mingw-windows-x86-release - Build release configuration for Windows x86 using MinGW"
+	@echo "  make release      - Build all supported release artifacts (Linux + Windows x64)"
 	@echo "  make test         - Run tests on Linux"
 	@echo "  make test-intg         - Run integration tests for Linux"
 	@echo "  make test-intg-windows - Run integration tests for Windows (cross-compiled)"
