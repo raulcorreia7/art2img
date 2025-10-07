@@ -1,12 +1,14 @@
 # Review Notes
 
 ## Repository Survey
-- **Languages:** C++20 for core and CLI, CMake for build scripts, doctest for C++ tests.
-- **Toolchain:** Build via `make all`, tests with `make test`; CMake integrates CLI11, doctest, fmt, stb.
-- **CI Signals:** GitHub Actions workflows cover build/test and release; recent upstream adds lint targets.
-- **Hotspots:** `cli/processor.cpp` handles most workflow complexity (parallel exports, progress, error reporting).
-- **Risks:** Parallel export uses a thread pool; ensure thread count flags stay consistent across CLI parsing and processing. Merge conflicts likely in CLI files when adding new options.
+- **Languages:** C++20 for core/CLI, CMake for build orchestration, Bash/PowerShell helper scripts, GitHub Actions YAML for CI/CD.
+- **Toolchains & Commands:** Primary workflow via `make` targets delegating to `scripts/build/...` wrappers; tests run with `ctest`. Version retrieved through `cmake -P cmake/print_version.cmake`.
+- **CI Workflows:** `ci.yml` runs Linux, Windows, macOS builds with duplicated cache/setup steps; `release.yml` mirrors packaging across platforms and generates release notes advertising macOS binaries.
+- **Dependencies:** Managed through CPM (cache stored under user temp dirs). Actions install toolchains each run; no compiler cache (`ccache`) or GitHub Actions matrix reuse.
+- **Quality Signals:** CI builds all platforms but lacks lint/format stages; release notes mention macOS although delivery is being dropped per request. Build scripts rely on Ninja.
+- **Hotspots/Risks:** Redundant workflow steps increase maintenance overhead; caches cover whole build trees risking stale artifacts; release job depends on macOS build; Makefile lacks phony declarations for test-intg variants.
 
-## Low-Risk Wins
-- Keep CLI option-to-processing translation centralized (`make_processing_options`).
-- Maintain deterministic directory traversal by sorting collected ART files.
+## Immediate Opportunities
+- Collapse repeated workflow logic via matrices/composite actions; tighten cache paths to avoid copying build trees.
+- Align release messaging with actual platform support (Linux & Windows) and ensure release job tolerates missing macOS artifacts.
+- Consider adding compiler caching or targeted dependency install scripts for faster runs.

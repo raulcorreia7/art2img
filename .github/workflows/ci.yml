@@ -8,165 +8,100 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Linux build and test
-  linux-build:
-    name: Linux Build and Test
-    runs-on: ubuntu-latest
+  build-test:
+    name: ${{ matrix.display_name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            display_name: Linux Build & Test
+            shell: bash
+            cache_path: |
+              ~/.cache/CPM
+            cpm_cache_dir: ~/.cache/CPM
+            configure: |
+              cmake -S . -B build/linux-x64 \
+                    -DCMAKE_BUILD_TYPE=Release \
+                    -DBUILD_TESTS=ON \
+                    -DBUILD_DIAGNOSTIC=ON \
+                    -DBUILD_SHARED_LIBS=OFF \
+                    -G Ninja
+            build: cmake --build build/linux-x64 --parallel
+            test: |
+              cd build/linux-x64
+              ctest --output-on-failure
+            install: |
+              sudo apt-get update
+              sudo apt-get install -y \
+                build-essential \
+                clang \
+                lld \
+                pkg-config \
+                cmake \
+                ninja-build
+          - os: windows-latest
+            display_name: Windows Build & Test
+            shell: pwsh
+            cache_path: |
+              ~/.cache/CPM
+              ~/AppData/Local/Temp/CPM
+            cpm_cache_dir: ~/AppData/Local/Temp/CPM
+            configure: |
+              cmake -S . -B build/windows-x64 `
+                    -DCMAKE_BUILD_TYPE=Release `
+                    -DBUILD_TESTS=ON `
+                    -DBUILD_DIAGNOSTIC=ON `
+                    -DBUILD_SHARED_LIBS=OFF `
+                    -A x64
+            build: cmake --build build/windows-x64 --config Release --parallel
+            test: |
+              cd build/windows-x64
+              ctest --output-on-failure -C Release
+            install: ""
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup CPM dependencies cache
+      - name: Cache CPM dependencies
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.cache/CPM
-            ~/AppData/Local/Temp/CPM
-          key: cpm-${{ runner.os }}-linux-${{ hashFiles('**/CMakeLists.txt') }}
+          path: ${{ matrix.cache_path }}
+          key: cpm-${{ runner.os }}-${{ hashFiles('**/CMakeLists.txt') }}
           restore-keys: |
-            cpm-${{ runner.os }}-linux-
+            cpm-${{ runner.os }}-
 
-      - name: Setup build cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            build/**/CMakeCache.txt
-            build/**/CMakeFiles/**
-            build/**/cmake_install.cmake
-          key: build-${{ runner.os }}-linux-${{ hashFiles('**/CMakeLists.txt', '**/src/**', '**/include/**', '**/cli/**') }}
-          restore-keys: |
-            build-${{ runner.os }}-linux-
-
-      - name: Install dependencies
+      - name: Configure CPM cache directory
+        if: runner.os == 'Linux'
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            clang \
-            lld \
-            pkg-config \
-            cmake \
-            ninja-build
+          mkdir -p "${{ matrix.cpm_cache_dir }}"
+          echo "CPM_SOURCE_CACHE=${{ matrix.cpm_cache_dir }}" >> $GITHUB_ENV
+
+      - name: Configure CPM cache directory (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "${{ matrix.cpm_cache_dir }}" -Force | Out-Null
+          "CPM_SOURCE_CACHE=${{ matrix.cpm_cache_dir }}" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Install build dependencies
+        if: matrix.install != ''
+        shell: ${{ matrix.shell }}
+        run: ${{ matrix.install }}
 
       - name: Configure CMake
-        run: |
-          cmake -B build/linux-x64 \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_TESTS=ON \
-                -DBUILD_DIAGNOSTIC=ON \
-                -DBUILD_SHARED_LIBS=OFF \
-                -G Ninja
+        shell: ${{ matrix.shell }}
+        run: ${{ matrix.configure }}
 
-      - name: Build Linux binaries
-        run: |
-          cmake --build build/linux-x64 --parallel $(nproc)
+      - name: Build
+        shell: ${{ matrix.shell }}
+        run: ${{ matrix.build }}
 
       - name: Run tests
-        run: |
-          cd build/linux-x64 && ctest --output-on-failure
-
-  # Windows native build and test
-  windows-build:
-    name: Windows Build and Test
-    runs-on: windows-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup CPM dependencies cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/CPM
-            ~/AppData/Local/Temp/CPM
-          key: cpm-${{ runner.os }}-windows-${{ hashFiles('**/CMakeLists.txt') }}
-          restore-keys: |
-            cpm-${{ runner.os }}-windows-
-
-      - name: Setup build cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            build/**/CMakeCache.txt
-            build/**/CMakeFiles/**
-            build/**/cmake_install.cmake
-          key: build-${{ runner.os }}-windows-${{ hashFiles('**/CMakeLists.txt', '**/src/**', '**/include/**', '**/cli/**') }}
-          restore-keys: |
-            build-${{ runner.os }}-windows-
-
-      - name: Configure CMake for Windows
-        shell: pwsh
-        run: |
-          cmake -B build/windows-x64 `
-                -DCMAKE_BUILD_TYPE=Release `
-                -DBUILD_TESTS=ON `
-                -DBUILD_DIAGNOSTIC=ON `
-                -DBUILD_SHARED_LIBS=OFF `
-                -A x64
-
-      - name: Build Windows binaries
-        shell: pwsh
-        run: |
-          cmake --build build/windows-x64 --config Release --parallel
-
-      - name: Run tests
-        shell: pwsh
-        run: |
-          cd build/windows-x64
-          ctest --output-on-failure -C Release
-
-  # macOS build and test
-  macos-build:
-    name: macOS Build and Test
-    runs-on: macos-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup CPM dependencies cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/CPM
-            ~/AppData/Local/Temp/CPM
-          key: cpm-${{ runner.os }}-macos-${{ hashFiles('**/CMakeLists.txt') }}
-          restore-keys: |
-            cpm-${{ runner.os }}-macos-
-
-      - name: Setup build cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            build/**/CMakeCache.txt
-            build/**/CMakeFiles/**
-            build/**/cmake_install.cmake
-          key: build-${{ runner.os }}-macos-${{ hashFiles('**/CMakeLists.txt', '**/src/**', '**/include/**', '**/cli/**') }}
-          restore-keys: |
-            build-${{ runner.os }}-macos-
-
-      - name: Install dependencies
-        run: |
-          brew install cmake ninja
-
-      - name: Configure CMake
-        run: |
-          cmake -B build/macos-x64 \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_TESTS=ON \
-                -DBUILD_DIAGNOSTIC=ON \
-                -DBUILD_SHARED_LIBS=OFF \
-                -G Ninja
-
-      - name: Build macOS binaries
-        run: |
-          cmake --build build/macos-x64 --parallel $(sysctl -n hw.ncpu)
-
-      - name: Run tests
-        run: |
-          cd build/macos-x64 && ctest --output-on-failure
+        shell: ${{ matrix.shell }}
+        run: ${{ matrix.test }}
