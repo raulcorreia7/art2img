@@ -18,7 +18,7 @@ constexpr uint8_t to_6bit(uint8_t value) {
 }  // namespace
 
 Palette::Palette() : raw_data_(SIZE, 0) {
-  load_duke3d_default();
+  load_build_engine_default();
 }
 
 uint8_t Palette::scale_component(uint8_t value) {
@@ -93,8 +93,8 @@ std::vector<uint8_t> Palette::get_bgr_data() const {
   return bgr_data;
 }
 
-void Palette::load_duke3d_default() {
-  static const uint8_t duke3d_palette[SIZE] = {
+void Palette::load_build_engine_default() {
+  static const uint8_t build_engine_palette[SIZE] = {
       0,  0,  0,  1,  1,  1,  4,  3,  4,  6,  6,  6,  9,  8,  8,  11, 10, 11, 14, 13, 13, 16, 15,
       15, 19, 18, 18, 22, 20, 20, 24, 22, 23, 27, 24, 25, 29, 27, 28, 32, 29, 30, 34, 31, 32, 37,
       34, 35, 38, 35, 36, 40, 37, 38, 42, 39, 40, 43, 41, 42, 44, 43, 43, 46, 44, 45, 48, 46, 46,
@@ -130,7 +130,7 @@ void Palette::load_duke3d_default() {
       0,  63, 22, 0,  0,  43, 0,  0,  63, 0,  0,  0,  17, 0,  0,  41, 0,  0,  63, 0,  0,  0,  17,
       0,  0,  41, 0,  0,  63, 63, 0,  63,
   };
-  raw_data_.assign(std::begin(duke3d_palette), std::end(duke3d_palette));
+  raw_data_.assign(std::begin(build_engine_palette), std::end(build_engine_palette));
 
   loaded_ = true;
 }
@@ -205,6 +205,11 @@ uint8_t Palette::get_blue(size_t index) const {
     return 0;
   }
   return raw_data_[index * 3 + 2];
+}
+
+// Compatibility function for existing code
+void Palette::load_duke3d_default() {
+  load_build_engine_default();
 }
 
 }  // namespace art2img
