@@ -15,6 +15,21 @@ constexpr bool is_build_engine_magenta(uint8_t r, uint8_t g, uint8_t b) {
   return (r >= 250u) && (b >= 250u) && (g <= 5u);
 }
 
+// For pixels that are fully transparent, set them to a neutral color to prevent color bleeding
+void clean_transparent_pixels(std::vector<uint8_t>& rgba_data, int width, int height) {
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      const std::size_t idx = (static_cast<std::size_t>(y) * width + x) * 4;
+      if (rgba_data[idx + 3] == 0) {  // Fully transparent pixel
+        // Set RGB to black to prevent magenta bleeding
+        rgba_data[idx + 0] = 0;  // R
+        rgba_data[idx + 1] = 0;  // G
+        rgba_data[idx + 2] = 0;  // B
+      }
+    }
+  }
+}
+
 void apply_premultiplication(std::vector<uint8_t>& rgba_data) {
   for (std::size_t i = 0; i < rgba_data.size(); i += 4) {
     const uint8_t alpha = rgba_data[i + 3];
@@ -76,11 +91,8 @@ void apply_matte_hygiene(std::vector<uint8_t>& rgba_data, int width, int height)
   }
 }
 
-std::vector<uint8_t> convert_pixels_to_rgba(const Palette& palette,
-                                            uint16_t width,
-                                            uint16_t height,
-                                            const uint8_t* pixels,
-                                            std::size_t pixel_count,
+std::vector<uint8_t> convert_pixels_to_rgba(const Palette& palette, uint16_t width, uint16_t height,
+                                            const uint8_t* pixels, std::size_t pixel_count,
                                             const TileConversionOptions& options) {
   const std::size_t expected = static_cast<std::size_t>(width) * height;
   if (pixel_count != expected) {
@@ -101,13 +113,21 @@ std::vector<uint8_t> convert_pixels_to_rgba(const Palette& palette,
           (static_cast<std::size_t>(y) * width + static_cast<std::size_t>(x)) * 4;
 
       uint8_t alpha = 255;
+      uint8_t out_r = r;
+      uint8_t out_g = g;
+      uint8_t out_b = b;
+
       if (options.enable_alpha && options.fix_transparency && is_build_engine_magenta(r, g, b)) {
         alpha = 0;
+        // Set RGB to black for fully transparent pixels to prevent color bleeding
+        out_r = 0;
+        out_g = 0;
+        out_b = 0;
       }
 
-      rgba[rgba_index + 0] = r;
-      rgba[rgba_index + 1] = g;
-      rgba[rgba_index + 2] = b;
+      rgba[rgba_index + 0] = out_r;
+      rgba[rgba_index + 1] = out_g;
+      rgba[rgba_index + 2] = out_b;
       rgba[rgba_index + 3] = alpha;
     }
   }
@@ -128,9 +148,8 @@ std::vector<uint8_t> convert_pixels_to_rgba(const Palette& palette,
 
 }  // namespace
 
-std::vector<uint8_t> convert_tile_to_rgba(const Palette& palette,
-                                         const TileView& tile,
-                                         const TileConversionOptions& options) {
+std::vector<uint8_t> convert_tile_to_rgba(const Palette& palette, const TileView& tile,
+                                          const TileConversionOptions& options) {
   if (tile.width == 0 || tile.height == 0) {
     throw ArtException("Tile dimensions must be positive");
   }
@@ -155,17 +174,18 @@ std::vector<uint8_t> convert_tile_to_rgba(const Palette& palette,
     source_pixels = remapped_pixels.data();
   }
 
-  return convert_pixels_to_rgba(
-      palette, tile.width, tile.height, source_pixels, tile.pixels.size(), options);
+  return convert_pixels_to_rgba(palette, tile.width, tile.height, source_pixels, tile.pixels.size(),
+                                options);
 }
 
-}  // namespace
+}  // namespace art2img
 
 // Legacy compatibility namespace
 namespace image_processor {
 
-std::vector<uint8_t> convert_to_rgba(const art2img::Palette& palette, const art2img::ArtFile::Tile& tile,
-                                     const uint8_t* pixel_data, size_t pixel_data_size,
+std::vector<uint8_t> convert_to_rgba(const art2img::Palette& palette,
+                                     const art2img::ArtFile::Tile& tile, const uint8_t* pixel_data,
+                                     size_t pixel_data_size,
                                      const art2img::ImageWriter::Options& options) {
   // Convert the old API to the new TileView API
   if (pixel_data_size != tile.size()) {
