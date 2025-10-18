@@ -9,7 +9,7 @@
 #include <system_error>
 
 #include "cli_operations.hpp"
-#include "palette.hpp"
+#include "art2img/palette.hpp"
 #include "test_helpers.hpp"
 
 namespace {

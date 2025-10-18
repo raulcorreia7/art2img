@@ -5,13 +5,13 @@
 #include <fstream>
 #include <vector>
 
-#include "art_file.hpp"
-#include "image_writer.hpp"
-#include "palette.hpp"
+#include "art2img/art_file.hpp"
+#include "art2img/image_writer.hpp"
+#include "art2img/palette.hpp"
 
 // Include new module headers for direct testing
-#include "file_operations.hpp"
-#include "image_processor.hpp"
+#include "art2img/file_operations.hpp"
+#include "art2img/image_processor.hpp"
 
 TEST_CASE("PNG Memory Regression - In-memory vs File output") {
   art2img::Palette palette;
@@ -28,7 +28,7 @@ TEST_CASE("PNG Memory Regression - In-memory vs File output") {
   }
 
   // Test cases for module-specific PNG operations
-  TEST_CASE("Module-specific PNG operations") {
+  SUBCASE("Module-specific PNG operations") {
     art2img::Palette palette;
     art2img::ArtFile::Tile tile{};
     tile.width = 32;
@@ -46,7 +46,7 @@ TEST_CASE("PNG Memory Regression - In-memory vs File output") {
 
     SUBCASE("Image processor RGBA conversion") {
       // Test the image_processor module directly
-      auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
+      auto rgba_data = image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
                                                                  pixel_data.size(), options);
       CHECK_EQ(rgba_data.size(), pixel_count * 4);
 
@@ -58,7 +58,7 @@ TEST_CASE("PNG Memory Regression - In-memory vs File output") {
 
     SUBCASE("File operations PNG encoding") {
       // Test the file_operations module directly
-      auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
+      auto rgba_data = image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
                                                                  pixel_data.size(), options);
       auto png_data =
           art2img::file_operations::encode_png_to_memory(rgba_data, tile.width, tile.height);
@@ -80,7 +80,7 @@ TEST_CASE("PNG Memory Regression - In-memory vs File output") {
       CHECK_GT(image_writer_png.size(), 0);
 
       // Direct module usage
-      auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
+      auto rgba_data = image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
                                                                  pixel_data.size(), options);
       auto direct_png =
           art2img::file_operations::encode_png_to_memory(rgba_data, tile.width, tile.height);

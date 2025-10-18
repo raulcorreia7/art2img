@@ -4,14 +4,14 @@
 #include <filesystem>
 #include <fstream>
 
-#include "exceptions.hpp"
-#include "extractor_api.hpp"
+#include "art2img/exceptions.hpp"
+#include "art2img/extractor_api.hpp"
 #include "test_helpers.hpp"
 
 // Include new module headers for direct testing
-#include "file_operations.hpp"
-#include "image_processor.hpp"
-#include "image_writer.hpp"
+#include "art2img/file_operations.hpp"
+#include "art2img/image_processor.hpp"
+#include "art2img/image_writer.hpp"
 
 TEST_CASE("Integration tests - Complete pipeline from ART loading to image extraction") {
   if (!has_test_asset("TILES000.ART") || !has_test_asset("PALETTE.DAT")) {
@@ -152,8 +152,7 @@ TEST_CASE("Integration tests - Complete pipeline from ART loading to image extra
     REQUIRE(extractor.load_palette_from_memory(palette_data.data(), palette_data.size()));
 
     // Extract all tiles as BMP
-    auto bmp_results =
-        extractor.extract_all_tiles(art2img::ImageFormat::BMP);
+    auto bmp_results = extractor.extract_all_tiles(art2img::ImageFormat::BMP);
     CHECK_EQ(bmp_results.size(), extractor.get_tile_count());
 
     size_t bmp_success_count = 0;

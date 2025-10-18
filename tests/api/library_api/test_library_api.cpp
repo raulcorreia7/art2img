@@ -5,7 +5,7 @@
 #include <fstream>
 #include <vector>
 
-#include "extractor_api.hpp"
+#include "art2img/extractor_api.hpp"
 #include "test_helpers.hpp"
 
 TEST_CASE("ExtractorAPI - Library API comprehensive tests") {

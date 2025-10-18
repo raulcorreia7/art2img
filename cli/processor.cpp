@@ -11,16 +11,16 @@
 #include <vector>
 
 #include "cli_operations.hpp"
-#include "version.hpp"
+#include "art2img/version.hpp"
 
 // =============================================================================
 
 #include "BS_thread_pool.hpp"
-#include "art_file.hpp"
-#include "colors.hpp"
-#include "extractor_api.hpp"
-#include "image_writer.hpp"
-#include "palette.hpp"
+#include "art2img/art_file.hpp"
+#include "art2img/colors.hpp"
+#include "art2img/extractor_api.hpp"
+#include "art2img/image_writer.hpp"
+#include "art2img/palette.hpp"
 
 namespace {
 

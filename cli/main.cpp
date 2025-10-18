@@ -7,15 +7,15 @@
 // Includes and Configuration
 // =============================================================================
 
-#include "art_file.hpp"
+#include "art2img/art_file.hpp"
 #include "cli_app_builder.hpp"
-#include "colors.hpp"
+#include "art2img/colors.hpp"
 #include "config.hpp"
-#include "exceptions.hpp"
-#include "extractor_api.hpp"
-#include "palette.hpp"
+#include "art2img/exceptions.hpp"
+#include "art2img/extractor_api.hpp"
+#include "art2img/palette.hpp"
 #include "processor.hpp"
-#include "version.hpp"
+#include "art2img/version.hpp"
 
 // =============================================================================
 // Main Entry Point

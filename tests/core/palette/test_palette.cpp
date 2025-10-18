@@ -3,8 +3,8 @@
 
 #include <filesystem>
 
-#include "exceptions.hpp"
-#include "palette.hpp"
+#include "art2img/exceptions.hpp"
+#include "art2img/palette.hpp"
 #include "test_helpers.hpp"
 
 TEST_CASE("Palette basic functionality") {

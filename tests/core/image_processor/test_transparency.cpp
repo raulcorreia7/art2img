@@ -3,9 +3,9 @@
 
 #include <vector>
 
-#include "image_processor.hpp"
-#include "image_writer.hpp"
-#include "palette.hpp"
+#include "art2img/image_processor.hpp"
+#include "art2img/image_writer.hpp"
+#include "art2img/palette.hpp"
 
 // Test transparency functionality with both file and memory operations
 TEST_CASE("Transparency processing - magenta pixel detection and alpha channel handling") {
@@ -50,7 +50,7 @@ TEST_CASE("Transparency processing - magenta pixel detection and alpha channel h
 
     // Convert to RGBA directly
     auto rgba_data = image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
-                                                               pixel_data.size(), options);
+                                                      pixel_data.size(), options);
 
     REQUIRE_EQ(rgba_data.size(), 16);  // 2x2x4 = 16 bytes
 
@@ -68,7 +68,7 @@ TEST_CASE("Transparency processing - magenta pixel detection and alpha channel h
 
     // Convert to RGBA directly
     auto rgba_data = image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
-                                                               pixel_data.size(), options);
+                                                      pixel_data.size(), options);
 
     REQUIRE_EQ(rgba_data.size(), 16);  // 2x2x4 = 16 bytes
 

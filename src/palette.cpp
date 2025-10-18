@@ -1,4 +1,4 @@
-#include "palette.hpp"
+#include "art2img/palette.hpp"
 
 #include <algorithm>
 #include <cstring>

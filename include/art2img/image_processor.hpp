@@ -5,6 +5,8 @@
 #include <span>
 #include <vector>
 
+#include "art_file.hpp"
+#include "image_writer.hpp"
 #include "palette.hpp"
 
 namespace art2img {
@@ -20,9 +22,13 @@ struct TileView {
     return static_cast<std::size_t>(width) * height;
   }
 
-  [[nodiscard]] constexpr bool is_empty() const { return pixel_count() == 0; }
+  [[nodiscard]] constexpr bool is_empty() const {
+    return pixel_count() == 0;
+  }
 
-  [[nodiscard]] constexpr bool has_lookup() const { return !lookup.empty(); }
+  [[nodiscard]] constexpr bool has_lookup() const {
+    return !lookup.empty();
+  }
 };
 
 // Behaviour switches applied during indexed-to-RGBA conversion.
@@ -33,9 +39,23 @@ struct TileConversionOptions {
   bool apply_matte_hygiene = false;
 };
 
-[[nodiscard]] std::vector<uint8_t> convert_tile_to_rgba(
-    const Palette& palette, const TileView& tile,
-    const TileConversionOptions& options = {});
+[[nodiscard]] std::vector<uint8_t> convert_tile_to_rgba(const Palette& palette,
+                                                        const TileView& tile,
+                                                        const TileConversionOptions& options = {});
 
 }  // namespace art2img
 
+// Legacy compatibility namespace
+namespace image_processor {
+
+std::vector<uint8_t> convert_to_rgba(const art2img::Palette& palette,
+                                     const art2img::ArtFile::Tile& tile, const uint8_t* pixel_data,
+                                     size_t pixel_data_size,
+                                     const art2img::ImageWriter::Options& options);
+
+constexpr bool is_build_engine_magenta(uint8_t r, uint8_t g, uint8_t b) {
+  // Magenta detection: r8≥250, b8≥250, g8≤5
+  return (r >= 250) && (b >= 250) && (g <= 5);
+}
+
+}  // namespace image_processor

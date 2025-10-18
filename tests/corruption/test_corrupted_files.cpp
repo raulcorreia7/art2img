@@ -6,10 +6,10 @@
 #include <fstream>
 #include <vector>
 
-#include "art_file.hpp"
-#include "exceptions.hpp"
-#include "extractor_api.hpp"
-#include "palette.hpp"
+#include "art2img/art_file.hpp"
+#include "art2img/exceptions.hpp"
+#include "art2img/extractor_api.hpp"
+#include "art2img/palette.hpp"
 #include "test_helpers.hpp"
 
 // Helper function to create corrupted files
