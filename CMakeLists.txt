@@ -218,14 +218,14 @@ target_include_directories(art2img_extractor
 # Add header files as dependencies
 target_sources(art2img_extractor
     PRIVATE
-    include/extractor_api.hpp
-    include/art_file.hpp
-    include/palette.hpp
-    include/image_writer.hpp
-    include/image_processor.hpp
-    include/exceptions.hpp
-    include/file_operations.hpp
-    ${CMAKE_BINARY_DIR}/include/version.hpp
+    include/art2img/extractor_api.hpp
+    include/art2img/art_file.hpp
+    include/art2img/palette.hpp
+    include/art2img/image_writer.hpp
+    include/art2img/image_processor.hpp
+    include/art2img/exceptions.hpp
+    include/art2img/file_operations.hpp
+    include/art2img/colors.hpp
 )
 
 target_link_libraries(art2img_extractor

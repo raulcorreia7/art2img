@@ -1,11 +1,11 @@
-#include "extractor_api.hpp"
+#include "art2img/extractor_api.hpp"
 
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 
-#include "image_writer.hpp"
+#include "art2img/image_writer.hpp"
 
 namespace art2img {
 

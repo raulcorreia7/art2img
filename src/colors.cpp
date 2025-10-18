@@ -1,4 +1,4 @@
-#include "colors.hpp"
+#include "art2img/colors.hpp"
 
 namespace art2img {
 

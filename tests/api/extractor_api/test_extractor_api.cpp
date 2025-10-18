@@ -3,8 +3,8 @@
 
 #include <filesystem>
 
-#include "exceptions.hpp"
-#include "extractor_api.hpp"
+#include "art2img/exceptions.hpp"
+#include "art2img/extractor_api.hpp"
 #include "test_helpers.hpp"
 
 TEST_CASE("ExtractorAPI construction - initial state and multiple instances") {

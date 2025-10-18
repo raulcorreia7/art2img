@@ -4,14 +4,14 @@
 #include <filesystem>
 #include <fstream>
 
-#include "exceptions.hpp"
-#include "extractor_api.hpp"
+#include "art2img/exceptions.hpp"
+#include "art2img/extractor_api.hpp"
 #include "test_helpers.hpp"
 
 // Include new module headers for direct testing
-#include "file_operations.hpp"
-#include "image_processor.hpp"
-#include "image_writer.hpp"
+#include "art2img/file_operations.hpp"
+#include "art2img/image_processor.hpp"
+#include "art2img/image_writer.hpp"
 
 // Function to create a test extractor with data
 art2img::ExtractorAPI create_test_extractor() {
@@ -400,8 +400,8 @@ TEST_CASE("ImageProcessor module tests") {
 
   SUBCASE("Convert to RGBA") {
     art2img::ImageWriter::Options options;
-    auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
-                                                               pixel_data.size(), options);
+    auto rgba_data = image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
+                                                      pixel_data.size(), options);
 
     CHECK_EQ(rgba_data.size(), static_cast<size_t>(tile.width) * tile.height * 4);
 
@@ -470,8 +470,8 @@ TEST_CASE("FileOperations module tests") {
 
   // Convert to RGBA for PNG operations
   art2img::ImageWriter::Options options;
-  auto rgba_data = art2img::image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
-                                                             pixel_data.size(), options);
+  auto rgba_data = image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
+                                                    pixel_data.size(), options);
 
   SUBCASE("PNG encoding to memory") {
     auto png_data =

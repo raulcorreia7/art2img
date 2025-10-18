@@ -1,4 +1,4 @@
-#include "image_writer.hpp"
+#include "art2img/image_writer.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -7,8 +7,8 @@
 #include <iostream>
 #include <sstream>
 
-#include "file_operations.hpp"
-#include "image_processor.hpp"
+#include "art2img/file_operations.hpp"
+#include "art2img/image_processor.hpp"
 
 namespace art2img {
 

@@ -10,9 +10,9 @@
 #include <system_error>
 #include <vector>
 
-#include "art_file.hpp"
-#include "extractor_api.hpp"
-#include "palette.hpp"
+#include "art2img/art_file.hpp"
+#include "art2img/extractor_api.hpp"
+#include "art2img/palette.hpp"
 #include "test_helpers.hpp"
 
 namespace {

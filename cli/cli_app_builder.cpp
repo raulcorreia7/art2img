@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include "version.hpp"
+#include "art2img/version.hpp"
 
 namespace art2img {
 

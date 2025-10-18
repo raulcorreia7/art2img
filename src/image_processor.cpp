@@ -1,12 +1,12 @@
-#include "image_processor.hpp"
+#include "art2img/image_processor.hpp"
 
 #include <algorithm>
 #include <cstdint>
 #include <span>
 #include <vector>
 
-#include "exceptions.hpp"
-#include "image_writer.hpp"
+#include "art2img/exceptions.hpp"
+#include "art2img/image_writer.hpp"
 
 namespace art2img {
 namespace {

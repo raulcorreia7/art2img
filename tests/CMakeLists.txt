@@ -10,19 +10,27 @@ target_sources(art2img_tests
     ../cli/cli_app_builder.cpp
     ../cli/processor.cpp
     ../cli/config.cpp
-    test_art_file.cpp
-    test_extractor_api.cpp
-    test_functionality.cpp
-    test_cli_options.cpp
-    test_cli_processing_order.cpp
-    test_integration.cpp
-    test_palette.cpp
-    test_cli_error_messages.cpp
-    test_transparency.cpp
-    test_transparency_files.cpp
-    test_batch_extraction_files.cpp
-    test_full_extraction.cpp
-    test_output_directories.cpp
+    core/art_file/test_art_file.cpp
+    core/art_file/test_image_view.cpp
+    core/palette/test_palette.cpp
+    core/palette/test_blood_palette_validation.cpp
+    core/image_processor/test_transparency.cpp
+    core/image_processor/test_transparency_files.cpp
+    api/extractor_api/test_extractor_api.cpp
+    api/extractor_api/test_batch_extraction_files.cpp
+    api/extractor_api/test_full_extraction.cpp
+    api/library_api/test_library_api.cpp
+    cli/options/test_cli_options.cpp
+    cli/options/test_cli_error_messages.cpp
+    cli/processing/test_cli_processing_order.cpp
+    cli/processing/test_output_directories.cpp
+    cli/functionality/test_functionality.cpp
+    format/bmp/test_bmp_format.cpp
+    core/image_processor/test_png_memory_regression.cpp
+    core/art_file/test_art2img_includes.cpp
+    core/art_file/test_art2img_api.cpp
+    integration/test_integration.cpp
+    corruption/test_corrupted_files.cpp
 )
 
 # Set test executable properties

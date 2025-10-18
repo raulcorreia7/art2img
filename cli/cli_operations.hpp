@@ -4,9 +4,9 @@
 #include <optional>
 #include <string>
 
-#include "art_file.hpp"
+#include "art2img/art_file.hpp"
 #include "config.hpp"  // Keep our configuration structures
-#include "extractor_api.hpp"
+#include "art2img/extractor_api.hpp"
 
 // Result structure for composability
 struct ProcessingResult {
