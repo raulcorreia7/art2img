@@ -27,7 +27,8 @@ find_binary_path() {
     return 1
 }
 
-setup() {
+# Common setup function
+common_setup() {
     # Project root detection
     PROJECT_ROOT="$(cd "$(dirname "${BATS_TEST_FILENAME}")/../.." && pwd)"
     
@@ -57,7 +58,12 @@ setup() {
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         BUILD_SUBDIR="macos-x64"
     else
-        BUILD_SUBDIR="$BUILD_TYPE"
+        # For Linux, use linux-x64 as the default build directory
+        if [[ "$BUILD_TYPE" == "linux" ]]; then
+            BUILD_SUBDIR="linux-x64"
+        else
+            BUILD_SUBDIR="$BUILD_TYPE"
+        fi
     fi
     
     # Set the main build directory based on the build subdirectory
@@ -65,8 +71,6 @@ setup() {
     
     # Set platform-specific paths
     BINARY_DIR="${BUILD_DIR}/bin"
-    MAIN_BIN="$(find_binary_path "$BINARY_DIR" "art2img")"
-    TEST_BIN="$(find_binary_path "$BINARY_DIR" "art2img_tests")"
     
     # Test assets directory
     TEST_ASSETS_DIR="${PROJECT_ROOT}/tests/assets"
@@ -76,6 +80,38 @@ setup() {
     # Setup output directories in the proper build directory structure
     OUTPUT_DIR="${PROJECT_ROOT}/build/${BUILD_SUBDIR}/test_output"
     mkdir -p "$OUTPUT_DIR"
+    
+    # Set binary paths after all directories are set
+    # Use direct paths instead of find_binary_path to avoid issues
+    if [[ -f "$BINARY_DIR/art2img" ]]; then
+        MAIN_BIN="$BINARY_DIR/art2img"
+    elif [[ -f "$BINARY_DIR/art2img.exe" ]]; then
+        MAIN_BIN="$BINARY_DIR/art2img.exe"
+    else
+        MAIN_BIN=""
+    fi
+    
+    if [[ -f "$BINARY_DIR/art2img_tests" ]]; then
+        TEST_BIN="$BINARY_DIR/art2img_tests"
+    elif [[ -f "$BINARY_DIR/art2img_tests.exe" ]]; then
+        TEST_BIN="$BINARY_DIR/art2img_tests.exe"
+    else
+        TEST_BIN=""
+    fi
+    
+    # Debug output
+    log_debug "PROJECT_ROOT: $PROJECT_ROOT"
+    log_debug "BUILD_TYPE: $BUILD_TYPE"
+    log_debug "BUILD_SUBDIR: $BUILD_SUBDIR"
+    log_debug "BUILD_DIR: $BUILD_DIR"
+    log_debug "BINARY_DIR: $BINARY_DIR"
+    log_debug "MAIN_BIN: $MAIN_BIN"
+    log_debug "TEST_BIN: $TEST_BIN"
+}
+
+# Default setup function for tests that don't override it
+setup() {
+    common_setup
 }
 
 teardown() {

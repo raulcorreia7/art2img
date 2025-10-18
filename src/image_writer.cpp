@@ -75,9 +75,15 @@ bool ImageWriter::write_png_to_file(const std::filesystem::path& filename, const
     throw ArtException("Pixel data size mismatch for tile: " + filename.string());
   }
 
+  // For PNG, we want clean transparency without matte hygiene or premultiplication that might cause
+  // shimmering
+  Options png_options = options;
+  png_options.matte_hygiene = false;
+  png_options.premultiply_alpha = false;
+
   // Convert indexed color to RGBA
   std::vector<uint8_t> rgba_data =
-      image_processor::convert_to_rgba(palette, tile, pixel_data, pixel_data_size, options);
+      image_processor::convert_to_rgba(palette, tile, pixel_data, pixel_data_size, png_options);
 
   // Write PNG file using file_operations
   return file_operations::write_png_file(filename, rgba_data, tile.width, tile.height);

@@ -5,8 +5,10 @@
 load "./common.bats"
 
 setup() {
+    # Call the common setup first
+    common_setup
+    
     # Additional setup for transparency tests
-    # (Don't call parent setup - common.bats handles platform detection in load)
     readonly OUTPUT_DIR="$BATS_TEST_TMPDIR/transparency_tests"
     create_directory_if_needed "$OUTPUT_DIR"
 }

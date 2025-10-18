@@ -6,16 +6,31 @@ load "./common.bats"
 
 # Setup: Set up variables for test
 setup() {
-    # Project root detection
-    PROJECT_ROOT="$(cd "$(dirname "${BATS_TEST_FILENAME}")/../.." && pwd)"
+    # Call the common setup first
+    common_setup
     
     # Configuration
     : "${BUILD_DIR:=build}"
     : "${WINDOWS_TOOLCHAIN:=cmake/windows-toolchain.cmake}"
     : "${TEST_ASSETS_DIR:=tests/assets}"
     WINDOWS_BIN_DIR="${BUILD_DIR}/windows-release/bin"
-    MAIN_BIN="$(find_binary_path "$WINDOWS_BIN_DIR" "art2img")"
-    TEST_BIN="$(find_binary_path "$WINDOWS_BIN_DIR" "art2img_tests")"
+    
+    # Use direct paths instead of find_binary_path to avoid issues
+    if [[ -f "$WINDOWS_BIN_DIR/art2img" ]]; then
+        MAIN_BIN="$WINDOWS_BIN_DIR/art2img"
+    elif [[ -f "$WINDOWS_BIN_DIR/art2img.exe" ]]; then
+        MAIN_BIN="$WINDOWS_BIN_DIR/art2img.exe"
+    else
+        MAIN_BIN=""
+    fi
+    
+    if [[ -f "$WINDOWS_BIN_DIR/art2img_tests" ]]; then
+        TEST_BIN="$WINDOWS_BIN_DIR/art2img_tests"
+    elif [[ -f "$WINDOWS_BIN_DIR/art2img_tests.exe" ]]; then
+        TEST_BIN="$WINDOWS_BIN_DIR/art2img_tests.exe"
+    else
+        TEST_BIN=""
+    fi
     
     # Test assets
     PALETTE_FILE="${TEST_ASSETS_DIR}/PALETTE.DAT"
