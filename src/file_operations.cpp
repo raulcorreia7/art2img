@@ -1,6 +1,6 @@
-#include "file_operations.hpp"
+#include "art2img/file_operations.hpp"
 
-#include "image_processor.hpp"
+#include "art2img/image_processor.hpp"
 
 // Suppress warnings from stb_image_write.h
 #ifdef __GNUC__
@@ -279,13 +279,11 @@ void write_bmp_pixels_direct(std::ostream& output, const Palette& palette,
   // Write pixel data row by row (BMP is bottom-up)
   for (int y = 0; y < height; ++y) {
     // BMP stores rows bottom-to-top, so we process from bottom row
-    // For vertical flip, we need to process from the opposite end
     int flipped_y = height - 1 - y;
 
     // Write pixels for this row
     for (int x = 0; x < width; ++x) {
       // Get pixel index from ART format (column-major storage)
-      // Apply vertical flip by using flipped_y instead of y
       uint8_t pixel_index = pixel_data[flipped_y + x * height];
 
       // Get BGR values from palette
@@ -300,13 +298,13 @@ void write_bmp_pixels_direct(std::ostream& output, const Palette& palette,
         b = 252;
       }
 
-      // Write BGR pixel data directly to output
+      // Write BGR pixel data directly to output (24-bit)
       output.put(static_cast<char>(b));  // Blue
       output.put(static_cast<char>(g));  // Green
       output.put(static_cast<char>(r));  // Red
     }
 
-    // Add padding bytes if needed
+    // Add padding bytes if needed (24-bit BMP rows must be padded to 4-byte boundary)
     uint32_t padding = headers.row_size - (width * 3);
     for (uint32_t p = 0; p < padding; ++p) {
       output.put(0);  // Pad with zeros
