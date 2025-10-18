@@ -575,6 +575,57 @@ The codebase currently has **inconsistent error handling patterns**:
    - Handle platform-specific file system differences
    - Ensure consistent behavior across environments
 
+## TEST INFRASTRUCTURE ENHANCEMENT
+
+### Current Test Output Issues:
+- Random timestamp-based directory names (`output_dirs_1760752922`, `batch_extraction_1760753002`)
+- No clear organization by test category or purpose
+- Mixed test artifacts scattered throughout build directory
+- Hard to manually verify specific test outputs
+- No cleanup mechanism for local development
+
+### Proposed Test Structure (Organic & Simple):
+
+```
+build/tests/output/
+├── unit/                  # Unit test outputs
+│   ├── core/
+│   │   ├── art_file/
+│   │   ├── palette/
+│   │   └── image_processor/
+│   ├── api/
+│   │   ├── extractor_api/
+│   │   └── library_api/
+│   └── format/
+│       ├── png/
+│       └── bmp/
+├── integration/           # Integration test outputs
+│   ├── cli/
+│   │   ├── output_directories/
+│   │   └── processing/
+│   ├── batch_extraction/
+│   └── full_extraction/
+└── verification/         # Manual verification outputs
+    ├── transparency/
+    └── format_comparison/
+```
+
+### Key Improvements:
+1. **Descriptive names** instead of random timestamps
+2. **Hierarchical organization** matching test categories
+3. **Consistent naming** patterns for easy navigation
+4. **Clear separation** between unit, integration, and verification tests
+5. **Automatic cleanup** option for local development
+
+### Implementation Strategy:
+- Modify test helpers to use structured paths
+- Add test category prefixes to directory names
+- Create summary metadata files in each output directory
+- Add cleanup mechanism controlled by environment variable
+- Standardize file naming conventions across all tests
+
+This structure aligns with the memory-first architecture and makes test outputs immediately understandable and manually verifiable.
+
 ## SUCCESS CRITERIA
 
 ### API Quality:
