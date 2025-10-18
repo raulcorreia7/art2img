@@ -25,6 +25,7 @@ public:
   bool load_from_file(const std::filesystem::path& filename);
   void load_build_engine_default();
   void load_blood_default();
+  void load_duke3d_default();
 
   // Memory-based operations
   bool load_from_memory(const uint8_t* data, size_t size);

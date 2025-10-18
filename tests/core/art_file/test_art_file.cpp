@@ -3,8 +3,8 @@
 
 #include <filesystem>
 
-#include "art_file.hpp"
-#include "exceptions.hpp"
+#include "art2img/art_file.hpp"
+#include "art2img/exceptions.hpp"
 #include "test_helpers.hpp"
 
 TEST_CASE("ArtFile basic functionality - initialization and file loading") {

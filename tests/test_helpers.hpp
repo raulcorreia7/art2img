@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstdlib>  // for getenv
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
@@ -62,6 +63,25 @@ inline std::vector<uint8_t> load_asset(const std::string& filename) {
   }
 
   return data;
+}
+
+// Test output directory management
+inline std::filesystem::path test_output_root() {
+  static const std::filesystem::path output_root{"build/tests/output"};
+  return output_root;
+}
+
+inline void create_test_output_dir(const std::filesystem::path& dir) {
+  std::filesystem::create_directories(dir);
+}
+
+inline void cleanup_test_output_dir(const std::filesystem::path& dir) {
+  // Only cleanup in CI environment or when explicitly requested
+  if (std::getenv("CI") != nullptr || std::getenv("CLEANUP_TEST_OUTPUT") != nullptr) {
+    std::error_code ec;
+    std::filesystem::remove_all(dir, ec);
+    // Ignore errors during cleanup
+  }
 }
 
 }  // namespace art2img::tests
