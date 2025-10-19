@@ -1,13 +1,17 @@
 #include <art2img/error.hpp>
 
-namespace art2img {
+namespace art2img
+{
 
-const char* error_category::name() const noexcept {
-    return "art2img";
-}
+    const char *error_category::name() const noexcept
+    {
+        return "art2img";
+    }
 
-std::string error_category::message(int ev) const {
-    switch (static_cast<errc>(ev)) {
+    std::string error_category::message(int ev) const
+    {
+        switch (static_cast<errc>(ev))
+        {
         case errc::none:
             return "No error";
         case errc::io_failure:
@@ -24,16 +28,18 @@ std::string error_category::message(int ev) const {
             return "Requested operation or format is not supported";
         default:
             return "Unknown error";
+        }
     }
-}
 
-const std::error_category& error_category::instance() {
-    static const error_category instance;
-    return instance;
-}
+    const std::error_category &error_category::instance()
+    {
+        static const error_category instance;
+        return instance;
+    }
 
-std::error_code make_error_code(errc e) noexcept {
-    return std::error_code(static_cast<int>(e), error_category::instance());
-}
+    std::error_code make_error_code(errc e) noexcept
+    {
+        return std::error_code(static_cast<int>(e), error_category::instance());
+    }
 
 } // namespace art2img

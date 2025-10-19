@@ -5,9 +5,10 @@
 # ============================================================================
 # 1. TEST SOURCES
 # ============================================================================
-file(GLOB_RECURSE TEST_SOURCES 
+file(GLOB_RECURSE TEST_SOURCES
                             core/*.cpp
-                            art/*.cpp)
+                            art/*.cpp
+                            convert/*.cpp)
 
 # ============================================================================
 # 2. TEST EXECUTABLE
@@ -32,3 +33,11 @@ doctest_discover_tests(art2img_tests
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     PROPERTIES TIMEOUT 300
 )
+
+# ============================================================================
+# 6. BENCHMARK EXECUTABLE (separate from unit tests)
+# ============================================================================
+add_executable(test_convert_benchmark convert/test_convert_benchmark.cpp)
+target_link_libraries(test_convert_benchmark PRIVATE art2img_core)
+target_include_directories(test_convert_benchmark PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+target_compile_definitions(test_convert_benchmark PRIVATE TEST_ASSET_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets")

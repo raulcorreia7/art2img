@@ -10,6 +10,7 @@
 #include <iterator>
 #include <cstddef>
 
+using namespace art2img::types;
 namespace art2img {
 
 /// @brief Options for converting indexed tiles to RGBA images
@@ -24,13 +25,13 @@ struct ConversionOptions {
     bool premultiply_alpha = false;
     
     /// @brief Shade table index to apply (0 = no shading)
-    std::uint8_t shade_index = 0;
+    u8 shade_index = 0;
     
     /// @brief Default constructor
     ConversionOptions() = default;
     
     /// @brief Constructor with all options
-    ConversionOptions(bool lookup, bool transparency, bool premult, std::uint8_t shade)
+    ConversionOptions(bool lookup, bool transparency, bool premult, u8 shade)
         : apply_lookup(lookup), fix_transparency(transparency), 
           premultiply_alpha(premult), shade_index(shade) {}
 };
@@ -38,13 +39,13 @@ struct ConversionOptions {
 /// @brief Owning RGBA image container
 struct Image {
     /// @brief RGBA pixel data (row-major format)
-    std::vector<std::uint8_t> data;
+    std::vector<u8> data;
     
     /// @brief Image width in pixels
-    std::uint16_t width = 0;
+    u16 width = 0;
     
     /// @brief Image height in pixels
-    std::uint16_t height = 0;
+    u16 height = 0;
     
     /// @brief Number of bytes per row (stride)
     std::size_t stride = 0;
@@ -53,7 +54,7 @@ struct Image {
     Image() = default;
     
     /// @brief Constructor with dimensions
-    Image(std::uint16_t w, std::uint16_t h)
+    Image(u16 w, u16 h)
         : width(w), height(h), stride(static_cast<std::size_t>(w) * constants::RGBA_BYTES_PER_PIXEL) {
         data.resize(stride * static_cast<std::size_t>(h));
     }
@@ -70,12 +71,12 @@ struct Image {
     }
     
     /// @brief Get read-only view of pixel data
-    std::span<const std::uint8_t> pixels() const noexcept {
+    std::span<const u8> pixels() const noexcept {
         return data;
     }
     
     /// @brief Get mutable view of pixel data
-    std::span<std::uint8_t> pixels() noexcept {
+    std::span<u8> pixels() noexcept {
         return data;
     }
 };
@@ -83,13 +84,13 @@ struct Image {
 /// @brief Non-owning view over an Image
 struct ImageView {
     /// @brief RGBA pixel data (row-major format)
-    std::span<const std::uint8_t> data;
+    std::span<const u8> data;
     
     /// @brief Image width in pixels
-    std::uint16_t width = 0;
+    u16 width = 0;
     
     /// @brief Image height in pixels
-    std::uint16_t height = 0;
+    u16 height = 0;
     
     /// @brief Number of bytes per row (stride)
     std::size_t stride = 0;
@@ -102,7 +103,7 @@ struct ImageView {
         : data(image.data), width(image.width), height(image.height), stride(image.stride) {}
     
     /// @brief Constructor from span and dimensions
-    ImageView(std::span<const std::uint8_t> pixel_data, std::uint16_t w, std::uint16_t h, std::size_t s)
+    ImageView(std::span<const u8> pixel_data, u16 w, u16 h, std::size_t s)
         : data(pixel_data), width(w), height(h), stride(s) {}
     
     /// @brief Check if view is valid
@@ -124,7 +125,7 @@ public:
     class iterator {
     public:
         using iterator_category = std::forward_iterator_tag;
-        using value_type = std::span<const std::uint8_t>;
+        using value_type = std::span<const u8>;
         using difference_type = std::ptrdiff_t;
         using pointer = const value_type*;
         using reference = const value_type&;
@@ -133,10 +134,10 @@ public:
         iterator() = default;
         
         /// @brief Constructor for begin iterator
-        iterator(const TileView& tile, std::span<std::uint8_t> scratch);
+        iterator(const TileView& tile, std::span<u8> scratch);
         
         /// @brief Constructor for end iterator
-        iterator(std::uint16_t current_row, std::uint16_t max_rows);
+        iterator(u16 current_row, u16 max_rows);
         
         /// @brief Dereference operator
         value_type operator*() const;
@@ -155,17 +156,17 @@ public:
         
     private:
         const TileView* tile_ = nullptr;
-        std::span<std::uint8_t> scratch_;
-        std::uint16_t current_row_ = 0;
-        std::uint16_t max_rows_ = 0;
-        mutable std::vector<std::uint8_t> row_buffer_;
+        std::span<u8> scratch_;
+        u16 current_row_ = 0;
+        u16 max_rows_ = 0;
+        mutable std::vector<u8> row_buffer_;
     };
     
     /// @brief Default constructor
     ColumnMajorRowRange() = default;
     
     /// @brief Constructor from tile view and scratch buffer
-    ColumnMajorRowRange(const TileView& tile, std::span<std::uint8_t> scratch);
+    ColumnMajorRowRange(const TileView& tile, std::span<u8> scratch);
     
     /// @brief Get begin iterator
     iterator begin() const;
@@ -180,7 +181,7 @@ public:
     
 private:
     const TileView* tile_ = nullptr;
-    std::span<std::uint8_t> scratch_;
+    std::span<u8> scratch_;
 };
 
 // ============================================================================
@@ -208,17 +209,17 @@ ImageView image_view(const Image& image);
 /// @return Expected success on completion, Error on failure
 std::expected<std::monostate, Error> copy_column_major_to_row_major(
     const TileView& tile, 
-    std::span<std::uint8_t> destination);
+    std::span<u8> destination);
 
 /// @brief Sample a pixel index from column-major data
 /// @param tile The tile view to sample from
 /// @param x X coordinate (column)
 /// @param y Y coordinate (row)
 /// @return Expected palette index on success, Error on failure
-std::expected<std::uint8_t, Error> sample_column_major_index(
+std::expected<u8, Error> sample_column_major_index(
     const TileView& tile, 
-    std::uint16_t x, 
-    std::uint16_t y);
+    u16 x, 
+    u16 y);
 
 /// @brief Create a range for iterating over tile rows
 /// @param tile The tile view to iterate over
@@ -226,6 +227,6 @@ std::expected<std::uint8_t, Error> sample_column_major_index(
 /// @return ColumnMajorRowRange for row iteration
 ColumnMajorRowRange column_major_rows(
     const TileView& tile, 
-    std::span<std::uint8_t> scratch);
+    std::span<u8> scratch);
 
 } // namespace art2img

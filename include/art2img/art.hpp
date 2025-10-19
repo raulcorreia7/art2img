@@ -9,10 +9,11 @@
 #include <vector>
 #include <optional>
 
+using namespace art2img::types;
 namespace art2img {
 
 /// @brief Palette hint for automatic palette discovery
-enum class PaletteHint : std::uint8_t {
+enum class PaletteHint : u8 {
     /// @brief No palette hint - don't attempt auto-discovery
     none = 0,
     
@@ -29,10 +30,10 @@ enum class PaletteHint : std::uint8_t {
 /// @brief Animation information for a tile
 struct TileAnimation {
     /// @brief Number of animation frames (0-63, bits 0-5 of picanm)
-    std::uint8_t frame_count = 0;
+    u8 frame_count = 0;
     
     /// @brief Animation type (bits 6-7 of picanm)
-    enum class Type : std::uint8_t {
+    enum class Type : u8 {
         none = 0,        ///< 00 = no animation
         oscillating = 1, ///< 01 = oscillating animation
         forward = 2,     ///< 10 = animate forward
@@ -40,37 +41,37 @@ struct TileAnimation {
     } type = Type::none;
     
     /// @brief Animation speed/timing (bits 24-27 of picanm)
-    std::uint8_t speed = 0;
+    u8 speed = 0;
     
     /// @brief X-center offset (bits 16-23 of picanm, signed)
-    std::int8_t x_center_offset = 0;
+    i8 x_center_offset = 0;
     
     /// @brief Y-center offset (bits 8-15 of picanm, signed)
-    std::int8_t y_center_offset = 0;
+    i8 y_center_offset = 0;
     
     /// @brief Default constructor
     TileAnimation() = default;
     
     /// @brief Construct from picanm value
-    explicit TileAnimation(std::uint32_t picanm);
+    explicit TileAnimation(u32 picanm);
     
     /// @brief Convert back to picanm format
-    std::uint32_t to_picanm() const noexcept;
+    u32 to_picanm() const noexcept;
 };
 
 /// @brief Non-owning view of tile data
 struct TileView {
     /// @brief Tile width in pixels
-    std::uint16_t width = 0;
+    u16 width = 0;
     
     /// @brief Tile height in pixels
-    std::uint16_t height = 0;
+    u16 height = 0;
     
     /// @brief Column-major pixel data (palette indices)
-    types::u8_span pixels;
+    u8_span pixels;
     
     /// @brief Optional remap table data (may be empty)
-    types::u8_span remap;
+    u8_span remap;
     
     /// @brief Animation information
     TileAnimation animation;
@@ -99,25 +100,25 @@ struct TileView {
 /// @brief Owning container for ART bundle data
 struct ArtData {
     /// @brief ART file version
-    std::uint32_t version = 0;
+    u32 version = 0;
     
     /// @brief First tile index in this file
-    std::uint32_t tile_start = 0;
+    u32 tile_start = 0;
     
     /// @brief Last tile index in this file
-    std::uint32_t tile_end = 0;
+    u32 tile_end = 0;
     
     /// @brief Owning pixel data buffer (column-major format)
-    std::vector<std::uint8_t> pixels;
+    std::vector<u8> pixels;
     
     /// @brief Owning remap data buffer (contiguous for all tiles)
-    std::vector<std::uint8_t> remaps;
+    std::vector<u8> remaps;
     
     /// @brief Tile views referencing the above buffers
     std::vector<TileView> tiles;
     
     /// @brief Tile IDs corresponding to each view
-    std::vector<std::uint32_t> tile_ids;
+    std::vector<u32> tile_ids;
     
     /// @brief Default constructor
     ArtData() = default;
@@ -136,7 +137,7 @@ struct ArtData {
     std::optional<TileView> get_tile(std::size_t index) const noexcept;
     
     /// @brief Get tile view by tile ID (bounds-checked)
-    std::optional<TileView> get_tile_by_id(std::uint32_t tile_id) const noexcept;
+    std::optional<TileView> get_tile_by_id(u32 tile_id) const noexcept;
 };
 
 /// @brief Load an ART bundle from a file path
@@ -165,7 +166,7 @@ std::optional<TileView> make_tile_view(const ArtData& art_data, std::size_t inde
 /// @param art_data The art data container
 /// @param tile_id The tile ID to look up
 /// @return TileView if tile_id is found, empty optional otherwise
-std::optional<TileView> make_tile_view_by_id(const ArtData& art_data, std::uint32_t tile_id);
+std::optional<TileView> make_tile_view_by_id(const ArtData& art_data, u32 tile_id);
 
 /// @brief Discover sidecar palette file for an ART file
 /// @param art_path Path to the ART file
@@ -180,13 +181,13 @@ std::filesystem::path discover_lookup_file(const std::filesystem::path& art_path
 /// @brief Load LOOKUP.DAT remap data
 /// @param lookup_path Path to LOOKUP.DAT file
 /// @return Expected vector of remap data on success, Error on failure
-std::expected<std::vector<std::uint8_t>, Error> load_lookup_data(
+std::expected<std::vector<u8>, Error> load_lookup_data(
     const std::filesystem::path& lookup_path);
 
 /// @brief Load LOOKUP.DAT remap data from byte span
 /// @param data Span containing the raw LOOKUP.DAT data
 /// @return Expected vector of remap data on success, Error on failure
-std::expected<std::vector<std::uint8_t>, Error> load_lookup_data(
+std::expected<std::vector<u8>, Error> load_lookup_data(
     std::span<const std::byte> data);
 
 } // namespace art2img
