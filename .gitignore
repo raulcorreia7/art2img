@@ -35,7 +35,9 @@ final_test/
 _fetch/
 .cpm/
 .bin
+.cache/
 *.png
 *.bpm
 *.tga
 *.idx
+*.kilocode

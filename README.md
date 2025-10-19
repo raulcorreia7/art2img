@@ -1,103 +1,57 @@
-<div align="center">
-  <h1>art2img v0.2.0</h1>
-  <p><strong>Convert Duke Nukem 3D ART files to modern image formats</strong></p>
-</div>
+# art2img
 
-A professional tool for game modders to convert Duke Nukem 3D ART files to PNG, TGA, or BMP with transparency and animation support.
+A C++23 library and tool for extracting and converting ART format assets (from Build engine games) to modern image formats.
 
-## Quick Start for Modders
+## Status: 🚧 Architecture Refactor in Progress
 
-After building (see below), run:
+This repository is currently undergoing a major architectural refactor as described in [`plan/tasks.md`](plan/tasks.md). The existing implementation has been moved to [`repository/legacy`](repository/legacy) for reference.
+
+### New Architecture
+
+The new C++23 architecture will feature:
+- Stateless functions with plain structs
+- `std::expected<T, Error>` error handling throughout
+- Modern CMake build system
+- Comprehensive test suite
+
+### Directory Structure
+
+```
+├── include/art2img/     # New public headers (C++23)
+├── src/                 # New implementation files
+├── tests/               # New test suite
+├── cmake/               # Build configuration
+├── plan/                # Architecture and task documentation
+├── docs/                # Legacy documentation
+└── repository/legacy/   # Previous implementation (preserved)
+```
+
+### Building (New Architecture)
 
 ```bash
-# Basic conversion (Linux/Mac)
-./art2img tiles.art
-
-# Basic conversion (Windows)
-./art2img.exe tiles.art
-
-# Convert to specific format with output directory
-./art2img tiles.art -f tga -o output/
-
-# Convert all ART files in a directory
-./art2img art/ -o images/
-
-# For games with transparency (Green Slime, etc.)
-./art2img tiles.art -F  # Enable transparency fix
-
-# Extract animation data
-./art2img art/ -m -o game/  # Merge animation data
+cmake -S . -B build -DART2IMG_ENABLE_LEGACY=ON
+cmake --build build
 ```
 
-## Command-Line Options
+### Legacy Implementation
 
-```
-art2img [OPTIONS] ART_FILE|ART_DIRECTORY
+The previous implementation remains available in `repository/legacy/` and can be built with:
 
-POSITIONALS:
-  ART_FILE|ART_DIRECTORY TEXT REQUIRED
-                              Input ART file or directory containing ART files 
-
-OPTIONS:
-  -h,     --help              Print this help message and exit 
-  -v,     --version           Display program version information and exit 
-  -o,     --output TEXT [.]   Output directory for converted images 
-  -p,     --palette FILE      Custom palette file (defaults to built-in Duke Nukem 3D palette) 
-  -f,     --format TEXT:{tga,png,bmp} [png]  
-                              Output format: tga, png, or bmp 
-  -F,     --fix-transparency, --no-fix-transparency{false} 
-                              Enable magenta transparency fix (default: enabled) 
-  -q,     --quiet             Suppress all non-essential output 
-  -n,     --no-anim           Skip animation data generation 
-  -m,     --merge-anim        Merge all animation data into a single file (directory mode) 
-          --parallel, --no-parallel{false} 
-                              Enable parallel tile export (default: enabled) 
-  -j,     --jobs UINT:NONNEGATIVE [0]  
-                              Maximum number of worker threads to use (0 = auto) 
-
-Examples: 
-art2img tiles.art # Convert single ART file 
-art2img tiles.art -f tga -o out/ # Convert to TGA with output dir 
-art2img art/ -o images/ # Convert all ART files 
-art2img tiles.art -p custom.pal # Use custom palette 
-art2img tiles.art --no-fix-transparency # Disable transparency 
-art2img art/ -m -o game/ # Merge animation data 
-
-For modders: Use -F for transparency and -m for animation data.
-```
-
-## Building the Project
-
-**Requirements:**
-- C++20 compiler (GCC 10+, Clang 10+, MSVC 2019+)
-- CMake 3.14+
-
-**Build Commands:**
 ```bash
-make all                    # Build release version for your platform
-make build                  # Build for Linux x64
-make debug                  # Build debug version for Linux x64
-make mingw-windows          # Cross-compile for Windows x64 using MinGW
-make mingw-windows-x86      # Cross-compile for Windows x86 using MinGW
-make test                   # Run tests on Linux
-make clean                  # Clean build directory
+cd repository/legacy
+mkdir build && cd build
+cmake ..
+make
 ```
 
-**Cross-compilation for Windows (from Linux):**
-```bash
-# Install MinGW cross-compilers
-sudo apt-get install g++-mingw-w64-x86-64 g++-mingw-w64-i686
+See [`repository/legacy/BUILDING.md`](repository/legacy/BUILDING.md) for detailed legacy build instructions.
 
-# Build for Windows
-make mingw-windows          # x64 version
-make mingw-windows-x86      # x86 version
-```
+## Documentation
+
+- [Architecture Overview](plan/architecture.md)
+- [Implementation Roadmap](plan/tasks.md)
+- [Legacy Documentation](docs/)
 
 ## License
 
-[GPL v2](LICENSE) - Free and open-source software.
-
-## Credits
-
-Based on original work by Mathieu Olivier and Kenneth Silverman.
-Modern C++20 implementation by [Raúl Correia](https://github.com/raulcorreia7).
+See [`repository/legacy/LICENSE`](repository/legacy/LICENSE) for license information.

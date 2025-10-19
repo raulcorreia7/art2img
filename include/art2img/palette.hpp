@@ -1,57 +1,100 @@
 #pragma once
 
-#include <cstdint>
+#include <art2img/types.hpp>
+#include <art2img/error.hpp>
+#include <expected>
 #include <filesystem>
-#include <string>
+#include <span>
 #include <vector>
-
-#include "exceptions.hpp"
 
 namespace art2img {
 
-class Palette {
-public:
-  static constexpr size_t SIZE = 256 * 3;  // 256 colors, 3 components each
-
-  Palette();
-
-  // Non-copyable, movable
-  Palette(const Palette&) = delete;
-  Palette& operator=(const Palette&) = delete;
-  Palette(Palette&&) = default;
-  Palette& operator=(Palette&&) = default;
-
-  // File-based operations
-  bool load_from_file(const std::filesystem::path& filename);
-  void load_build_engine_default();
-  void load_blood_default();
-  void load_duke3d_default();
-
-  // Memory-based operations
-  bool load_from_memory(const uint8_t* data, size_t size);
-
-  // Get palette data in BGR format (for TGA/PNG output)
-  std::vector<uint8_t> get_bgr_data() const;
-
-  // Accessors
-  const std::vector<uint8_t>& raw_data() const {
-    return raw_data_;
-  }
-  bool is_loaded() const {
-    return loaded_;
-  }
-
-  // Get specific color component
-  uint8_t get_red(size_t index) const;
-  uint8_t get_green(size_t index) const;
-  uint8_t get_blue(size_t index) const;
-
-private:
-  std::vector<uint8_t> raw_data_;
-  bool loaded_ = false;
-
-  // Helper function to convert 6-bit component to 8-bit
-  static uint8_t scale_component(uint8_t value);
+/// @brief Immutable palette data structure containing RGB colors, shade tables, and translucent map
+struct Palette {
+    /// @brief Raw palette data - 256 entries × 3 bytes (6-bit RGB stored as raw bytes)
+    std::array<std::uint8_t, constants::PALETTE_DATA_SIZE> data{};
+    
+    /// @brief Number of shade tables in the palette
+    std::uint16_t shade_table_count = 0;
+    
+    /// @brief Shade table data - shade_table_count × 256 entries mapping original colors to shaded versions
+    std::vector<std::uint8_t> shade_tables{};
+    
+    /// @brief Translucent blend table - 64K entries for blending any two palette colors
+    /// Zeroed when absent in the source file
+    std::array<std::uint8_t, constants::TRANSLUCENT_TABLE_SIZE> translucent_map{};
+    
+    /// @brief Default constructor
+    Palette() = default;
+    
+    /// @brief Get a read-only view of the palette data
+    constexpr std::span<const std::uint8_t> palette_data() const noexcept {
+        return data;
+    }
+    
+    /// @brief Get a read-only view of the shade tables
+    std::span<const std::uint8_t> shade_data() const noexcept {
+        return shade_tables;
+    }
+    
+    /// @brief Get a read-only view of the translucent map
+    constexpr std::span<const std::uint8_t> translucent_data() const noexcept {
+        return translucent_map;
+    }
+    
+    /// @brief Check if shade tables are available
+    constexpr bool has_shade_tables() const noexcept {
+        return shade_table_count > 0 && !shade_tables.empty();
+    }
+    
+    /// @brief Check if translucent map is available (non-zero)
+    constexpr bool has_translucent_map() const noexcept {
+        // Check if the translucent map has any non-zero entries
+        for (std::size_t i = 0; i < constants::TRANSLUCENT_TABLE_SIZE; ++i) {
+            if (translucent_map[i] != 0) {
+                return true;
+            }
+        }
+        return false;
+    }
 };
 
-}  // namespace art2img
+/// @brief Load a palette from a file path
+/// @param path Path to the PALETTE.DAT file
+/// @return Expected Palette on success, Error on failure
+std::expected<Palette, Error> load_palette(const std::filesystem::path& path);
+
+/// @brief Load a palette from a byte span
+/// @param data Span containing the raw PALETTE.DAT data
+/// @return Expected Palette on success, Error on failure
+std::expected<Palette, Error> load_palette(std::span<const std::byte> data);
+
+/// @brief Convert a palette entry to 32-bit RGBA format
+/// @param palette The palette to read from
+/// @param index Palette index (0-255)
+/// @return 32-bit RGBA value with 8-bit components (0xFF for alpha)
+std::uint32_t palette_entry_to_rgba(const Palette& palette, std::uint8_t index);
+
+/// @brief Convert a shaded palette entry to 32-bit RGBA format
+/// @param palette The palette to read from
+/// @param shade Shade table index (0 to shade_table_count-1)
+/// @param index Original palette index (0-255)
+/// @return 32-bit RGBA value with 8-bit components (0xFF for alpha)
+std::uint32_t palette_shaded_entry_to_rgba(const Palette& palette, std::uint8_t shade, std::uint8_t index);
+
+/// @brief Get the RGB components of a palette entry as 8-bit values
+/// @param palette The palette to read from
+/// @param index Palette index (0-255)
+/// @return Tuple of (red, green, blue) components scaled to 8-bit
+std::tuple<std::uint8_t, std::uint8_t, std::uint8_t> palette_entry_to_rgb(
+    const Palette& palette, std::uint8_t index);
+
+/// @brief Get the RGB components of a shaded palette entry as 8-bit values
+/// @param palette The palette to read from
+/// @param shade Shade table index (0 to shade_table_count-1)
+/// @param index Original palette index (0-255)
+/// @return Tuple of (red, green, blue) components scaled to 8-bit
+std::tuple<std::uint8_t, std::uint8_t, std::uint8_t> palette_shaded_entry_to_rgb(
+    const Palette& palette, std::uint8_t shade, std::uint8_t index);
+
+} // namespace art2img

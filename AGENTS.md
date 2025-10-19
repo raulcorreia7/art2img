@@ -146,6 +146,12 @@ Expose canonical dev/build/test commands in `README`. Use multi-stage Dockerfile
 * If the context7 MCP is available, Always use context7 when I need code generation, setup or configuration steps, or library/API documentation. This means you should automatically use the Context7 MCP tools to resolve library id and get library docs without me having to explicitly ask.
 * If serena is available, reads its instructions, and try to activate the project and use its tools.
 
+**Mentality**
+* Simple, no complexity, no overengineering, don't try to be too smart.
+* Balance of simple, organic, easy, boring test patterns, composable code.
+* Avoid over engineering, complexity.
+* Favour maintanility, low cognitive complexity.
+
 **Shell**
 
 * `set -euo pipefail`; use functions; keep logic minimal
