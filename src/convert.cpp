@@ -126,7 +126,7 @@ namespace art2img
         }
 
         /// @brief Write RGBA value to destination buffer (RGBA format)
-        void write_rgba(mutable_u8_span dest, std::size_t offset, u32 rgba) noexcept
+        void write_rgba(mutable_u8_span dest, std::size_t offset, Color color) noexcept
         {
             if (offset + 3 < dest.size())
             {
