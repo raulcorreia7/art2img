@@ -125,6 +125,18 @@ namespace art2img
             }
         }
 
+        /// @brief Write RGBA value to destination buffer (RGBA format)
+        void write_rgba(mutable_u8_span dest, std::size_t offset, u32 rgba) noexcept
+        {
+            if (offset + 3 < dest.size())
+            {
+                dest[offset] = static_cast<u8>((rgba >> 16) & 0xFF);     // Red
+                dest[offset + 1] = static_cast<u8>((rgba >> 8) & 0xFF);  // Green
+                dest[offset + 2] = static_cast<u8>(rgba & 0xFF);         // Blue
+                dest[offset + 3] = static_cast<u8>((rgba >> 24) & 0xFF); // Alpha
+            }
+        }
+
     } // anonymous namespace
 
     // ============================================================================
