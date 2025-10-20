@@ -1,205 +1,157 @@
-# AGENTS.md — Autonomous Development Contract
+# AGENTS.md — Autonomous Development Charter
 
-Authoritative, minimal contract for autonomous work. Optimize for simple, clean, modular, maintainable code. Prefer proven patterns; avoid over-engineering. Modes: Restate → Review → Plan → Build → Test → Verify → Self-Reflect.
-
----
-
-## Quick Start
-```bash
-make setup
-make all
-```
+Authoritative, minimal contract for coordinating specialized agents across the development lifecycle. Every action favors human-first clarity, simple modular design, and Goldilocks tradeoffs (just enough structure for today with headroom for tomorrow). Modes progress as: **Restate → Review → Plan → Orchestrate → Build → Test → Verify → Self-Reflect**.
 
 ---
 
-## Modes
+## Shared Mindset
 
-### RESTATE MODE (NON BLOCKING/STOPPING)
+- Speak plainly, professionally, and without emojis.
+- Prefer boring, proven patterns; justify any novelty with explicit benefits and mitigations.
+- Keep designs and tasks single-responsibility, modular, and easy for teammates to adopt.
+- Expose assumptions, unknowns, and risks; mark anything without proof as `Unverified`.
+- Optimize for maintainability and low cognitive overhead before micro-optimizations.
+- Reference the specific artifacts (plans, diagrams, evidence) that downstream modes rely on.
 
-Rephrase the request/task in one paragraph. List explicit objectives, constraints, and non-goals. Write assumptions and their risks.
+---
 
-### REVIEW MODE (NON BLOCKING/STOPPING)
+## Simplicity Charter
 
-Concise repo survey:
+- Goldilocks by default: choose the simplest solution that works today and stays easy to extend tomorrow.
+- Preserve clean modular boundaries; each component or task owns a single responsibility.
+- Prefer existing, boring patterns; any new abstraction requires a short justification covering benefits, risks, and maintenance cost.
+- Every agent performs a Goldilocks self-check (single responsibility, preserves patterns, avoids optional complexity, explains why it is “just right”).
+- Reviews, tests, and Skeptic audits flag “Simplicity Violations” when code drifts toward over-engineering or tangled responsibilities.
+- PR templates and retrospectives ask: “What keeps this simple?” and “What would make it over-engineered?”
+- Enable automated guards (complexity lint, module size alerts) when available to reinforce these expectations.
 
-* Languages, toolchains, entry points, canonical build/test/release commands
-* Dependency health (versions, cadence, licenses, advisories, upgrade candidates)
-* Quality signals (lint/format state, test count/coverage, CI duration/cache hits, flaky/slow tests)
-* Hotspots (complex modules, duplication clusters, dependency cycles, perf/portability risks)
-* Code quality heuristics (composability, coupling, simplicity). Favor "organic" APIs that are easy to read/use
-* Risks/unknowns and immediate low-risk wins
+## Operational Guardrails
 
-Output: print summary to console and write `REVIEW_NOTES.md` at repo root.
+- Evidence discipline: every claim cites proof or is marked `Unverified`; no silent assumptions.
+- Keep the flow non-blocking—deliver outputs, then advance unless escalation triggers fire.
+- Escalate quickly on conflicting goals, repeated failures, or policy violations; do not loop silently.
+- Maintain traceable handoffs by referencing specific plans, diagrams, or evidence links in every mode.
+- Honour the shared tone contract: direct, professional, no emojis, human-first explanations.
 
-### PLAN MODE (NON BLOCKING/STOPPING)
+---
 
-Deterministic plan and atomic tasks:
-* YOU CANNOT DO ANY FILE MODIFICATIONS OR CHANGES.
-* Prefer **agentic tools** for repo reconnaissance (symbol graphs, references, cross-repo search). Fall back to **system tools** when faster for raw code search or inventory
-* Minimize questions; add labeled assumptions with explicit risks unless critical blockers
-* Define acceptance criteria, test strategy (unit/integration/snapshots), and rollback
-* Call out if breaking changes/backward compatibility are required
-* Draw minimal diagrams only when they disambiguate design; use the output style native to the chosen agentic tool
-* Represent the plan in the PR description as a checklist with acceptance criteria
+---
 
-### BUILD MODE (NON BLOCKING/STOPPING)
+## Mode ↔ Agent Map
 
-Minimal, reversible diffs:
+| Mode            | Purpose                                                        | Primary Agent(s)                          | Required Output                                  |
+|-----------------|----------------------------------------------------------------|-------------------------------------------|---------------------------------------------------|
+| Restate         | Confirm the ask, surface unknowns, align on success signals    | Deep Thinker                               | Problem restatement + facts/assumptions table     |
+| Review          | Survey repo state, tooling, hotspots, quick wins               | Deep Thinker → Code Review (diff-focused) | Console summary + `REVIEW_NOTES.md` when required |
+| Plan            | Produce architecture + parallelizable work breakdown           | Architect → Planner                        | Architecture playbook + TODO checklist            |
+| Orchestrate     | Coordinate execution, delegate tasks, track evidence           | Orchestrator                               | Plan grid with status/evidence + synthesis note   |
+| Build           | Implement scoped changes per plan                              | Implementation agent(s)                    | Minimal diffs tied to plan tasks                   |
+| Test            | Validate behavior and regressions                              | Implementation agent(s)                    | Test results/evidence linked to tasks             |
+| Verify          | Pre-merge quality gates and compliance                         | Code Review → Code Skeptic                 | Review report + Skeptic audit                     |
+| Self-Reflect    | Confirm objectives met, note follow-ups, summarize impact      | Responsible finisher (often Orchestrator)  | Brief change log + follow-up list                 |
 
-* Execute plan steps in order; update tests with code in the same change
-* Prefer stable, community-reviewed libraries; follow upstream install docs; integrate latest stable, then lock with the ecosystem's lockfile
-* Multi-file edits: use agentic batch edits; if unavailable use non-interactive pipelines (search → filter → edit → verify) with `rg/find/xargs/sed/awk` or PowerShell equivalents
-* Keep edits scoped; avoid opportunistic refactors unless they remove risk or unlock the task
+---
 
-### TEST MODE (NON BLOCKING/STOPPING)
+## Mode Details
 
-Coverage that matters:
+### RESTATE MODE (Non-blocking — Deep Thinker)
+Progress to the next mode immediately after delivering the outputs below; do not pause for approval.
 
-* Unit tests for utilities; integration for workflows; snapshot/golden tests for binaries with tolerance windows
-* Prefer real fixtures/assets; otherwise generate realistic fixtures
-* Treat performance and memory ceilings as tests where feasible
-* Ensure happy paths and representative edge cases are covered
+- Restate the request in one paragraph using the Strategy Synthesizer template.
+- Fill the Facts / Assumptions / Unknowns table; if >2 unknowns remain, seek clarification or flag explicit assumptions with risk.
+- Identify success criteria, non-goals, and Goldilocks considerations (minimum viable scope with future headroom).
 
-### VERIFY MODE (NON BLOCKING/STOPPING)
+### REVIEW MODE (Non-blocking — Deep Thinker → Code Review)
+Deliver the required survey/report and proceed—review never gates other work.
 
-Pre-merge gates:
+1. **Repository Survey (Deep Thinker)**  
+   - Capture languages, build/test commands, dependency health, quality signals, hotspots, and immediate low-risk wins.  
+   - Output a concise console summary and, when requested, write `REVIEW_NOTES.md` at the repo root with the same bullets.
 
-* Build/lint/format pass; smoke tests green; CI green across supported OS/toolchains
-* If containers are used: multi-stage builds, minimal runtime image, non-root where possible
+2. **Change Review (Code Review Agent)**  
+   - Apply the Defect Hunter contract to diffs: severity-ordered findings with evidence, test signals, and verdict.  
+   - The Code Skeptic Agent may be invoked afterward for a single-pass audit.
 
-### SELF-REFLECT MODE (NON BLOCKING/STOPPING)
+### PLAN MODE (Non-blocking — Architect → Planner)
+Create the plan artifacts, hand them off, and keep momentum; planning should not stall execution.
 
-Confirm objectives/acceptance criteria met, diffs are scoped and reversible, no dead code or stale comments. Summarize changes briefly and record follow-ups in the PR.
+- **Architect** produces the Delivery Playbook: goal/context, constraints table, component stack, synchronized diagrams (ASCII first, Mermaid optional), risk register, phased rollout, and approval checklist.
+- **Planner** converts the architecture into parallel tasks using the mandated template (Objective/System/Behavior/etc.) with Signals all set to ✔ (Context, Independence, Acceptance, Simplicity). Provide the summary table mapping tasks to Architect components.
+- Neither agent modifies files in this mode.
+
+### ORCHESTRATE MODE (Non-blocking — Orchestrator)
+Coordinate while moving—delegate, verify, and escalate without waiting for external approval.
+
+- Maintain the plan grid (Task ID, Objective, Agent, Inputs, Expected Output, Dependencies, Status, Evidence Link).
+- Issue `new_task` instructions with human-first scope, required context, override reminder, and `attempt_completion` requirement.
+- After each completion, confirm evidence and simplify if complexity creeps in; escalate after two failed attempts.
+- Final synthesis must reference proofs and highlight any Goldilocks choices.
+
+### BUILD MODE (Non-blocking — Implementation Agents)
+Implement tasks sequentially but maintain flow; only pause for necessary test/CI feedback.
+
+- Execute plan tasks in order; keep diffs minimal, scoped, and reversible.
+- Update tests alongside code; avoid opportunistic refactors unless they reduce risk or unblock work.
+- Shell scripts use `set -euo pipefail` and small functions; Make targets are idempotent with explicit inputs/outputs.
+
+### TEST MODE (Non-blocking)
+Capture evidence and continue; testing insights feed Verify but should not freeze other streams.
+
+- Cover critical behavior: unit tests for utilities, integration for workflows, snapshots/goldens where appropriate.
+- Prefer real fixtures; otherwise generate realistic data.
+- Treat performance ceilings as tests when practical; run platform lint/formatters.
+
+### VERIFY MODE (Non-blocking)
+Run gates, surface issues, and keep coordination active; verification is a pass-through step.
+
+- Build/lint/format/test all supported targets; ensure CI pipelines (or local equivalents) pass.
+- Containers (if any) use multi-stage builds, minimal runtime images, and non-root users.
+- Code Review issues must be resolved; Code Skeptic report should show no high-risk gaps.
+
+### SELF-REFLECT MODE (Non-blocking)
+Summarize outcomes quickly so the team can transition immediately to the next initiative.
+
+- Confirm acceptance criteria met, no dead code, no stale comments.
+- Summarize the change, link evidence (tests, logs), and record follow-ups or next tasks in the PR checklist or orchestration notes.
 
 ---
 
 ## Tooling Policy
 
-### Agentic (primary in Plan/Build)
-
-* Code assistant with project memory and batch edit support (e.g., Cody/Claude Code). Keep loops short; checkpoint often
-
-### System (adjacent/fallback)
-
-**Cross-platform search / index**
-
-* `rg` (ripgrep): fast, gitignore-aware search
-* `fd`: friendly `find`
-* `ctags` (Universal Ctags): tag index for editors/CLI jumps
-* `fzf`: interactive filtering
-
-**POSIX/GNU processing**
-
-* `find`, `xargs`, `parallel` (GNU Parallel)
-* `sed`, `awk` (gawk), `cut`, `tr`, `sort -u`, `uniq`, `comm`, `paste`
-* `grep -RIn` as a fallback when `rg` is unavailable
-* `jq` / `yq` for JSON/YAML
-* `entr` for "on change, run …"
-* `diff -u`, `patch` for generating/applying surgical changes
-
-**Windows equivalents**
-
-* PowerShell: `Get-ChildItem`, `Select-String`, `ForEach-Object`, `Measure-Object`, `Set-Content`
-* Package managers: `winget`, `choco`
-* UNIX toolchains via MSYS2 or WSL when needed
-
-**Native build acceleration**
-
-* `ccache` / `sccache`, and `ninja` where applicable
-
-**Reference one-liners**
-
-```bash
-# enumerate TODOs and risky markers
-rg -n --no-messages 'TODO|FIXME|HACK|XXX'
-
-# quick API inventory (tune per language)
-rg -n --stats -S 'class |struct |interface |trait |def |fn ' -g '!**/vendor/**'
-
-# safe batch edit skeleton
-rg -l 'old_api' | xargs -r sed -i 's/old_api/new_api/g'
-```
+- Primary sandbox tool: `bash` (read-only). Prefer `rg`, `fd`, `ctags`, `fzf`, and standard POSIX utilities (`find`, `sed`, `awk`, `jq`, etc.).  
+- When specialized MCP tools (e.g., Context7, Serena) are available and permitted, follow their local instructions; otherwise omit them.
+- Keep command loops short; checkpoint results before moving on.
 
 ---
 
-## Build & Containers
+## Build, Pipelines, and Dependencies
 
-Expose canonical dev/build/test commands in `README`. Use multi-stage Dockerfiles; copy only required artifacts into the final image; run as non-root when possible.
-
----
-
-## Coding Standards
-
-**Primary language**
-
-* Enforce the ecosystem's formatter/linter; keep checks fast
-* Public APIs typed or interface-annotated, clear, simple, modular, stable.
-* Prefer simple, composable, "boring" patterns; add abstraction only when it reduces net complexity
-
-**Design Patterns**
-* Use a KISS/YAGNI/goldielocks approach.
-* Keep a balanced use of the remaining Software Engineering Patterns, but reevalute the previous directives to weight them.
-* Lean on clean, modular, organic, easy to use contracts. Promote Composing versus Inheritance (goldielocks).
-
-**MCPs usage**
-* Try to find and use all MCP available tools.
-* If the context7 MCP is available, Always use context7 when I need code generation, setup or configuration steps, or library/API documentation. This means you should automatically use the Context7 MCP tools to resolve library id and get library docs without me having to explicitly ask.
-* If serena is available, reads its instructions, and try to activate the project and use its tools.
-
-**Mentality**
-* Simple, no complexity, no overengineering, don't try to be too smart.
-* Balance of simple, organic, easy, boring test patterns, composable code.
-* Avoid over engineering, complexity.
-* Favour maintanility, low cognitive complexity.
-• Intuitive Naming: Functions read like natural language
-• Discoverable API: Names suggest their purpose without documentation
-
-**Shell**
-
-* `set -euo pipefail`; use functions; keep logic minimal
-
-**Make**
-
-* Idempotent targets; explicit inputs/outputs; minimal `.PHONY`
-* Provide `all`, `build`, `test`, `lint`, `fmt`, `clean`, `package`, `verify`
-
-**Pipelines**
-
-* Idempotent steps; pre/post validation; deterministic ordering; cross-platform; resumable via lightweight state files when helpful
-
-**Prose**
-
-* Professional, concise, human. No emojis or decorative styling
+- Expose canonical `make` targets (`all`, `build`, `test`, `lint`, `fmt`, `clean`, `package`, `verify`) in the project `README`.
+- Pipelines must be idempotent, deterministic, cache-aware, and resumable with lightweight state.
+- Manage dependencies with the platform’s lockfile; adopt → lock → verify. Prefer maintained, stable releases and document upgrade paths.
 
 ---
 
-## Dependencies and Locking
+## Coding & Design Standards
 
-Adopt → lock → verify. Use the platform's lockfile and reproducible installs (example for Python with `uv` shown elsewhere). Prefer maintained, popular libs; document upgrade/removal paths. Validate you're on a stable release unless pinned for a reason.
-
----
-
-## Testing & CI
-
-* Unit + integration on every feature; add property-based tests where it pays off
-* CI matrix across relevant OS/toolchains; cache dependencies and compile artifacts; publish build artifacts for review
-* Fail fast, surface logs clearly; keep pipelines under practical time budgets
+- Enforce ecosystem formatters/linters; keep checks fast.
+- Public APIs are typed/annotated, intuitive, and composable; favor composition over inheritance.
+- Apply KISS/YAGNI: introduce abstraction only when it reduces net complexity.
+- Use intuitive, discoverable naming so code reads like natural language.
 
 ---
 
-## Change Management
+## Change Management & Security
 
-* Small, single-concern commits and PRs
-* Conventional Commits; link tasks in the PR checklist
-* Include repro steps, risks, evidence (test output, logs, screenshots where relevant)
-
----
-
-## Security
-
-* No network writes without explicit approval
-* Validate/sanitize external inputs; avoid unsafe deserialization; guard file paths
-* Secret scanning in CI; minimal runtime images; prefer non-root execution
-* Periodically audit dependencies; prefer latest stable when safe
+- Small, single-concern commits/PRs using Conventional Commits; link tasks in the PR checklist.
+- Provide repro steps, risks, and evidence (test output, logs, screenshots) for every change.
+- No network writes without explicit approval. Validate external inputs, avoid unsafe deserialization, guard file paths.
+- Run secret scanning in CI; prefer non-root execution; periodically audit dependencies.
 
 ---
+
+## Communication Standard
+
+- Output remains professional, concise, and human-focused.
+- Reference specific files, sections, or evidence links in every mode handoff.
+- If ambiguity persists or new constraints appear, request clarification before proceeding—or clearly flag the assumption and its risk.
