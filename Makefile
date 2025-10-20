@@ -31,8 +31,8 @@ all: build
 
 # Native Linux build
 build:
-	@$(CMAKE) -S . -B $(BUILD_DIR)/linux_x64 -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
-	@$(CMAKE) --build $(BUILD_DIR)/linux_x64 --parallel $(JOBS)
+	@$(CMAKE) -S . -B $(BUILD_DIR)/linux-x64 -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
+	@$(CMAKE) --build $(BUILD_DIR)/linux-x64 --parallel $(JOBS)
 
 # ============================================================================
 # Cross-compilation Support Functions
@@ -59,25 +59,25 @@ check-osxcross:
 
 # Windows cross-compilation targets
 windows-x64-mingw: check-mingw
-	@$(CMAKE) -B $(BUILD_DIR)/windows_x64 -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+	@$(CMAKE) -B $(BUILD_DIR)/windows-x64 -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 		-DCMAKE_TOOLCHAIN_FILE=cmake/windows_x64.cmake
-	@$(CMAKE) --build $(BUILD_DIR)/windows_x64 --parallel $(JOBS)
+	@$(CMAKE) --build $(BUILD_DIR)/windows-x64 --parallel $(JOBS)
 
 windows-x86-mingw: check-mingw
-	@$(CMAKE) -B $(BUILD_DIR)/windows_x86 -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+	@$(CMAKE) -B $(BUILD_DIR)/windows-x86 -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 		-DCMAKE_TOOLCHAIN_FILE=cmake/windows_x86.cmake
-	@$(CMAKE) --build $(BUILD_DIR)/windows_x86 --parallel $(JOBS)
+	@$(CMAKE) --build $(BUILD_DIR)/windows-x86 --parallel $(JOBS)
 
 # macOS cross-compilation targets
 macos-x64-osxcross: check-osxcross
-	@$(CMAKE) -B $(BUILD_DIR)/macos_x64 -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+	@$(CMAKE) -B $(BUILD_DIR)/macos-x64 -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 		-DCMAKE_TOOLCHAIN_FILE=cmake/macos_x64.cmake
-	@$(CMAKE) --build $(BUILD_DIR)/macos_x64 --parallel $(JOBS)
+	@$(CMAKE) --build $(BUILD_DIR)/macos-x64 --parallel $(JOBS)
 
 macos-arm64-osxcross: check-osxcross
-	@$(CMAKE) -B $(BUILD_DIR)/macos_arm64 -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+	@$(CMAKE) -B $(BUILD_DIR)/macos-arm64 -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 		-DCMAKE_TOOLCHAIN_FILE=cmake/macos_arm64.cmake
-	@$(CMAKE) --build $(BUILD_DIR)/macos_arm64 --parallel $(JOBS)
+	@$(CMAKE) --build $(BUILD_DIR)/macos-arm64 --parallel $(JOBS)
 
 # ============================================================================
 # Platform Aliases
@@ -91,7 +91,56 @@ macos: macos-x64-osxcross macos-arm64-osxcross
 
 # Run tests (Linux native)
 test: build
-	@cd $(BUILD_DIR)/linux_x64 && ctest --output-on-failure --parallel 1
+	@cd $(BUILD_DIR)/linux-x64 && ctest --output-on-failure --parallel 1
+
+# Run integration tests only (tests 91-96)
+test-intg: build
+	@cd $(BUILD_DIR)/linux-x64 && ctest --output-on-failure --parallel 1 -I 91,96
+
+# Run unit tests only (tests 1-90, 97-117)
+test-unit: build
+	@cd $(BUILD_DIR)/linux-x64 && ctest --output-on-failure --parallel 1 -I 1,90 && ctest --output-on-failure --parallel 1 -I 97,117
+
+
+
+# Cross-compilation test targets
+test-windows-x64: windows-x64-mingw
+	@echo "Testing Windows x64 build..."
+	@if command -v wine >/dev/null 2>&1; then \
+		wine $(BUILD_DIR)/windows-x64/tests/art2img_tests.exe --help >/dev/null 2>&1 && \
+		echo "Windows x64 test executable runs successfully"; \
+	else \
+		echo "Wine not available, cannot test Windows executable"; \
+	fi
+
+test-windows-x86: windows-x86-mingw
+	@echo "Testing Windows x86 build..."
+	@if command -v wine >/dev/null 2>&1; then \
+		wine $(BUILD_DIR)/windows-x86/tests/art2img_tests.exe --help >/dev/null 2>&1 && \
+		echo "Windows x86 test executable runs successfully"; \
+	else \
+		echo "Wine not available, cannot test Windows executable"; \
+	fi
+
+test-macos-x64: macos-x64-osxcross
+	@echo "Testing macOS x64 build..."
+	@if [ -f "$(BUILD_DIR)/macos-x64/tests/art2img_tests" ]; then \
+		echo "macOS x64 test executable built successfully"; \
+	else \
+		echo "macOS x64 test executable not found"; \
+	fi
+
+test-macos-arm64: macos-arm64-osxcross
+	@echo "Testing macOS ARM64 build..."
+	@if [ -f "$(BUILD_DIR)/macos-arm64/tests/art2img_tests" ]; then \
+		echo "macOS ARM64 test executable built successfully"; \
+	else \
+		echo "macOS ARM64 test executable not found"; \
+	fi
+
+# Platform test aliases
+test-windows: test-windows-x64 test-windows-x86
+test-macos: test-macos-x64 test-macos-arm64
 
 # Install project
 install: build
@@ -130,6 +179,14 @@ lint:
 	@cd $(BUILD_DIR)/lint && run-clang-tidy -config '{}' -p . $$(shell $(FIND) .. -name '*.cpp' -o -name '*.hpp') || true
 	@echo "Static analysis completed"
 
+# Generate code coverage report
+coverage: build
+	@echo "Generating code coverage report..."
+	@cd $(BUILD_DIR)/linux-x64 && \
+		make art2img_tests && \
+		./tests/art2img_tests && \
+		gcovr --html-details coverage.html --root ../.. --print-summary
+
 # ============================================================================
 # Help Target
 # ============================================================================
@@ -154,7 +211,12 @@ help:
 	@echo "  macos                  - All macOS cross-compilation"
 	@echo ""
 	@echo "DEVELOPMENT:"
-	@echo "  test                   - Run tests (Linux)"
+	@echo "  test                   - Run all tests (Linux)"
+	@echo "  test-unit              - Run unit tests only"
+	@echo "  test-intg              - Run integration tests only"
+	@echo "  test-windows           - Test Windows cross-compiled builds"
+	@echo "  test-macos             - Test macOS cross-compiled builds"
+	@echo "  coverage               - Generate code coverage report"
 	@echo "  fmt                    - Format source code"
 	@echo "  fmt-check              - Check formatting"
 	@echo "  lint                   - Run static analysis"

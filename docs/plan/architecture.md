@@ -211,7 +211,7 @@ Parallelism (thread pool) wraps steps 3–6 only.
 
 - Unit: doctest suites per module, including corruption fixtures.
 - Regression: compare encoded outputs vs. golden files.
-- Integration: Bats CLI runs (single file, directory, shading, transparency, failure paths).
+- Integration: CLI runs (single file, directory, shading, transparency, failure paths).
 - Sanitizers: ASAN / UBSAN / LSAN jobs triggered via CMake options.
 
 ---
