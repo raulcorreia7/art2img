@@ -49,46 +49,54 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-cpm-
           
-    - name: Configure CMake
+    - name: Configure CMake (Windows)
+      if: runner.os == 'Windows'
       run: |
-        if [ "${{ runner.os }}" = "Windows" ]; then
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON ${{ matrix.arch && format('-A {0}', matrix.arch) || '' }}
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON ${{ matrix.arch && format('-A {0}', matrix.arch) || '' }}
+        
+    - name: Configure CMake (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        if [ "${{ runner.os }}" = "macOS" ]; then
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
         else
           which ninja && cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -G Ninja || cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
         fi
         
-    - name: Build
+    - name: Build (Windows)
+      if: runner.os == 'Windows'
       run: |
-        if [ "${{ runner.os }}" = "Windows" ]; then
-          cmake --build build --config Debug --parallel
+        cmake --build build --config Debug --parallel
+        
+    - name: Build (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        if [ "${{ runner.os }}" = "macOS" ]; then
+          cmake --build build --config Debug
         else
           which ninja && cmake --build build --config Debug --parallel || cmake --build build --config Debug
         fi
         
     - name: Build Verification
+      if: always()
+      shell: bash
       run: |
         cd build
         if [ "${{ runner.os }}" = "Windows" ]; then
-          if (!(Test-Path "tests/art2img_tests.exe")) { exit 1 }
+          if [ ! -f "tests/art2img_tests.exe" ] && [ ! -f "tests/Debug/art2img_tests.exe" ]; then exit 1; fi
         else
           if [ ! -f "tests/art2img_tests" ]; then exit 1; fi
         fi
-      shell: powershell
         
-    - name: Test (Windows)
-      if: runner.os == 'Windows'
-      shell: powershell
+    - name: Test
+      if: always()
+      shell: bash
       continue-on-error: true
       run: |
         cd build
-        ctest --output-on-failure --parallel 1 --timeout 300
-        
-    - name: Test (Unix)
-      if: runner.os != 'Windows'
-      continue-on-error: true
-      run: |
-        cd build
-        if [ "${{ runner.os }}" = "macOS" ]; then
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          ctest --output-on-failure --parallel 1 --timeout 300
+        elif [ "${{ runner.os }}" = "macOS" ]; then
           ctest --output-on-failure --parallel $(sysctl -n hw.ncpu) --timeout 300
         else
           ctest --output-on-failure --parallel $(nproc) --timeout 300
@@ -96,6 +104,7 @@ jobs:
         
     - name: Test Status Check
       if: always()
+      shell: bash
       run: |
         if [ "${{ job.status }}" = "failure" ]; then
           echo "Tests failed on ${{ matrix.os }}"

@@ -81,7 +81,9 @@ std::error_code map_system_error(const std::error_code& ec) {
       // Network/mount related filesystem errors
       case ESTALE:     // Stale file handle
       case EREMOTE:    // Object is remote
+#ifdef EREMOTEIO
       case EREMOTEIO:  // Remote I/O error
+#endif
 
         return make_error_code(errc::io_failure);
       default:
