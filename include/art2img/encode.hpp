@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <art2img/convert.hpp>
+#include <art2img/detail/format_utils.hpp>
 #include <art2img/error.hpp>
 #include <art2img/types.hpp>
 
@@ -122,6 +123,8 @@ std::expected<std::monostate, Error> validate_image_for_encoding(
 /// @brief Get a string representation of the image format
 /// @param format The image format
 /// @return String name of the format
-const char* format_to_string(ImageFormat format);
+inline const char* format_to_string(ImageFormat format) {
+  return detail::format_to_string(format);
+}
 
 }  // namespace art2img

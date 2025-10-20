@@ -14,6 +14,7 @@
 
 // Core modules
 #include "art.hpp"
+#include "convenience.hpp"
 #include "convert.hpp"
 #include "encode.hpp"
 #include "io.hpp"
