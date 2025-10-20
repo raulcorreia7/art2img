@@ -9,16 +9,19 @@
 /// - Legacy format compatibility with art2tga.c
 /// - Parallel processing of multiple ART files
 
-#include "../test_helpers.hpp"
-#include <art2img/art.hpp>
-#include <art2img/error.hpp>
-#include <doctest/doctest.h>
 #include <filesystem>
 #include <fstream>
 #include <regex>
 #include <sstream>
 #include <string>
 #include <vector>
+
+#include <doctest/doctest.h>
+
+#include <art2img/art.hpp>
+#include <art2img/error.hpp>
+
+#include "../test_helpers.hpp"
 
 namespace {
 
@@ -58,7 +61,7 @@ struct AnimationTestFixture {
     std::vector<std::filesystem::path> art_files;
     const std::filesystem::path assets_dir = TEST_ASSET_SOURCE_DIR;
 
-    for (const auto &entry : std::filesystem::directory_iterator(assets_dir)) {
+    for (const auto& entry : std::filesystem::directory_iterator(assets_dir)) {
       if (entry.path().extension() == ".ART") {
         art_files.push_back(entry.path());
       }
@@ -72,7 +75,6 @@ struct AnimationTestFixture {
   static std::vector<std::byte> create_animated_art_file(
       std::uint32_t tile_start = 0, std::uint16_t tile_width = 8,
       std::uint16_t tile_height = 8, std::uint32_t picanm = 0x12345678) {
-
     std::vector<std::byte> data;
 
     // Header: version (1), numtiles (1), localtilestart, localtileend
@@ -87,9 +89,9 @@ struct AnimationTestFixture {
     write_u32_le(data, localtileend);
 
     // Write tile arrays
-    write_u16_le(data, tile_width);  // tilesizx[0]
-    write_u16_le(data, tile_height); // tilesizy[0]
-    write_u32_le(data, picanm);      // picanm[0] (with animation)
+    write_u16_le(data, tile_width);   // tilesizx[0]
+    write_u16_le(data, tile_height);  // tilesizy[0]
+    write_u32_le(data, picanm);       // picanm[0] (with animation)
 
     // Write pixel data (column-major, filled with test pattern)
     const std::size_t pixel_count = static_cast<std::size_t>(tile_width) *
@@ -102,25 +104,24 @@ struct AnimationTestFixture {
   }
 
   /// @brief Create a test ART file with no animation
-  static std::vector<std::byte>
-  create_non_animated_art_file(std::uint32_t tile_start = 0,
-                               std::uint16_t tile_width = 8,
-                               std::uint16_t tile_height = 8) {
+  static std::vector<std::byte> create_non_animated_art_file(
+      std::uint32_t tile_start = 0, std::uint16_t tile_width = 8,
+      std::uint16_t tile_height = 8) {
     return create_animated_art_file(tile_start, tile_width, tile_height,
-                                    0); // picanm = 0 (no animation)
+                                    0);  // picanm = 0 (no animation)
   }
 
-private:
-  static void write_u8(std::vector<std::byte> &data, std::uint8_t value) {
+ private:
+  static void write_u8(std::vector<std::byte>& data, std::uint8_t value) {
     data.push_back(static_cast<std::byte>(value));
   }
 
-  static void write_u16_le(std::vector<std::byte> &data, std::uint16_t value) {
+  static void write_u16_le(std::vector<std::byte>& data, std::uint16_t value) {
     data.push_back(static_cast<std::byte>(value & 0xFF));
     data.push_back(static_cast<std::byte>((value >> 8) & 0xFF));
   }
 
-  static void write_u32_le(std::vector<std::byte> &data, std::uint32_t value) {
+  static void write_u32_le(std::vector<std::byte>& data, std::uint32_t value) {
     data.push_back(static_cast<std::byte>(value & 0xFF));
     data.push_back(static_cast<std::byte>((value >> 8) & 0xFF));
     data.push_back(static_cast<std::byte>((value >> 16) & 0xFF));
@@ -128,10 +129,9 @@ private:
   }
 };
 
-} // anonymous namespace
+}  // anonymous namespace
 
 TEST_SUITE("Animation Export Unit Tests") {
-
   TEST_CASE_FIXTURE(AnimationTestFixture,
                     "AnimationExportConfig default values") {
     art2img::AnimationExportConfig default_config;
@@ -151,7 +151,7 @@ TEST_SUITE("Animation Export Unit Tests") {
     auto art_result = art2img::load_art_bundle(test_data);
 
     REQUIRE(art_result.has_value());
-    const auto &art_data = art_result.value();
+    const auto& art_data = art_result.value();
 
     // Export animation data
     auto export_result = art2img::export_animation_data(art_data, config);
@@ -176,7 +176,7 @@ TEST_SUITE("Animation Export Unit Tests") {
     auto art_result = art2img::load_art_bundle(test_data);
 
     REQUIRE(art_result.has_value());
-    const auto &art_data = art_result.value();
+    const auto& art_data = art_result.value();
 
     // Export animation data
     auto export_result = art2img::export_animation_data(art_data, config);
@@ -204,7 +204,7 @@ TEST_SUITE("Animation Export Unit Tests") {
     auto art_result = art2img::load_art_bundle(test_data);
 
     REQUIRE(art_result.has_value());
-    const auto &art_data = art_result.value();
+    const auto& art_data = art_result.value();
 
     // Export animation data
     auto export_result =
@@ -241,7 +241,7 @@ TEST_SUITE("Animation Export Unit Tests") {
     auto art_result = art2img::load_art_bundle(test_data);
 
     REQUIRE(art_result.has_value());
-    const auto &art_data = art_result.value();
+    const auto& art_data = art_result.value();
 
     // Export animation data
     auto export_result = art2img::export_animation_data(art_data, config_bmp);
@@ -267,7 +267,7 @@ TEST_SUITE("Animation Export Unit Tests") {
     auto art_result = art2img::load_art_bundle(test_data);
 
     REQUIRE(art_result.has_value());
-    const auto &art_data = art_result.value();
+    const auto& art_data = art_result.value();
 
     // Export animation data
     auto export_result =
@@ -284,21 +284,20 @@ TEST_SUITE("Animation Export Unit Tests") {
 }
 
 TEST_SUITE("Animation Export Integration Tests") {
-
   TEST_CASE_FIXTURE(AnimationTestFixture,
                     "export all test ART files in parallel") {
     const auto art_files = get_test_art_files();
 
     // Skip if no test assets found
     if (art_files.empty()) {
-      return; // Skip test if no assets found
+      return;  // Skip test if no assets found
     }
 
     INFO("Found ", art_files.size(), " ART files for testing");
     CHECK(art_files.size() > 0);
 
     // Test loading and exporting each ART file
-    for (const auto &art_file : art_files) {
+    for (const auto& art_file : art_files) {
       INFO("Testing file: ", art_file.filename().string());
 
       CHECK(std::filesystem::exists(art_file));
@@ -311,17 +310,25 @@ TEST_SUITE("Animation Export Integration Tests") {
         continue;
       }
 
-      const auto &art_data = art_result.value();
+      const auto& art_data = art_result.value();
       CHECK(art_data.is_valid());
 
-      // Export animation data
-      auto export_result = art2img::export_animation_data(art_data, config);
-      if (!export_result.has_value()) {
-        // Some files might not have animation data
-        continue;
-      }
+      // Create unique config for this ART file to avoid race conditions
+      art2img::AnimationExportConfig file_config = config;
+      file_config.ini_filename =
+          art_file.filename().stem().string() + "_animdata.ini";
 
-      CHECK(ini_file_exists());
+      // Export animation data
+      auto export_result =
+          art2img::export_animation_data(art_data, file_config);
+      REQUIRE(
+          export_result
+              .has_value());  // Export should always succeed unless there's an I/O error
+
+      // Check that the unique INI file was created
+      const std::filesystem::path ini_path =
+          temp_dir / file_config.ini_filename;
+      CHECK(std::filesystem::exists(ini_path));
     }
   }
 
@@ -332,7 +339,7 @@ TEST_SUITE("Animation Export Integration Tests") {
     auto art_result = art2img::load_art_bundle(test_data);
 
     REQUIRE(art_result.has_value());
-    const auto &art_data = art_result.value();
+    const auto& art_data = art_result.value();
 
     // Export animation data
     auto export_result = art2img::export_animation_data(art_data, config);
@@ -368,7 +375,7 @@ TEST_SUITE("Animation Export Integration Tests") {
         TEST_ASSET_SOURCE_DIR "/TILES000.ART";
 
     if (!std::filesystem::exists(art_file)) {
-      return; // Skip test if file not found
+      return;  // Skip test if file not found
     }
 
     INFO("Found TILES000.ART for animation detection testing");
@@ -377,7 +384,7 @@ TEST_SUITE("Animation Export Integration Tests") {
     // Load the real ART file
     auto art_result = art2img::load_art_bundle(art_file);
     REQUIRE(art_result.has_value());
-    const auto &art_data = art_result.value();
+    const auto& art_data = art_result.value();
 
     CHECK(art_data.is_valid());
     CHECK(art_data.tile_count() > 0);
@@ -412,7 +419,6 @@ TEST_SUITE("Animation Export Integration Tests") {
 }
 
 TEST_SUITE("Animation Export Error Handling") {
-
   TEST_CASE_FIXTURE(AnimationTestFixture, "no animation data error") {
     // Configure to exclude non-animated tiles
     art2img::AnimationExportConfig config_exclude = config;
@@ -423,7 +429,7 @@ TEST_SUITE("Animation Export Error Handling") {
     auto art_result = art2img::load_art_bundle(test_data);
 
     REQUIRE(art_result.has_value());
-    const auto &art_data = art_result.value();
+    const auto& art_data = art_result.value();
 
     // Export animation data - should succeed but create empty INI
     auto export_result =
@@ -477,7 +483,7 @@ TEST_SUITE("Animation Export Error Handling") {
   TEST_CASE_FIXTURE(AnimationTestFixture, "invalid ART data") {
     // Create corrupted ART data
     std::vector<std::byte> corrupted_data = {
-        std::byte{0x01}}; // Just version byte
+        std::byte{0x01}};  // Just version byte
 
     // Try to load corrupted data
     auto art_result = art2img::load_art_bundle(corrupted_data);

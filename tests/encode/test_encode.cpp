@@ -1,11 +1,13 @@
 /// @file test_encode.cpp
 /// @brief Unit tests for image encoding functions
 
+#include <cstring>
+#include <vector>
+
+#include <doctest/doctest.h>
+
 #include <art2img/convert.hpp>
 #include <art2img/encode.hpp>
-#include <cstring>
-#include <doctest/doctest.h>
-#include <vector>
 
 using namespace art2img;
 
@@ -19,10 +21,10 @@ Image create_test_image(u16 width, u16 height) {
   for (u16 y = 0; y < height; ++y) {
     for (u16 x = 0; x < width; ++x) {
       const std::size_t offset = (static_cast<std::size_t>(y) * width + x) * 4;
-      image.data[offset + 0] = static_cast<u8>(x * 255 / width);  // Red
-      image.data[offset + 1] = static_cast<u8>(y * 255 / height); // Green
-      image.data[offset + 2] = 128;                               // Blue
-      image.data[offset + 3] = 255;                               // Alpha
+      image.data[offset + 0] = static_cast<u8>(x * 255 / width);   // Red
+      image.data[offset + 1] = static_cast<u8>(y * 255 / height);  // Green
+      image.data[offset + 2] = 128;                                // Blue
+      image.data[offset + 3] = 255;                                // Alpha
     }
   }
 
@@ -30,29 +32,29 @@ Image create_test_image(u16 width, u16 height) {
 }
 
 /// @brief Check if encoded data has valid format headers
-bool check_png_header(const std::vector<byte> &data) {
+bool check_png_header(const std::vector<byte>& data) {
   return data.size() >= 8 && data[0] == static_cast<byte>(0x89) &&
-         data[1] == static_cast<byte>(0x50) && // 'P'
-         data[2] == static_cast<byte>(0x4E) && // 'N'
-         data[3] == static_cast<byte>(0x47) && // 'G'
+         data[1] == static_cast<byte>(0x50) &&  // 'P'
+         data[2] == static_cast<byte>(0x4E) &&  // 'N'
+         data[3] == static_cast<byte>(0x47) &&  // 'G'
          data[4] == static_cast<byte>(0x0D) &&
          data[5] == static_cast<byte>(0x0A) &&
          data[6] == static_cast<byte>(0x1A) &&
          data[7] == static_cast<byte>(0x0A);
 }
 
-bool check_tga_header(const std::vector<byte> &data) {
+bool check_tga_header(const std::vector<byte>& data) {
   return data.size() >= 18 &&
          (data[2] == static_cast<byte>(2) ||
-          data[2] == static_cast<byte>(10)); // Uncompressed or RLE compressed
+          data[2] == static_cast<byte>(10));  // Uncompressed or RLE compressed
 }
 
-bool check_bmp_header(const std::vector<byte> &data) {
-  return data.size() >= 54 && data[0] == static_cast<byte>(0x42) && // 'B'
-         data[1] == static_cast<byte>(0x4D);                        // 'M'
+bool check_bmp_header(const std::vector<byte>& data) {
+  return data.size() >= 54 && data[0] == static_cast<byte>(0x42) &&  // 'B'
+         data[1] == static_cast<byte>(0x4D);                         // 'M'
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 TEST_SUITE("encode") {
   // ============================================================================
@@ -79,7 +81,7 @@ TEST_SUITE("encode") {
   }
 
   TEST_CASE("validate_image_for_encoding - invalid dimensions") {
-    Image image = create_test_image(0, 64); // Zero width
+    Image image = create_test_image(0, 64);  // Zero width
     const ImageView view = image_view(image);
 
     const auto result = validate_image_for_encoding(view);
@@ -98,8 +100,8 @@ TEST_SUITE("encode") {
     const auto result = encode_png(view);
     REQUIRE(result.has_value());
 
-    const std::vector<byte> &encoded = result.value();
-    CHECK(encoded.size() > 100); // PNG should have some reasonable size
+    const std::vector<byte>& encoded = result.value();
+    CHECK(encoded.size() > 100);  // PNG should have some reasonable size
     CHECK(check_png_header(encoded));
   }
 
@@ -140,8 +142,8 @@ TEST_SUITE("encode") {
     const auto result = encode_tga(view);
     REQUIRE(result.has_value());
 
-    const std::vector<byte> &encoded = result.value();
-    CHECK(encoded.size() > 50); // TGA should have some reasonable size
+    const std::vector<byte>& encoded = result.value();
+    CHECK(encoded.size() > 50);  // TGA should have some reasonable size
     CHECK(check_tga_header(encoded));
   }
 
@@ -170,8 +172,8 @@ TEST_SUITE("encode") {
     const auto result = encode_bmp(view);
     REQUIRE(result.has_value());
 
-    const std::vector<byte> &encoded = result.value();
-    CHECK(encoded.size() > 100); // BMP should have some reasonable size
+    const std::vector<byte>& encoded = result.value();
+    CHECK(encoded.size() > 100);  // BMP should have some reasonable size
     CHECK(check_bmp_header(encoded));
   }
 
@@ -266,7 +268,7 @@ TEST_SUITE("encode") {
   TEST_CASE("encode functions - invalid image") {
     // Create an image with invalid stride
     Image image = create_test_image(16, 16);
-    image.stride = 1; // Invalid stride
+    image.stride = 1;  // Invalid stride
     const ImageView view(image.data, image.width, image.height, image.stride);
 
     const auto png_result = encode_png(view);
@@ -290,7 +292,7 @@ TEST_SUITE("encode") {
     const std::vector<std::pair<u16, u16>> sizes = {
         {1, 1}, {8, 8}, {16, 16}, {32, 32}, {64, 64}, {128, 128}};
 
-    for (const auto &[width, height] : sizes) {
+    for (const auto& [width, height] : sizes) {
       const Image image = create_test_image(width, height);
       const ImageView view = image_view(image);
 
@@ -308,4 +310,4 @@ TEST_SUITE("encode") {
     }
   }
 
-} // TEST_SUITE("encode")
+}  // TEST_SUITE("encode")

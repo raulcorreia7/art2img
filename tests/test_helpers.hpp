@@ -24,8 +24,8 @@ inline std::filesystem::path get_test_output_dir() {
 /// @brief Get integration test output directory
 /// @param test_name Name of the specific test
 /// @return Path to integration test directory
-inline std::filesystem::path
-get_integration_test_dir(const std::string &test_name) {
+inline std::filesystem::path get_integration_test_dir(
+    const std::string& test_name) {
   return get_test_output_dir() / "integration" / test_name;
 }
 
@@ -33,21 +33,21 @@ get_integration_test_dir(const std::string &test_name) {
 /// @param category Category of unit test (export, io, art, etc.)
 /// @param test_name Name of the specific test
 /// @return Path to unit test directory
-inline std::filesystem::path get_unit_test_dir(const std::string &category,
-                                               const std::string &test_name) {
+inline std::filesystem::path get_unit_test_dir(const std::string& category,
+                                               const std::string& test_name) {
   return get_test_output_dir() / "unit" / category / test_name;
 }
 
 /// @brief Get CLI test output directory
 /// @param test_name Name of the CLI test
 /// @return Path to CLI test directory
-inline std::filesystem::path get_cli_test_dir(const std::string &test_name) {
+inline std::filesystem::path get_cli_test_dir(const std::string& test_name) {
   return get_test_output_dir() / "cli" / test_name;
 }
 
 /// @brief Ensure test output directory exists
 /// @param dir Directory path to create
-inline void ensure_test_output_dir(const std::filesystem::path &dir) {
+inline void ensure_test_output_dir(const std::filesystem::path& dir) {
   std::error_code ec;
   std::filesystem::create_directories(dir, ec);
   if (ec) {
@@ -58,7 +58,7 @@ inline void ensure_test_output_dir(const std::filesystem::path &dir) {
 
 /// @brief Clean up test output directory
 /// @param dir Directory path to remove
-inline void cleanup_test_output_dir(const std::filesystem::path &dir) {
+inline void cleanup_test_output_dir(const std::filesystem::path& dir) {
   std::error_code ec;
   std::filesystem::remove_all(dir, ec);
   if (ec) {
@@ -69,9 +69,9 @@ inline void cleanup_test_output_dir(const std::filesystem::path &dir) {
 
 /// @brief Print test output directory info (for debugging)
 /// @param context Context message
-inline void debug_test_output_dir(const std::string &context) {
+inline void debug_test_output_dir(const std::string& context) {
   std::cout << "Test output directory (" << context
             << "): " << get_test_output_dir() << std::endl;
 }
 
-} // namespace test_helpers
+}  // namespace test_helpers

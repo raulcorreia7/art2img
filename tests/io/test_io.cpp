@@ -1,14 +1,17 @@
 /// @file test_io.cpp
 /// @brief Unit tests for file I/O functions
 
-#include "../test_helpers.hpp"
-#include <art2img/io.hpp>
 #include <cstring>
-#include <doctest/doctest.h>
 #include <filesystem>
 #include <fstream>
 #include <string>
 #include <vector>
+
+#include <doctest/doctest.h>
+
+#include <art2img/io.hpp>
+
+#include "../test_helpers.hpp"
 
 using namespace art2img;
 
@@ -22,7 +25,7 @@ std::filesystem::path create_temp_dir() {
 }
 
 /// @brief Clean up a temporary directory
-void cleanup_temp_dir(const std::filesystem::path &dir) {
+void cleanup_temp_dir(const std::filesystem::path& dir) {
   test_helpers::cleanup_test_output_dir(dir);
 }
 
@@ -51,7 +54,7 @@ std::string create_test_text_data() {
          "End of test data.";
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 TEST_SUITE("io") {
   // ============================================================================
@@ -66,7 +69,7 @@ TEST_SUITE("io") {
     const auto test_data = create_test_binary_data();
     {
       std::ofstream file(test_file, std::ios::binary);
-      file.write(reinterpret_cast<const char *>(test_data.data()),
+      file.write(reinterpret_cast<const char*>(test_data.data()),
                  test_data.size());
     }
 
@@ -74,7 +77,7 @@ TEST_SUITE("io") {
     const auto result = read_binary_file(test_file);
     REQUIRE(result.has_value());
 
-    const auto &read_data = result.value();
+    const auto& read_data = result.value();
     CHECK(read_data.size() == test_data.size());
     CHECK(std::memcmp(read_data.data(), test_data.data(), test_data.size()) ==
           0);
@@ -108,7 +111,7 @@ TEST_SUITE("io") {
     REQUIRE(file.good());
 
     std::vector<types::byte> read_back(test_data.size());
-    file.read(reinterpret_cast<char *>(read_back.data()), read_back.size());
+    file.read(reinterpret_cast<char*>(read_back.data()), read_back.size());
 
     CHECK(std::memcmp(read_back.data(), test_data.data(), test_data.size()) ==
           0);
@@ -137,7 +140,7 @@ TEST_SUITE("io") {
     // Test error path by trying to write to an invalid location
     // Use platform-specific impossible paths
     std::filesystem::path impossible_path;
-    
+
 #ifdef _WIN32
     // Windows: Use reserved device name that cannot be created
     impossible_path = "CON:/test.dat";
@@ -282,7 +285,7 @@ TEST_SUITE("io") {
     const auto test_data = create_test_binary_data();
     {
       std::ofstream file(test_file, std::ios::binary);
-      file.write(reinterpret_cast<const char *>(test_data.data()),
+      file.write(reinterpret_cast<const char*>(test_data.data()),
                  test_data.size());
     }
 
@@ -317,7 +320,7 @@ TEST_SUITE("io") {
 
     // Write more than the 100MB limit (write 200MB of zeros)
     constexpr std::size_t large_size = 200 * 1024 * 1024;
-    std::vector<char> zeros(1024 * 1024, 0); // 1MB buffer
+    std::vector<char> zeros(1024 * 1024, 0);  // 1MB buffer
 
     for (int i = 0; i < 200; ++i) {
       file.write(zeros.data(), zeros.size());
@@ -351,7 +354,7 @@ TEST_SUITE("io") {
     const auto read_result = read_binary_file(test_file);
     REQUIRE(read_result.has_value());
 
-    const auto &read_data = read_result.value();
+    const auto& read_data = read_result.value();
     CHECK(read_data.size() == original_data.size());
     CHECK(std::memcmp(read_data.data(), original_data.data(),
                       original_data.size()) == 0);
@@ -387,9 +390,7 @@ TEST_SUITE("io") {
     const auto empty_file = temp_dir / "empty.dat";
 
     // Create empty file
-    {
-      std::ofstream file(empty_file, std::ios::binary);
-    }
+    { std::ofstream file(empty_file, std::ios::binary); }
 
     // Read empty file
     const auto read_result = read_binary_file(empty_file);
@@ -413,4 +414,4 @@ TEST_SUITE("io") {
     CHECK(message.find(std::to_string(ec.value())) != std::string::npos);
   }
 
-} // TEST_SUITE("io")
+}  // TEST_SUITE("io")

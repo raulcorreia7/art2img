@@ -1,14 +1,14 @@
-#include <art2img/types.hpp>
 #include <doctest/doctest.h>
 
-TEST_SUITE("types::constants") {
+#include <art2img/types.hpp>
 
+TEST_SUITE("types::constants") {
   TEST_CASE("Palette constants are correct") {
     using namespace art2img::constants;
 
     CHECK(PALETTE_SIZE == 256);
     CHECK(COLOR_COMPONENTS == 3);
-    CHECK(PALETTE_DATA_SIZE == 768); // 256 * 3
+    CHECK(PALETTE_DATA_SIZE == 768);  // 256 * 3
     CHECK(PALETTE_BITS_PER_COMPONENT == 6);
     CHECK(PALETTE_COMPONENT_MAX == 63);
     CHECK(PALETTE_SCALE_FACTOR == 4);
@@ -19,7 +19,7 @@ TEST_SUITE("types::constants") {
 
     CHECK(SHADE_TABLE_COUNT == 32);
     CHECK(SHADE_TABLE_SIZE == 256);
-    CHECK(SHADE_TABLE_TOTAL_ENTRIES == 8192); // 32 * 256
+    CHECK(SHADE_TABLE_TOTAL_ENTRIES == 8192);  // 32 * 256
   }
 
   TEST_CASE("Translucent table constants are correct") {
@@ -45,7 +45,6 @@ TEST_SUITE("types::constants") {
 }
 
 TEST_SUITE("types::type_aliases") {
-
   TEST_CASE("Type aliases are correctly defined") {
     using namespace art2img::types;
 

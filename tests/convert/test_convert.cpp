@@ -12,15 +12,17 @@
 /// - Edge cases and error conditions
 
 #include <array>
+#include <chrono>
+#include <filesystem>
+#include <vector>
+
+#include <doctest/doctest.h>
+
 #include <art2img/art.hpp>
 #include <art2img/color_helpers.hpp>
 #include <art2img/convert.hpp>
 #include <art2img/convert/detail/row_range.hpp>
 #include <art2img/palette.hpp>
-#include <chrono>
-#include <doctest/doctest.h>
-#include <filesystem>
-#include <vector>
 
 namespace {
 
@@ -32,29 +34,29 @@ Palette create_test_palette() {
 
   // Set up basic RGB colors (6-bit values, will be scaled to 8-bit)
   // Index 0: Black (for transparency testing)
-  palette.data[0] = 0; // R
-  palette.data[1] = 0; // G
-  palette.data[2] = 0; // B
+  palette.data[0] = 0;  // R
+  palette.data[1] = 0;  // G
+  palette.data[2] = 0;  // B
 
   // Index 1: Red
-  palette.data[3] = 63; // R (max 6-bit)
-  palette.data[4] = 0;  // G
-  palette.data[5] = 0;  // B
+  palette.data[3] = 63;  // R (max 6-bit)
+  palette.data[4] = 0;   // G
+  palette.data[5] = 0;   // B
 
   // Index 2: Green
-  palette.data[6] = 0;  // R
-  palette.data[7] = 63; // G (max 6-bit)
-  palette.data[8] = 0;  // B
+  palette.data[6] = 0;   // R
+  palette.data[7] = 63;  // G (max 6-bit)
+  palette.data[8] = 0;   // B
 
   // Index 3: Blue
-  palette.data[9] = 0;   // R
-  palette.data[10] = 0;  // G
-  palette.data[11] = 63; // B (max 6-bit)
+  palette.data[9] = 0;    // R
+  palette.data[10] = 0;   // G
+  palette.data[11] = 63;  // B (max 6-bit)
 
   // Index 4: White
-  palette.data[12] = 63; // R (max 6-bit)
-  palette.data[13] = 63; // G (max 6-bit)
-  palette.data[14] = 63; // B (max 6-bit)
+  palette.data[12] = 63;  // R (max 6-bit)
+  palette.data[13] = 63;  // G (max 6-bit)
+  palette.data[14] = 63;  // B (max 6-bit)
 
   // Add a simple shade table (just map each color to the next one)
   // Provide two shade tables: index 0 is identity (no shading), index 1 shifts
@@ -62,9 +64,10 @@ Palette create_test_palette() {
   palette.shade_table_count = 2;
   palette.shade_tables.resize(2 * 256);
   for (int i = 0; i < 256; ++i) {
-    palette.shade_tables[i] = static_cast<std::uint8_t>(i); // Shade 0: identity
+    palette.shade_tables[i] =
+        static_cast<std::uint8_t>(i);  // Shade 0: identity
     palette.shade_tables[256 + i] =
-        static_cast<std::uint8_t>((i + 1) % 256); // Shade 1: rotate
+        static_cast<std::uint8_t>((i + 1) % 256);  // Shade 1: rotate
   }
 
   return palette;
@@ -114,10 +117,9 @@ TileView create_empty_tile() {
 }
 
 /// @brief Compare two RGBA buffers for equality
-bool compare_rgba_buffers(const std::vector<std::uint8_t> &buffer1,
-                          const std::vector<std::uint8_t> &buffer2,
+bool compare_rgba_buffers(const std::vector<std::uint8_t>& buffer1,
+                          const std::vector<std::uint8_t>& buffer2,
                           std::size_t pixel_count) {
-
   if (buffer1.size() < pixel_count * 4 || buffer2.size() < pixel_count * 4) {
     return false;
   }
@@ -134,25 +136,25 @@ bool compare_rgba_buffers(const std::vector<std::uint8_t> &buffer1,
 /// @brief Get expected RGBA color for a palette index
 std::uint32_t get_expected_rgba(std::uint8_t palette_index) {
   // Scale from 6-bit to 8-bit
-  const std::uint8_t scale = 4; // 255 / 63
+  const std::uint8_t scale = 4;  // 255 / 63
 
   switch (palette_index) {
-  case 0:
-    return color::pack_rgba(0, 0, 0); // Black (fully opaque)
-  case 1:
-    return color::pack_rgba(255, 0, 0); // Red
-  case 2:
-    return color::pack_rgba(0, 255, 0); // Green
-  case 3:
-    return color::pack_rgba(0, 0, 255); // Blue
-  case 4:
-    return color::pack_rgba(255, 255, 255); // White
-  default:
-    return color::pack_rgba(0, 0, 0); // Default to black
+    case 0:
+      return color::pack_rgba(0, 0, 0);  // Black (fully opaque)
+    case 1:
+      return color::pack_rgba(255, 0, 0);  // Red
+    case 2:
+      return color::pack_rgba(0, 255, 0);  // Green
+    case 3:
+      return color::pack_rgba(0, 0, 255);  // Blue
+    case 4:
+      return color::pack_rgba(255, 255, 255);  // White
+    default:
+      return color::pack_rgba(0, 0, 0);  // Default to black
   }
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 // ============================================================================
 // BASIC CONVERSION TESTS
@@ -166,27 +168,27 @@ TEST_CASE("to_rgba basic conversion") {
   const auto result = to_rgba(tile, palette, options);
 
   REQUIRE(result);
-  const auto &image = result.value();
+  const auto& image = result.value();
 
   CHECK(image.width == 3);
   CHECK(image.height == 2);
-  CHECK(image.stride == 12); // 3 pixels * 4 bytes
+  CHECK(image.stride == 12);  // 3 pixels * 4 bytes
   CHECK(image.is_valid());
 
   // Check some expected pixel values
   // Pixel (0,0) should have palette index 0 (black)
   const std::size_t pixel_00_offset = 0 * 12 + 0 * 4;
-  CHECK(image.data[pixel_00_offset] == 0);       // R
-  CHECK(image.data[pixel_00_offset + 1] == 0);   // G
-  CHECK(image.data[pixel_00_offset + 2] == 0);   // B
-  CHECK(image.data[pixel_00_offset + 3] == 255); // A
+  CHECK(image.data[pixel_00_offset] == 0);        // R
+  CHECK(image.data[pixel_00_offset + 1] == 0);    // G
+  CHECK(image.data[pixel_00_offset + 2] == 0);    // B
+  CHECK(image.data[pixel_00_offset + 3] == 255);  // A
 
   // Pixel (1,0) should have palette index 1 (red)
   const std::size_t pixel_10_offset = 0 * 12 + 1 * 4;
-  CHECK(image.data[pixel_10_offset] == 255);     // R (red)
-  CHECK(image.data[pixel_10_offset + 1] == 0);   // G
-  CHECK(image.data[pixel_10_offset + 2] == 0);   // B
-  CHECK(image.data[pixel_10_offset + 3] == 255); // A
+  CHECK(image.data[pixel_10_offset] == 255);      // R (red)
+  CHECK(image.data[pixel_10_offset + 1] == 0);    // G
+  CHECK(image.data[pixel_10_offset + 2] == 0);    // B
+  CHECK(image.data[pixel_10_offset + 3] == 255);  // A
 }
 
 TEST_CASE("to_rgba with transparency fixing") {
@@ -195,9 +197,9 @@ TEST_CASE("to_rgba with transparency fixing") {
 
   // Modify palette to make index 0 magenta for transparency testing
   auto magenta_palette = palette;
-  magenta_palette.data[0] = 63; // R (max 6-bit = 255 scaled)
-  magenta_palette.data[1] = 0;  // G
-  magenta_palette.data[2] = 63; // B (max 6-bit = 255 scaled)
+  magenta_palette.data[0] = 63;  // R (max 6-bit = 255 scaled)
+  magenta_palette.data[1] = 0;   // G
+  magenta_palette.data[2] = 63;  // B (max 6-bit = 255 scaled)
 
   ConversionOptions options;
   options.fix_transparency = true;
@@ -205,18 +207,18 @@ TEST_CASE("to_rgba with transparency fixing") {
   const auto result = to_rgba(tile, magenta_palette, options);
 
   REQUIRE(result);
-  const auto &image = result.value();
+  const auto& image = result.value();
 
   // Pixel (0,0) should have palette index 0 (magenta) and be transparent
   const std::size_t pixel_00_offset = 0 * 8 + 0 * 4;
-  CHECK(image.data[pixel_00_offset] == 0); // R (set to black for transparent)
-  CHECK(image.data[pixel_00_offset + 1] == 0); // G
-  CHECK(image.data[pixel_00_offset + 2] == 0); // B
-  CHECK(image.data[pixel_00_offset + 3] == 0); // A (transparent)
+  CHECK(image.data[pixel_00_offset] == 0);  // R (set to black for transparent)
+  CHECK(image.data[pixel_00_offset + 1] == 0);  // G
+  CHECK(image.data[pixel_00_offset + 2] == 0);  // B
+  CHECK(image.data[pixel_00_offset + 3] == 0);  // A (transparent)
 
   // Other pixels should be opaque
   const std::size_t pixel_10_offset = 0 * 8 + 1 * 4;
-  CHECK(image.data[pixel_10_offset + 3] == 255); // A (opaque)
+  CHECK(image.data[pixel_10_offset + 3] == 255);  // A (opaque)
 }
 
 TEST_CASE("to_rgba with shading") {
@@ -224,19 +226,19 @@ TEST_CASE("to_rgba with shading") {
   const auto tile = create_test_tile(2, 2);
 
   ConversionOptions options;
-  options.shade_index = 1; // Use second shade table (first applies shading)
+  options.shade_index = 1;  // Use second shade table (first applies shading)
 
   const auto result = to_rgba(tile, palette, options);
 
   REQUIRE(result);
-  const auto &image = result.value();
+  const auto& image = result.value();
 
   // With shading, palette index 0 should become 1 (red)
   const std::size_t pixel_00_offset = 0 * 8 + 0 * 4;
-  CHECK(image.data[pixel_00_offset] == 255);     // R
-  CHECK(image.data[pixel_00_offset + 1] == 0);   // G
-  CHECK(image.data[pixel_00_offset + 2] == 0);   // B
-  CHECK(image.data[pixel_00_offset + 3] == 255); // A
+  CHECK(image.data[pixel_00_offset] == 255);      // R
+  CHECK(image.data[pixel_00_offset + 1] == 0);    // G
+  CHECK(image.data[pixel_00_offset + 2] == 0);    // B
+  CHECK(image.data[pixel_00_offset + 3] == 255);  // A
 }
 
 TEST_CASE("to_rgba with premultiplied alpha") {
@@ -250,14 +252,14 @@ TEST_CASE("to_rgba with premultiplied alpha") {
   const auto result = to_rgba(tile, palette, options);
 
   REQUIRE(result);
-  const auto &image = result.value();
+  const auto& image = result.value();
 
   // Transparent pixel should remain black with alpha 0
   const std::size_t pixel_00_offset = 0 * 8 + 0 * 4;
-  CHECK(image.data[pixel_00_offset] == 0);     // R
-  CHECK(image.data[pixel_00_offset + 1] == 0); // G
-  CHECK(image.data[pixel_00_offset + 2] == 0); // B
-  CHECK(image.data[pixel_00_offset + 3] == 0); // A (transparent)
+  CHECK(image.data[pixel_00_offset] == 0);      // R
+  CHECK(image.data[pixel_00_offset + 1] == 0);  // G
+  CHECK(image.data[pixel_00_offset + 2] == 0);  // B
+  CHECK(image.data[pixel_00_offset + 3] == 0);  // A (transparent)
 }
 
 TEST_CASE("to_rgba with remapping") {
@@ -280,14 +282,14 @@ TEST_CASE("to_rgba with remapping") {
   const auto result = to_rgba(tile, palette, options);
 
   REQUIRE(result);
-  const auto &image = result.value();
+  const auto& image = result.value();
 
   // Pixel (0,0) should have palette index 0 remapped to 1 (red)
   const std::size_t pixel_00_offset = 0 * 8 + 0 * 4;
-  CHECK(image.data[pixel_00_offset] == 255);     // R (red)
-  CHECK(image.data[pixel_00_offset + 1] == 0);   // G
-  CHECK(image.data[pixel_00_offset + 2] == 0);   // B
-  CHECK(image.data[pixel_00_offset + 3] == 255); // A
+  CHECK(image.data[pixel_00_offset] == 255);      // R (red)
+  CHECK(image.data[pixel_00_offset + 1] == 0);    // G
+  CHECK(image.data[pixel_00_offset + 2] == 0);    // B
+  CHECK(image.data[pixel_00_offset + 3] == 255);  // A
 }
 
 // ============================================================================
@@ -333,7 +335,7 @@ TEST_CASE("image_view creation") {
   const auto image_result = to_rgba(tile, palette, options);
   REQUIRE(image_result);
 
-  const auto &image = image_result.value();
+  const auto& image = image_result.value();
   const auto view = image_view(image);
 
   CHECK(view.width == image.width);
@@ -346,7 +348,7 @@ TEST_CASE("image_view creation") {
 TEST_CASE("convert_column_to_row_major") {
   const auto tile = create_test_tile(3, 2);
 
-  std::vector<std::uint8_t> destination(6); // 3 * 2 pixels
+  std::vector<std::uint8_t> destination(6);  // 3 * 2 pixels
 
   const auto result = convert_column_to_row_major(tile, destination);
 
@@ -354,18 +356,18 @@ TEST_CASE("convert_column_to_row_major") {
 
   // Check the conversion: pixel (x,y) should be at index y*width + x
   // Original pattern: (0,0)=0, (1,0)=1, (2,0)=2, (0,1)=1, (1,1)=2, (2,1)=3
-  CHECK(destination[0] == 0); // (0,0)
-  CHECK(destination[1] == 1); // (1,0)
-  CHECK(destination[2] == 2); // (2,0)
-  CHECK(destination[3] == 1); // (0,1)
-  CHECK(destination[4] == 2); // (1,1)
-  CHECK(destination[5] == 3); // (2,1)
+  CHECK(destination[0] == 0);  // (0,0)
+  CHECK(destination[1] == 1);  // (1,0)
+  CHECK(destination[2] == 2);  // (2,0)
+  CHECK(destination[3] == 1);  // (0,1)
+  CHECK(destination[4] == 2);  // (1,1)
+  CHECK(destination[5] == 3);  // (2,1)
 }
 
 TEST_CASE("convert_column_to_row_major with insufficient buffer") {
   const auto tile = create_test_tile(3, 2);
 
-  std::vector<std::uint8_t> too_small(5); // Need 6 bytes
+  std::vector<std::uint8_t> too_small(5);  // Need 6 bytes
 
   const auto result = convert_column_to_row_major(tile, too_small);
 
@@ -400,7 +402,7 @@ TEST_CASE("get_pixel_column_major") {
 TEST_CASE("make_column_major_row_iterator iteration") {
   const auto tile = create_test_tile(3, 2);
   auto rows_owner = convert::detail::ColumnMajorRowRangeOwner(tile);
-  auto &row_range = rows_owner.get();
+  auto& row_range = rows_owner.get();
   REQUIRE(row_range.is_valid());
 
   auto it = row_range.begin();
@@ -439,24 +441,24 @@ TEST_CASE("conversion with single pixel tile") {
   TileView single_tile;
   single_tile.width = 1;
   single_tile.height = 1;
-  static std::vector<std::uint8_t> single_pixel = {2}; // Green
+  static std::vector<std::uint8_t> single_pixel = {2};  // Green
   single_tile.pixels = single_pixel;
 
   const ConversionOptions options;
   const auto result = to_rgba(single_tile, palette, options);
 
   REQUIRE(result);
-  const auto &image = result.value();
+  const auto& image = result.value();
 
   CHECK(image.width == 1);
   CHECK(image.height == 1);
   CHECK(image.stride == 4);
 
   // Should be green
-  CHECK(image.data[0] == 0);   // R
-  CHECK(image.data[1] == 255); // G
-  CHECK(image.data[2] == 0);   // B
-  CHECK(image.data[3] == 255); // A
+  CHECK(image.data[0] == 0);    // R
+  CHECK(image.data[1] == 255);  // G
+  CHECK(image.data[2] == 0);    // B
+  CHECK(image.data[3] == 255);  // A
 }
 
 TEST_CASE("conversion with no remap data") {
@@ -467,15 +469,15 @@ TEST_CASE("conversion with no remap data") {
   tile_no_remap.height = 2;
   static std::vector<std::uint8_t> pixels = {0, 1, 2, 3};
   tile_no_remap.pixels = pixels;
-  tile_no_remap.remap = {}; // Empty remap
+  tile_no_remap.remap = {};  // Empty remap
 
   ConversionOptions options;
-  options.apply_lookup = true; // Should not crash with empty remap
+  options.apply_lookup = true;  // Should not crash with empty remap
 
   const auto result = to_rgba(tile_no_remap, palette, options);
 
   REQUIRE(result);
-  const auto &image = result.value();
+  const auto& image = result.value();
   CHECK(image.is_valid());
 }
 
@@ -497,20 +499,20 @@ TEST_CASE("conversion pipeline order") {
   // Apply all options: remap -> shade -> transparency fix -> premultiply
   ConversionOptions options;
   options.apply_lookup = true;
-  options.shade_index = 1;         // Use shading table that maps 1 -> 2
-  options.fix_transparency = true; // Will not affect index 2
+  options.shade_index = 1;          // Use shading table that maps 1 -> 2
+  options.fix_transparency = true;  // Will not affect index 2
   options.premultiply_alpha = true;
 
   const auto result = to_rgba(tile, palette, options);
 
   REQUIRE(result);
-  const auto &image = result.value();
+  const auto& image = result.value();
 
   // Final color should be green (index 2) with full opacity
-  CHECK(image.data[0] == 0);   // R
-  CHECK(image.data[1] == 255); // G
-  CHECK(image.data[2] == 0);   // B
-  CHECK(image.data[3] == 255); // A
+  CHECK(image.data[0] == 0);    // R
+  CHECK(image.data[1] == 255);  // G
+  CHECK(image.data[2] == 0);    // B
+  CHECK(image.data[3] == 255);  // A
 }
 
 // ============================================================================
@@ -535,7 +537,7 @@ TEST_CASE("performance sanity check" * doctest::skip()) {
       std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
   // Should complete reasonably fast (adjust threshold as needed)
-  CHECK(duration.count() < 1000); // Less than 1 second for 100 conversions
+  CHECK(duration.count() < 1000);  // Less than 1 second for 100 conversions
 
   // Print timing information
   MESSAGE("Converted 100x 64x64 tiles in ", duration.count(), " ms");

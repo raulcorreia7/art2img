@@ -1,8 +1,6 @@
 /// @file test_cli_export.cpp
 /// @brief CLI tests for export functionality
 
-#include "../test_helpers.hpp"
-#include <doctest/doctest.h>
 #include <filesystem>
 #include <iostream>
 #include <regex>
@@ -10,33 +8,38 @@
 #include <string>
 #include <vector>
 
+#include <doctest/doctest.h>
+
+#include "../test_helpers.hpp"
+
 namespace {
 
 // Mock CLI runner to capture output
 class CliRunner {
-public:
-  CliRunner(int argc, char *argv[]) : argc_(argc), argv_(argv) {}
+ public:
+  CliRunner(int argc, char* argv[]) : argc_(argc), argv_(argv) {}
 
   int run() {
     // Redirect stdout to capture output
     std::stringstream buffer;
-    std::streambuf *old = std::cout.rdbuf(buffer.rdbuf());
+    std::streambuf* old = std::cout.rdbuf(buffer.rdbuf());
 
     // Call main function (would need to be exposed for testing)
     // int result = art2img_main(argc_, argv_);
 
-    std::cout.rdbuf(old); // Restore
+    std::cout.rdbuf(old);  // Restore
     output_ = buffer.str();
 
-    return 0; // Mock success
+    return 0;  // Mock success
   }
 
-  const std::string &get_output() const { return output_; }
-  const std::string &get_error_output() const { return error_output_; }
+  const std::string& get_output() const { return output_; }
 
-private:
+  const std::string& get_error_output() const { return error_output_; }
+
+ private:
   int argc_;
-  char **argv_;
+  char** argv_;
   std::string output_;
   std::string error_output_;
 };
@@ -63,19 +66,18 @@ struct CliTestFixture {
 
   ~CliTestFixture() { test_helpers::cleanup_test_output_dir(temp_dir); }
 
-  std::vector<char *> make_argv(const std::vector<std::string> &args) {
-    std::vector<char *> argv;
-    for (const auto &arg : args) {
-      argv.push_back(const_cast<char *>(arg.c_str()));
+  std::vector<char*> make_argv(const std::vector<std::string>& args) {
+    std::vector<char*> argv;
+    for (const auto& arg : args) {
+      argv.push_back(const_cast<char*>(arg.c_str()));
     }
     return argv;
   }
 };
 
-} // anonymous namespace
+}  // anonymous namespace
 
 TEST_SUITE("CLI Export Tests") {
-
   TEST_CASE_FIXTURE(CliTestFixture, "CLI basic export command structure") {
     // Test that CLI accepts basic export arguments
     std::vector<std::string> args = {"art2img", art_file.string(),
@@ -269,4 +271,4 @@ TEST_SUITE("CLI Export Tests") {
     CHECK(result == 0);
   }
 
-} // TEST_SUITE
+}  // TEST_SUITE

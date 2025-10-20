@@ -1,9 +1,10 @@
-#include <art2img/error.hpp>
-#include <doctest/doctest.h>
 #include <sstream>
 
-TEST_SUITE("error handling") {
+#include <doctest/doctest.h>
 
+#include <art2img/error.hpp>
+
+TEST_SUITE("error handling") {
   TEST_CASE("errc enum values are correct") {
     using art2img::errc;
 
@@ -50,7 +51,7 @@ TEST_SUITE("error handling") {
     using art2img::errc;
     using art2img::make_error_code;
 
-    const auto &category = make_error_code(errc::none).category();
+    const auto& category = make_error_code(errc::none).category();
     CHECK(std::string(category.name()) == "art2img");
 
     CHECK(category.message(static_cast<int>(errc::none)) == "No error");

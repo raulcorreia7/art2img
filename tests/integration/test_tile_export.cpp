@@ -7,15 +7,8 @@
 /// - File I/O verification
 /// - Different output directory configurations
 
-#include "../test_helpers.hpp"
 #include <algorithm>
-#include <art2img/art.hpp>
-#include <art2img/convert.hpp>
-#include <art2img/encode.hpp>
-#include <art2img/export.hpp>
-#include <art2img/io.hpp>
 #include <atomic>
-#include <doctest/doctest.h>
 #include <filesystem>
 #include <future>
 #include <iostream>
@@ -24,25 +17,33 @@
 #include <thread>
 #include <vector>
 
+#include <doctest/doctest.h>
+
+#include <art2img/art.hpp>
+#include <art2img/convert.hpp>
+#include <art2img/encode.hpp>
+#include <art2img/export.hpp>
+#include <art2img/io.hpp>
+
+#include "../test_helpers.hpp"
+
 namespace {
 
 // Helper function to create output directory (using new test helpers)
-void ensure_output_directory(const std::filesystem::path &dir) {
+void ensure_output_directory(const std::filesystem::path& dir) {
   test_helpers::ensure_test_output_dir(dir);
 }
 
 // Helper function to verify file exists and has content
-void verify_output_file(const std::filesystem::path &path) {
+void verify_output_file(const std::filesystem::path& path) {
   REQUIRE(std::filesystem::exists(path));
   REQUIRE(std::filesystem::file_size(path) > 0);
 }
 
 // Helper function to export a single tile using the new export API
-std::expected<art2img::ExportResult, art2img::Error>
-export_single_tile(const art2img::TileView &tile,
-                   const art2img::Palette &palette, art2img::ImageFormat format,
-                   const std::filesystem::path &output_path) {
-
+std::expected<art2img::ExportResult, art2img::Error> export_single_tile(
+    const art2img::TileView& tile, const art2img::Palette& palette,
+    art2img::ImageFormat format, const std::filesystem::path& output_path) {
   art2img::ExportOptions options;
   options.output_dir = output_path.parent_path();
   options.format = format;
@@ -52,13 +53,13 @@ export_single_tile(const art2img::TileView &tile,
   if (result.has_value()) {
     // The export function generates its own filename, so we need to check
     // what file was actually created and verify it exists
-    const auto &exported_files = result.value().output_files;
+    const auto& exported_files = result.value().output_files;
     if (!exported_files.empty()) {
       // Verify the generated file exists
       if (!std::filesystem::exists(exported_files[0])) {
-        return std::unexpected(art2img::Error{art2img::errc::io_failure,
-                                              "Exported file does not exist: " +
-                                                  exported_files[0].string()});
+        return std::unexpected(art2img::Error{
+            art2img::errc::io_failure,
+            "Exported file does not exist: " + exported_files[0].string()});
       }
     }
   }
@@ -71,10 +72,9 @@ std::vector<art2img::ImageFormat> get_supported_formats() {
           art2img::ImageFormat::bmp};
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 TEST_SUITE("Tile Export Integration") {
-
   TEST_CASE("Setup - Create output directory") {
     const auto test_output_dir =
         test_helpers::get_integration_test_dir("setup");
@@ -87,12 +87,12 @@ TEST_SUITE("Tile Export Integration") {
     const std::filesystem::path art_path =
         TEST_ASSET_SOURCE_DIR "/TILES001.ART";
     if (!std::filesystem::exists(art_path)) {
-      return; // Skip if file not found
+      return;  // Skip if file not found
     }
 
     auto art_result = art2img::load_art_bundle(art_path);
     REQUIRE(art_result.has_value());
-    const auto &art_data = art_result.value();
+    const auto& art_data = art_result.value();
 
     // Load palette
     const std::filesystem::path palette_path =
@@ -100,12 +100,12 @@ TEST_SUITE("Tile Export Integration") {
     REQUIRE(std::filesystem::exists(palette_path));
     auto palette_result = art2img::load_palette(palette_path);
     REQUIRE(palette_result.has_value());
-    const auto &palette = palette_result.value();
+    const auto& palette = palette_result.value();
 
     // Get first tile
     auto tile_result = art_data.get_tile(0);
     REQUIRE(tile_result.has_value());
-    const auto &tile = tile_result.value();
+    const auto& tile = tile_result.value();
     REQUIRE(tile.is_valid());
 
     // Export to all formats in same directory
@@ -133,12 +133,12 @@ TEST_SUITE("Tile Export Integration") {
     const std::filesystem::path art_path =
         TEST_ASSET_SOURCE_DIR "/TILES004.ART";
     if (!std::filesystem::exists(art_path)) {
-      return; // Skip if file not found
+      return;  // Skip if file not found
     }
 
     auto art_result = art2img::load_art_bundle(art_path);
     REQUIRE(art_result.has_value());
-    const auto &art_data = art_result.value();
+    const auto& art_data = art_result.value();
 
     // Load palette
     const std::filesystem::path palette_path =
@@ -146,12 +146,12 @@ TEST_SUITE("Tile Export Integration") {
     REQUIRE(std::filesystem::exists(palette_path));
     auto palette_result = art2img::load_palette(palette_path);
     REQUIRE(palette_result.has_value());
-    const auto &palette = palette_result.value();
+    const auto& palette = palette_result.value();
 
     // Get first tile
     auto tile_result = art_data.get_tile(0);
     REQUIRE(tile_result.has_value());
-    const auto &tile = tile_result.value();
+    const auto& tile = tile_result.value();
     REQUIRE(tile.is_valid());
 
     // Export to all formats in different directories
@@ -160,18 +160,18 @@ TEST_SUITE("Tile Export Integration") {
     for (const auto format : formats) {
       std::string format_name;
       switch (format) {
-      case art2img::ImageFormat::png:
-        format_name = "png";
-        break;
-      case art2img::ImageFormat::tga:
-        format_name = "tga";
-        break;
-      case art2img::ImageFormat::bmp:
-        format_name = "bmp";
-        break;
-      default:
-        format_name = "unknown";
-        break;
+        case art2img::ImageFormat::png:
+          format_name = "png";
+          break;
+        case art2img::ImageFormat::tga:
+          format_name = "tga";
+          break;
+        case art2img::ImageFormat::bmp:
+          format_name = "bmp";
+          break;
+        default:
+          format_name = "unknown";
+          break;
       }
 
       const auto format_dir =
@@ -195,12 +195,12 @@ TEST_SUITE("Tile Export Integration") {
     const std::filesystem::path art_path =
         TEST_ASSET_SOURCE_DIR "/TILES004.ART";
     if (!std::filesystem::exists(art_path)) {
-      return; // Skip if file not found
+      return;  // Skip if file not found
     }
 
     auto art_result = art2img::load_art_bundle(art_path);
     REQUIRE(art_result.has_value());
-    const auto &art_data = art_result.value();
+    const auto& art_data = art_result.value();
 
     // Load palette
     const std::filesystem::path palette_path =
@@ -208,17 +208,17 @@ TEST_SUITE("Tile Export Integration") {
     REQUIRE(std::filesystem::exists(palette_path));
     auto palette_result = art2img::load_palette(palette_path);
     REQUIRE(palette_result.has_value());
-    const auto &palette = palette_result.value();
+    const auto& palette = palette_result.value();
 
     // Export all tiles to all formats in same directory
     const auto formats = get_supported_formats();
     const std::size_t max_tiles = std::min<std::size_t>(
-        5, art_data.tile_count()); // Limit for test performance
+        5, art_data.tile_count());  // Limit for test performance
 
     for (std::size_t tile_idx = 0; tile_idx < max_tiles; ++tile_idx) {
       auto tile_result = art_data.get_tile(tile_idx);
       REQUIRE(tile_result.has_value());
-      const auto &tile = tile_result.value();
+      const auto& tile = tile_result.value();
       if (!tile.is_valid()) {
         std::cout << "Skipping empty tile index " << tile_idx << std::endl;
         continue;
@@ -247,12 +247,12 @@ TEST_SUITE("Tile Export Integration") {
     const std::filesystem::path art_path =
         TEST_ASSET_SOURCE_DIR "/TILES005.ART";
     if (!std::filesystem::exists(art_path)) {
-      return; // Skip if file not found
+      return;  // Skip if file not found
     }
 
     auto art_result = art2img::load_art_bundle(art_path);
     REQUIRE(art_result.has_value());
-    const auto &art_data = art_result.value();
+    const auto& art_data = art_result.value();
 
     // Load palette
     const std::filesystem::path palette_path =
@@ -260,28 +260,28 @@ TEST_SUITE("Tile Export Integration") {
     REQUIRE(std::filesystem::exists(palette_path));
     auto palette_result = art2img::load_palette(palette_path);
     REQUIRE(palette_result.has_value());
-    const auto &palette = palette_result.value();
+    const auto& palette = palette_result.value();
 
     // Export all tiles to all formats in separate directories
     const auto formats = get_supported_formats();
     const std::size_t max_tiles = std::min<std::size_t>(
-        3, art_data.tile_count()); // Limit for test performance
+        3, art_data.tile_count());  // Limit for test performance
 
     for (const auto format : formats) {
       std::string format_name;
       switch (format) {
-      case art2img::ImageFormat::png:
-        format_name = "png";
-        break;
-      case art2img::ImageFormat::tga:
-        format_name = "tga";
-        break;
-      case art2img::ImageFormat::bmp:
-        format_name = "bmp";
-        break;
-      default:
-        format_name = "unknown";
-        break;
+        case art2img::ImageFormat::png:
+          format_name = "png";
+          break;
+        case art2img::ImageFormat::tga:
+          format_name = "tga";
+          break;
+        case art2img::ImageFormat::bmp:
+          format_name = "bmp";
+          break;
+        default:
+          format_name = "unknown";
+          break;
       }
 
       const auto format_dir =
@@ -291,7 +291,7 @@ TEST_SUITE("Tile Export Integration") {
       for (std::size_t tile_idx = 0; tile_idx < max_tiles; ++tile_idx) {
         auto tile_result = art_data.get_tile(tile_idx);
         REQUIRE(tile_result.has_value());
-        const auto &tile = tile_result.value();
+        const auto& tile = tile_result.value();
         if (!tile.is_valid()) {
           std::cout << "Skipping empty tile index " << tile_idx << std::endl;
           continue;
@@ -316,12 +316,12 @@ TEST_SUITE("Tile Export Integration") {
     const std::filesystem::path palette_path =
         TEST_ASSET_SOURCE_DIR "/PALETTE.DAT";
     if (!std::filesystem::exists(palette_path)) {
-      return; // Skip if palette not found
+      return;  // Skip if palette not found
     }
 
     auto palette_result = art2img::load_palette(palette_path);
     REQUIRE(palette_result.has_value());
-    const auto &palette = palette_result.value();
+    const auto& palette = palette_result.value();
 
     // Create a minimal invalid tile view (empty)
     art2img::TileView invalid_tile;
@@ -424,8 +424,9 @@ TEST_SUITE("Tile Export Integration") {
   //     std::cout << "Comprehensive dump completed successfully" << std::endl;
   // }
 
-  TEST_CASE("Export all ART files and tiles - comprehensive dump (massively "
-            "parallel)") {
+  TEST_CASE(
+      "Export all ART files and tiles - comprehensive dump (massively "
+      "parallel)") {
     // Create comprehensive dump directory using test helpers
     const auto comprehensive_dump_dir =
         test_helpers::get_integration_test_dir("comprehensive_dump_parallel");
@@ -437,14 +438,14 @@ TEST_SUITE("Tile Export Integration") {
     REQUIRE(std::filesystem::exists(palette_path));
     auto palette_result = art2img::load_palette(palette_path);
     REQUIRE(palette_result.has_value());
-    const auto &palette = palette_result.value();
+    const auto& palette = palette_result.value();
 
     // Get all supported formats
     const auto formats = get_supported_formats();
 
     // Find all TILES*.ART files
     std::vector<std::filesystem::path> art_files;
-    for (const auto &entry :
+    for (const auto& entry :
          std::filesystem::directory_iterator(TEST_ASSET_SOURCE_DIR)) {
       if (entry.is_regular_file() && entry.path().extension() == ".ART" &&
           entry.path().filename().string().starts_with("TILES")) {
@@ -472,7 +473,7 @@ TEST_SUITE("Tile Export Integration") {
     std::vector<art2img::ArtData> art_data_storage;
     std::vector<TileInfo> all_tiles;
 
-    for (const auto &art_path : art_files) {
+    for (const auto& art_path : art_files) {
       std::string art_filename = art_path.filename().string();
       art_filename = art_filename.substr(0, art_filename.find_last_of('.'));
 
@@ -492,14 +493,14 @@ TEST_SUITE("Tile Export Integration") {
       // Store the ArtData to keep it alive
       std::size_t art_data_idx = art_data_storage.size();
       art_data_storage.push_back(std::move(art_result.value()));
-      const auto &art_data = art_data_storage.back();
+      const auto& art_data = art_data_storage.back();
 
       // Pre-compute all valid tiles from this ART file
       for (std::size_t tile_idx = 0; tile_idx < art_data.tile_count();
            ++tile_idx) {
         auto tile_result = art_data.get_tile(tile_idx);
         if (tile_result.has_value()) {
-          const auto &tile = tile_result.value();
+          const auto& tile = tile_result.value();
           if (tile.is_valid()) {
             all_tiles.push_back({art_data_idx, tile_idx, tile, art_filename});
           }
@@ -512,23 +513,23 @@ TEST_SUITE("Tile Export Integration") {
 
     // Process each format with batched parallel tasks
     constexpr std::size_t BATCH_SIZE =
-        64; // Process 64 tiles per task to reduce async overhead
+        64;  // Process 64 tiles per task to reduce async overhead
 
     for (const auto format : formats) {
       std::string format_name;
       switch (format) {
-      case art2img::ImageFormat::png:
-        format_name = "png";
-        break;
-      case art2img::ImageFormat::tga:
-        format_name = "tga";
-        break;
-      case art2img::ImageFormat::bmp:
-        format_name = "bmp";
-        break;
-      default:
-        format_name = "unknown";
-        break;
+        case art2img::ImageFormat::png:
+          format_name = "png";
+          break;
+        case art2img::ImageFormat::tga:
+          format_name = "tga";
+          break;
+        case art2img::ImageFormat::bmp:
+          format_name = "bmp";
+          break;
+        default:
+          format_name = "unknown";
+          break;
       }
 
       std::cout << "Starting batched parallel export for format: "
@@ -542,8 +543,8 @@ TEST_SUITE("Tile Export Integration") {
               std::size_t end = std::min(i + BATCH_SIZE, all_tiles.size());
 
               for (std::size_t j = i; j < end; ++j) {
-                const auto &tile_info = all_tiles[j];
-                const auto &art_data = art_data_storage[tile_info.art_data_idx];
+                const auto& tile_info = all_tiles[j];
+                const auto& art_data = art_data_storage[tile_info.art_data_idx];
 
                 const auto output_path =
                     comprehensive_dump_dir /
@@ -566,7 +567,7 @@ TEST_SUITE("Tile Export Integration") {
     // Wait for all async operations to complete
     std::cout << "Waiting for " << futures.size()
               << " parallel export tasks to complete..." << std::endl;
-    for (auto &future : futures) {
+    for (auto& future : futures) {
       future.wait();
     }
 
@@ -581,7 +582,7 @@ TEST_SUITE("Tile Export Integration") {
     anim_config.output_dir = comprehensive_dump_dir;
     anim_config.ini_filename = "animdata.ini";
     anim_config.image_format =
-        art2img::ImageFormat::png; // Use PNG for animation tile references
+        art2img::ImageFormat::png;  // Use PNG for animation tile references
     anim_config.include_image_references = true;
     anim_config.include_non_animated = true;
 
@@ -590,8 +591,8 @@ TEST_SUITE("Tile Export Integration") {
 
     // Export animation data in parallel for each ART file
     for (std::size_t art_idx = 0; art_idx < art_files.size(); ++art_idx) {
-      const auto &art_path = art_files[art_idx];
-      const auto &art_data = art_data_storage[art_idx];
+      const auto& art_path = art_files[art_idx];
+      const auto& art_data = art_data_storage[art_idx];
 
       anim_futures.push_back(
           std::async(std::launch::async, [&, art_idx, art_path, art_data]() {
@@ -629,7 +630,7 @@ TEST_SUITE("Tile Export Integration") {
     // Wait for all animation export tasks to complete
     std::cout << "Waiting for " << anim_futures.size()
               << " animation export tasks to complete..." << std::endl;
-    for (auto &future : anim_futures) {
+    for (auto& future : anim_futures) {
       future.wait();
     }
 
@@ -638,4 +639,4 @@ TEST_SUITE("Tile Export Integration") {
               << std::endl;
   }
 
-} // TEST_SUITE
+}  // TEST_SUITE

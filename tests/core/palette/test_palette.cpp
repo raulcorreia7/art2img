@@ -1,16 +1,17 @@
-#include <art2img/color_helpers.hpp>
-#include <art2img/palette.hpp>
-#include <art2img/types.hpp>
 #include <cstring>
-#include <doctest/doctest.h>
 #include <filesystem>
 #include <fstream>
 #include <vector>
 
+#include <doctest/doctest.h>
+
+#include <art2img/color_helpers.hpp>
+#include <art2img/palette.hpp>
+#include <art2img/types.hpp>
+
 using namespace art2img;
 
 TEST_SUITE("palette module") {
-
   TEST_CASE("Palette struct default construction") {
     Palette palette;
 
@@ -61,7 +62,7 @@ TEST_SUITE("palette module") {
     auto result = load_palette(palette_path);
     REQUIRE(result.has_value());
 
-    const auto &palette = result.value();
+    const auto& palette = result.value();
 
     // Basic validation of loaded palette
     CHECK(palette.shade_table_count > 0);
@@ -98,13 +99,13 @@ TEST_SUITE("palette module") {
     file.seekg(0, std::ios::beg);
 
     std::vector<std::byte> buffer(static_cast<std::size_t>(file_size));
-    REQUIRE(file.read(reinterpret_cast<char *>(buffer.data()), file_size));
+    REQUIRE(file.read(reinterpret_cast<char*>(buffer.data()), file_size));
 
     // Load from span
     auto result = load_palette(buffer);
     REQUIRE(result.has_value());
 
-    const auto &palette = result.value();
+    const auto& palette = result.value();
     CHECK(palette.shade_table_count > 0);
     CHECK(palette.has_shade_tables());
   }
@@ -120,7 +121,7 @@ TEST_SUITE("palette module") {
 
     auto result = load_palette(palette_path);
     REQUIRE(result.has_value());
-    const auto &palette = result.value();
+    const auto& palette = result.value();
 
     // Test various palette indices
     for (std::uint8_t i = 0; i < 10; ++i) {
@@ -139,7 +140,7 @@ TEST_SUITE("palette module") {
     for (std::uint8_t i = 250; i < 255; ++i) {
       const auto color = color::unpack_rgba(palette_entry_to_rgba(palette, i));
       // All valid indices should return valid RGBA values
-      CHECK(color.a == 255); // Alpha should be set
+      CHECK(color.a == 255);  // Alpha should be set
     }
   }
 
@@ -154,7 +155,7 @@ TEST_SUITE("palette module") {
 
     auto result = load_palette(palette_path);
     REQUIRE(result.has_value());
-    const auto &palette = result.value();
+    const auto& palette = result.value();
 
     REQUIRE(palette.has_shade_tables());
 
@@ -186,7 +187,7 @@ TEST_SUITE("palette module") {
     }
 
     SUBCASE("too small data") {
-      std::vector<std::byte> small_data(10); // Too small for palette
+      std::vector<std::byte> small_data(10);  // Too small for palette
       auto result = load_palette(small_data);
       CHECK(!result.has_value());
     }
@@ -201,7 +202,7 @@ TEST_SUITE("palette module") {
       // Set invalid shade count (too large)
       data[constants::PALETTE_DATA_SIZE] = std::byte{0xFF};
       data[constants::PALETTE_DATA_SIZE + 1] =
-          std::byte{0x01}; // 511 shade tables
+          std::byte{0x01};  // 511 shade tables
 
       auto result = load_palette(data);
       CHECK(!result.has_value());
@@ -225,7 +226,7 @@ TEST_SUITE("palette module") {
 
     auto result = load_palette(palette_path);
     REQUIRE(result.has_value());
-    const auto &palette = result.value();
+    const auto& palette = result.value();
 
     // Test that RGB conversion produces 8-bit values
     auto [r, g, b] = palette_entry_to_rgb(palette, 0);

@@ -1,11 +1,11 @@
+#include <array>
+
 #include <doctest/doctest.h>
 
-#include <array>
 #include <art2img/color_helpers.hpp>
 #include <art2img/types.hpp>
 
 TEST_SUITE("types::color_helpers") {
-
   TEST_CASE("pack/unpack roundtrip") {
     const auto packed = art2img::color::pack_rgba(10, 20, 30, 40);
     const auto unpacked = art2img::color::unpack_rgba(packed);

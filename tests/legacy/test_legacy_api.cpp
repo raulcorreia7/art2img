@@ -1,16 +1,18 @@
 // Tests for the legacy API compatibility layer
 
-#include <art2img/legacy_api.hpp>
-#include <doctest/doctest.h>
 #include <filesystem>
 #include <fstream>
 #include <vector>
+
+#include <doctest/doctest.h>
+
+#include <art2img/legacy_api.hpp>
 
 using namespace art2img;
 
 // Test fixtures and helpers
 class LegacyApiTestFixture {
-public:
+ public:
   std::filesystem::path test_data_dir = "tests/assets";
   std::filesystem::path art_file = test_data_dir / "TILES000.ART";
   std::filesystem::path palette_file = test_data_dir / "PALETTE.DAT";
@@ -21,36 +23,36 @@ public:
     std::vector<uint8_t> data;
 
     // Header (16 bytes)
-    data.push_back(1); // version
+    data.push_back(1);  // version
     data.push_back(0);
     data.push_back(0);
     data.push_back(0);
 
-    data.push_back(0); // start_tile
+    data.push_back(0);  // start_tile
     data.push_back(0);
     data.push_back(0);
     data.push_back(0);
 
-    data.push_back(0); // end_tile
+    data.push_back(0);  // end_tile
     data.push_back(0);
     data.push_back(0);
     data.push_back(0);
 
-    data.push_back(1); // num_tiles
+    data.push_back(1);  // num_tiles
     data.push_back(0);
     data.push_back(0);
     data.push_back(0);
 
     // Tile entry (16 bytes)
-    data.push_back(16); // width
+    data.push_back(16);  // width
     data.push_back(0);
-    data.push_back(16); // height
+    data.push_back(16);  // height
     data.push_back(0);
-    data.push_back(0); // anim_data
+    data.push_back(0);  // anim_data
     data.push_back(0);
     data.push_back(0);
     data.push_back(0);
-    data.push_back(32); // offset (after header + tile entries)
+    data.push_back(32);  // offset (after header + tile entries)
     data.push_back(0);
     data.push_back(0);
     data.push_back(0);
@@ -75,9 +77,9 @@ public:
 
     // Create a simple gradient palette
     for (int i = 0; i < 256; ++i) {
-      data[i * 3] = i;     // Red
-      data[i * 3 + 1] = i; // Green
-      data[i * 3 + 2] = i; // Blue
+      data[i * 3] = i;      // Red
+      data[i * 3 + 1] = i;  // Green
+      data[i * 3 + 2] = i;  // Blue
     }
 
     return data;
@@ -101,7 +103,7 @@ TEST_CASE_FIXTURE(LegacyApiTestFixture, "Legacy API - ArtFile") {
     CHECK_EQ(art_file.header().version, 1);
     CHECK_EQ(art_file.header().num_tiles, 1);
 
-    const auto &tile = art_file.tiles()[0];
+    const auto& tile = art_file.tiles()[0];
     CHECK_EQ(tile.width, 16);
     CHECK_EQ(tile.height, 16);
     CHECK_FALSE(tile.is_empty());
@@ -157,9 +159,9 @@ TEST_CASE_FIXTURE(LegacyApiTestFixture, "Legacy API - Palette") {
     CHECK_EQ(bgr_data.size(), 256 * 3);
 
     // Check BGR order (should be reversed from RGB)
-    CHECK_EQ(bgr_data[0], 0); // Blue
-    CHECK_EQ(bgr_data[1], 0); // Green
-    CHECK_EQ(bgr_data[2], 0); // Red
+    CHECK_EQ(bgr_data[0], 0);  // Blue
+    CHECK_EQ(bgr_data[1], 0);  // Green
+    CHECK_EQ(bgr_data[2], 0);  // Red
   }
 }
 
@@ -293,7 +295,7 @@ TEST_CASE_FIXTURE(LegacyApiTestFixture, "Legacy API - Integration") {
     auto palette_data = create_simple_palette_data();
 
     // Modify art data to include animation
-    art_data[20] = 0x42; // Set anim_data to have 2 frames, type 1
+    art_data[20] = 0x42;  // Set anim_data to have 2 frames, type 1
 
     ExtractorAPI api;
     api.load_art_from_memory(art_data.data(), art_data.size());

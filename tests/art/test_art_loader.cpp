@@ -10,26 +10,26 @@
 /// - Error handling for corrupt/invalid ART files
 /// - Helper functions for tile iteration and lookup
 
-#include <art2img/art.hpp>
-#include <art2img/error.hpp>
 #include <cstring>
-#include <doctest/doctest.h>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <vector>
 
+#include <doctest/doctest.h>
+
+#include <art2img/art.hpp>
+#include <art2img/error.hpp>
+
 namespace {
 
 // Test fixture for creating test ART files
 class ArtTestFixture {
-public:
+ public:
   /// @brief Create a minimal valid ART file with one tile
-  static std::vector<std::byte>
-  create_minimal_art_file(std::uint32_t tile_start = 0,
-                          std::uint16_t tile_width = 4,
-                          std::uint16_t tile_height = 4) {
-
+  static std::vector<std::byte> create_minimal_art_file(
+      std::uint32_t tile_start = 0, std::uint16_t tile_width = 4,
+      std::uint16_t tile_height = 4) {
     std::vector<std::byte> data;
 
     // Header: version (1), numtiles (1), localtilestart, localtileend
@@ -44,9 +44,9 @@ public:
     write_u32_le(data, localtileend);
 
     // Write tile arrays
-    write_u16_le(data, tile_width);  // tilesizx[0]
-    write_u16_le(data, tile_height); // tilesizy[0]
-    write_u32_le(data, 0);           // picanm[0] (no animation)
+    write_u16_le(data, tile_width);   // tilesizx[0]
+    write_u16_le(data, tile_height);  // tilesizy[0]
+    write_u32_le(data, 0);            // picanm[0] (no animation)
 
     // Write pixel data (column-major, filled with test pattern)
     const std::size_t pixel_count = static_cast<std::size_t>(tile_width) *
@@ -59,17 +59,15 @@ public:
   }
 
   /// @brief Create an ART file with multiple tiles
-  static std::vector<std::byte>
-  create_multi_tile_art_file(std::uint32_t tile_count = 3,
-                             std::uint32_t tile_start = 100) {
-
+  static std::vector<std::byte> create_multi_tile_art_file(
+      std::uint32_t tile_count = 3, std::uint32_t tile_start = 100) {
     std::vector<std::byte> data;
 
     // Header
-    write_u32_le(data, 1);                           // version
-    write_u32_le(data, tile_count);                  // numtiles
-    write_u32_le(data, tile_start);                  // localtilestart
-    write_u32_le(data, tile_start + tile_count - 1); // localtileend
+    write_u32_le(data, 1);                            // version
+    write_u32_le(data, tile_count);                   // numtiles
+    write_u32_le(data, tile_start);                   // localtilestart
+    write_u32_le(data, tile_start + tile_count - 1);  // localtileend
 
     // Tile dimensions and animations
     std::vector<std::uint16_t> widths(tile_count);
@@ -77,9 +75,9 @@ public:
     std::vector<std::uint32_t> picanms(tile_count);
 
     for (std::uint32_t i = 0; i < tile_count; ++i) {
-      widths[i] = 2 + i * 2;  // 2, 4, 6...
-      heights[i] = 2 + i * 2; // 2, 4, 6...
-      picanms[i] = i;         // Simple animation values
+      widths[i] = 2 + i * 2;   // 2, 4, 6...
+      heights[i] = 2 + i * 2;  // 2, 4, 6...
+      picanms[i] = i;          // Simple animation values
     }
 
     // Write tile arrays
@@ -107,37 +105,37 @@ public:
 
   /// @brief Create a corrupted ART file (too small)
   static std::vector<std::byte> create_corrupted_art_file() {
-    return std::vector<std::byte>{std::byte{0x01}}; // Just version byte
+    return std::vector<std::byte>{std::byte{0x01}};  // Just version byte
   }
 
   /// @brief Create an ART file with invalid header
   static std::vector<std::byte> create_invalid_header_art_file() {
     std::vector<std::byte> data;
-    write_u32_le(data, 999); // Invalid version
-    write_u32_le(data, 1);   // numtiles
-    write_u32_le(data, 0);   // localtilestart
-    write_u32_le(data, 0);   // localtileend
+    write_u32_le(data, 999);  // Invalid version
+    write_u32_le(data, 1);    // numtiles
+    write_u32_le(data, 0);    // localtilestart
+    write_u32_le(data, 0);    // localtileend
 
     // Minimal tile data
-    write_u16_le(data, 1); // tilesizx[0]
-    write_u16_le(data, 1); // tilesizy[0]
-    write_u32_le(data, 0); // picanm[0]
-    write_u8(data, 0);     // pixel data
+    write_u16_le(data, 1);  // tilesizx[0]
+    write_u16_le(data, 1);  // tilesizy[0]
+    write_u32_le(data, 0);  // picanm[0]
+    write_u8(data, 0);      // pixel data
 
     return data;
   }
 
-private:
-  static void write_u8(std::vector<std::byte> &data, std::uint8_t value) {
+ private:
+  static void write_u8(std::vector<std::byte>& data, std::uint8_t value) {
     data.push_back(static_cast<std::byte>(value));
   }
 
-  static void write_u16_le(std::vector<std::byte> &data, std::uint16_t value) {
+  static void write_u16_le(std::vector<std::byte>& data, std::uint16_t value) {
     data.push_back(static_cast<std::byte>(value & 0xFF));
     data.push_back(static_cast<std::byte>((value >> 8) & 0xFF));
   }
 
-  static void write_u32_le(std::vector<std::byte> &data, std::uint32_t value) {
+  static void write_u32_le(std::vector<std::byte>& data, std::uint32_t value) {
     data.push_back(static_cast<std::byte>(value & 0xFF));
     data.push_back(static_cast<std::byte>((value >> 8) & 0xFF));
     data.push_back(static_cast<std::byte>((value >> 16) & 0xFF));
@@ -145,16 +143,15 @@ private:
   }
 };
 
-} // anonymous namespace
+}  // anonymous namespace
 
 TEST_SUITE("ART Loader") {
-
   TEST_CASE("Load minimal ART file from span") {
     const auto test_data = ArtTestFixture::create_minimal_art_file();
     auto result = art2img::load_art_bundle(test_data);
 
     REQUIRE(result.has_value());
-    const auto &art_data = result.value();
+    const auto& art_data = result.value();
 
     CHECK(art_data.version == 1);
     CHECK(art_data.tile_start == 0);
@@ -178,7 +175,7 @@ TEST_SUITE("ART Loader") {
     auto result = art2img::load_art_bundle(test_data);
 
     REQUIRE(result.has_value());
-    const auto &art_data = result.value();
+    const auto& art_data = result.value();
 
     CHECK(art_data.version == 1);
     CHECK(art_data.tile_start == 100);
@@ -210,7 +207,7 @@ TEST_SUITE("ART Loader") {
 
     // Write test data to file
     std::ofstream file(temp_file, std::ios::binary);
-    file.write(reinterpret_cast<const char *>(test_data.data()),
+    file.write(reinterpret_cast<const char*>(test_data.data()),
                test_data.size());
     file.close();
 
@@ -218,7 +215,7 @@ TEST_SUITE("ART Loader") {
     auto result = art2img::load_art_bundle(temp_file);
 
     REQUIRE(result.has_value());
-    const auto &art_data = result.value();
+    const auto& art_data = result.value();
     CHECK(art_data.tile_count() == 1);
     CHECK(art_data.is_valid());
 
@@ -242,18 +239,19 @@ TEST_SUITE("ART Loader") {
 
     const std::uint32_t converted_picanm = anim.to_picanm();
     // Note: Some bits may be lost in conversion due to field size limits
-    CHECK((converted_picanm & 0x3F) == (original_picanm & 0x3F)); // frame_count
+    CHECK((converted_picanm & 0x3F) ==
+          (original_picanm & 0x3F));  // frame_count
     CHECK(((converted_picanm >> 6) & 0x03) ==
-          ((original_picanm >> 6) & 0x03)); // type
+          ((original_picanm >> 6) & 0x03));  // type
     CHECK(((converted_picanm >> 24) & 0x0F) ==
-          ((original_picanm >> 24) & 0x0F)); // speed
+          ((original_picanm >> 24) & 0x0F));  // speed
   }
 
   TEST_CASE("make_tile_view helper functions") {
     const auto test_data = ArtTestFixture::create_multi_tile_art_file(3, 100);
     auto result = art2img::load_art_bundle(test_data);
     REQUIRE(result.has_value());
-    const auto &art_data = result.value();
+    const auto& art_data = result.value();
 
     // Test make_tile_view by index
     auto tile_by_index = art2img::make_tile_view(art_data, 1);
@@ -279,7 +277,7 @@ TEST_SUITE("ART Loader") {
     const auto test_data = ArtTestFixture::create_multi_tile_art_file(3, 100);
     auto result = art2img::load_art_bundle(test_data);
     REQUIRE(result.has_value());
-    const auto &art_data = result.value();
+    const auto& art_data = result.value();
 
     // Test get_tile by index
     auto tile_by_index = art_data.get_tile(1);
@@ -301,7 +299,6 @@ TEST_SUITE("ART Loader") {
 }
 
 TEST_SUITE("ART Error Handling") {
-
   TEST_CASE("Corrupted ART file - too small") {
     const auto test_data = ArtTestFixture::create_corrupted_art_file();
     auto result = art2img::load_art_bundle(test_data);
@@ -309,7 +306,7 @@ TEST_SUITE("ART Error Handling") {
     REQUIRE(!result.has_value());
     CHECK(result.error().code == art2img::errc::invalid_art);
     // Check that error message contains relevant keywords
-    const std::string &msg = result.error().message;
+    const std::string& msg = result.error().message;
     // Just check that we have some error message - the exact wording may vary
     CHECK(!msg.empty());
   }
@@ -321,7 +318,7 @@ TEST_SUITE("ART Error Handling") {
     REQUIRE(!result.has_value());
     CHECK(result.error().code == art2img::errc::invalid_art);
     // Check that error message contains relevant keywords
-    const std::string &msg = result.error().message;
+    const std::string& msg = result.error().message;
     // Just check that we have some error message - the exact wording may vary
     CHECK(!msg.empty());
   }
@@ -332,7 +329,7 @@ TEST_SUITE("ART Error Handling") {
     REQUIRE(!result.has_value());
     CHECK(result.error().code == art2img::errc::io_failure);
     // Check that error message contains relevant keywords
-    const std::string &msg = result.error().message;
+    const std::string& msg = result.error().message;
     // Just check that we have some error message - the exact wording may vary
     CHECK(!msg.empty());
   }
@@ -341,19 +338,18 @@ TEST_SUITE("ART Error Handling") {
     // Skip this test for now - the helper functions are not properly exported
     // This test would require creating a custom ART file with invalid
     // dimensions which is complex to do without the helper functions
-    CHECK(true); // Placeholder to make the test pass
+    CHECK(true);  // Placeholder to make the test pass
   }
 }
 
 TEST_SUITE("Sidecar File Discovery") {
-
   TEST_CASE("discover_sidecar_palette") {
     // Test with existing PALETTE.DAT in assets directory
     const std::filesystem::path art_path = "../tests/assets/TILES000.ART";
     const auto palette_path = art2img::discover_sidecar_palette(art_path);
 
     if (!std::filesystem::exists(art_path)) {
-      return; // Skip test if file not found
+      return;  // Skip test if file not found
     }
 
     // Should find PALETTE.DAT in the same directory
@@ -368,7 +364,7 @@ TEST_SUITE("Sidecar File Discovery") {
     const auto lookup_path = art2img::discover_lookup_file(art_path);
 
     if (!std::filesystem::exists(art_path)) {
-      return; // Skip test if file not found
+      return;  // Skip test if file not found
     }
 
     // Should find LOOKUP.DAT in the same directory
@@ -382,7 +378,7 @@ TEST_SUITE("Sidecar File Discovery") {
     const std::filesystem::path lookup_path = "../tests/assets/LOOKUP.DAT";
 
     if (!std::filesystem::exists(lookup_path)) {
-      return; // Skip test if file not found
+      return;  // Skip test if file not found
     }
 
     // Read file into memory first
@@ -391,14 +387,14 @@ TEST_SUITE("Sidecar File Discovery") {
     file.seekg(0, std::ios::beg);
 
     std::vector<std::byte> buffer(size);
-    if (!file.read(reinterpret_cast<char *>(buffer.data()), size)) {
-      return; // Skip test if file read fails
+    if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) {
+      return;  // Skip test if file read fails
     }
 
     auto result = art2img::load_lookup_data(buffer);
 
     REQUIRE(result.has_value());
-    const auto &lookup_data = result.value();
+    const auto& lookup_data = result.value();
 
     // LOOKUP.DAT should have reasonable size
     CHECK(lookup_data.size() >= 256);
@@ -410,7 +406,7 @@ TEST_SUITE("Sidecar File Discovery") {
         TEST_ASSET_SOURCE_DIR "/LOOKUP.DAT";
 
     if (!std::filesystem::exists(lookup_path)) {
-      return; // Skip test if file not found
+      return;  // Skip test if file not found
     }
 
     // Read file into span first
@@ -420,13 +416,13 @@ TEST_SUITE("Sidecar File Discovery") {
     file.seekg(0, std::ios::beg);
 
     std::vector<std::byte> data(static_cast<std::size_t>(file_size));
-    file.read(reinterpret_cast<char *>(data.data()), file_size);
+    file.read(reinterpret_cast<char*>(data.data()), file_size);
 
     // Load from span
     auto result = art2img::load_lookup_data(data);
 
     REQUIRE(result.has_value());
-    const auto &lookup_data = result.value();
+    const auto& lookup_data = result.value();
     CHECK(lookup_data.size() >= 256);
     CHECK(!lookup_data.empty());
   }
@@ -444,14 +440,13 @@ TEST_SUITE("Sidecar File Discovery") {
 }
 
 TEST_SUITE("Real ART Files") {
-
   TEST_CASE("Load TILES000.ART") {
     const std::filesystem::path art_file =
         TEST_ASSET_SOURCE_DIR "/TILES000.ART";
 
     // Check if file exists
     if (!std::filesystem::exists(art_file)) {
-      return; // Skip test if file not found
+      return;  // Skip test if file not found
     }
 
     auto result = art2img::load_art_bundle(art_file);
@@ -463,7 +458,7 @@ TEST_SUITE("Real ART Files") {
     }
 
     REQUIRE(result.has_value());
-    const auto &art_data = result.value();
+    const auto& art_data = result.value();
 
     CHECK(art_data.version == 1);
     CHECK(art_data.tile_count() > 0);
@@ -484,14 +479,14 @@ TEST_SUITE("Real ART Files") {
         TEST_ASSET_SOURCE_DIR "/TILES001.ART";
 
     if (!std::filesystem::exists(art_file)) {
-      return; // Skip test if file not found
+      return;  // Skip test if file not found
     }
 
     auto result =
         art2img::load_art_bundle(art_file, art2img::PaletteHint::both);
 
     REQUIRE(result.has_value());
-    const auto &art_data = result.value();
+    const auto& art_data = result.value();
 
     CHECK(art_data.version == 1);
     CHECK(art_data.tile_count() > 0);
@@ -506,15 +501,15 @@ TEST_SUITE("Real ART Files") {
 
 // Helper function for writing test data (moved outside anonymous namespace)
 namespace {
-void write_u32_le(std::vector<std::byte> &data, std::uint32_t value) {
+void write_u32_le(std::vector<std::byte>& data, std::uint32_t value) {
   data.push_back(static_cast<std::byte>(value & 0xFF));
   data.push_back(static_cast<std::byte>((value >> 8) & 0xFF));
   data.push_back(static_cast<std::byte>((value >> 16) & 0xFF));
   data.push_back(static_cast<std::byte>((value >> 24) & 0xFF));
 }
 
-void write_u16_le(std::vector<std::byte> &data, std::uint16_t value) {
+void write_u16_le(std::vector<std::byte>& data, std::uint16_t value) {
   data.push_back(static_cast<std::byte>(value & 0xFF));
   data.push_back(static_cast<std::byte>((value >> 8) & 0xFF));
 }
-} // namespace
+}  // namespace

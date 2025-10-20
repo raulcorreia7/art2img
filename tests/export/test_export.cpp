@@ -1,13 +1,16 @@
 /// @file test_export.cpp
 /// @brief Unit tests for export functionality
 
-#include "../test_helpers.hpp"
-#include <art2img/export.hpp>
-#include <doctest/doctest.h>
 #include <filesystem>
 #include <regex>
 #include <string>
 #include <vector>
+
+#include <doctest/doctest.h>
+
+#include <art2img/export.hpp>
+
+#include "../test_helpers.hpp"
 
 namespace {
 
@@ -26,10 +29,9 @@ struct TestFixture {
   ~TestFixture() { test_helpers::cleanup_test_output_dir(temp_dir); }
 };
 
-} // anonymous namespace
+}  // anonymous namespace
 
 TEST_SUITE("Export Unit Tests") {
-
   TEST_CASE_FIXTURE(TestFixture, "ExportOptions default values") {
     art2img::ExportOptions opts;
     CHECK(opts.output_dir == "");
@@ -83,7 +85,7 @@ TEST_SUITE("Export Unit Tests") {
     art2img::Palette palette;
 
     auto result = art2img::export_art_files(invalid_files, palette, options);
-    REQUIRE(result.has_value()); // Should not fail, just skip invalid files
+    REQUIRE(result.has_value());  // Should not fail, just skip invalid files
     CHECK(result.value().total_tiles == 0);
     CHECK(result.value().exported_tiles == 0);
   }
@@ -134,4 +136,4 @@ TEST_SUITE("Export Unit Tests") {
     REQUIRE(result.has_value());
   }
 
-} // TEST_SUITE
+}  // TEST_SUITE

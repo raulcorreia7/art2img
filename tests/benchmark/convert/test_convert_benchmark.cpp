@@ -5,13 +5,14 @@
 /// as specified in T4.2 of the tasks.md file. It measures conversion speed and
 /// provides baseline comparisons for the new color abstraction system.
 
-#include <art2img/art.hpp>
-#include <art2img/convert.hpp>
-#include <art2img/palette.hpp>
 #include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <vector>
+
+#include <art2img/art.hpp>
+#include <art2img/convert.hpp>
+#include <art2img/palette.hpp>
 
 using namespace art2img;
 using namespace std::chrono;
@@ -20,7 +21,7 @@ using namespace std::chrono;
 class BenchmarkTimer {
   high_resolution_clock::time_point start_time_;
 
-public:
+ public:
   BenchmarkTimer() : start_time_(high_resolution_clock::now()) {}
 
   double elapsed_seconds() const {
@@ -31,16 +32,16 @@ public:
 };
 
 /// @brief Benchmark conversion of various tile sizes
-void benchmark_tile_conversion(const Palette &palette) {
+void benchmark_tile_conversion(const Palette& palette) {
   std::cout << "\n=== Tile Conversion Benchmarks ===\n";
   std::cout << std::fixed << std::setprecision(3);
 
   // Test different tile sizes
   std::vector<std::pair<u16, u16>> test_sizes = {
-      {16, 16},   // Small tile
-      {32, 32},   // Medium tile
-      {64, 64},   // Large tile
-      {128, 128}, // Very large tile
+      {16, 16},    // Small tile
+      {32, 32},    // Medium tile
+      {64, 64},    // Large tile
+      {128, 128},  // Very large tile
   };
 
   ConversionOptions options;
@@ -49,11 +50,11 @@ void benchmark_tile_conversion(const Palette &palette) {
   options.premultiply_alpha = false;
   options.shade_index = 0;
 
-  for (const auto &[width, height] : test_sizes) {
+  for (const auto& [width, height] : test_sizes) {
     // Create test tile data
     std::vector<u8> tile_data(width * height);
     for (size_t i = 0; i < tile_data.size(); ++i) {
-      tile_data[i] = static_cast<u8>(i % 256); // Pattern
+      tile_data[i] = static_cast<u8>(i % 256);  // Pattern
     }
 
     TileView tile;
@@ -85,7 +86,7 @@ void benchmark_tile_conversion(const Palette &palette) {
 }
 
 /// @brief Benchmark different conversion options
-void benchmark_conversion_options(const Palette &palette) {
+void benchmark_conversion_options(const Palette& palette) {
   std::cout << "\n=== Conversion Options Benchmarks ===\n";
   std::cout << std::fixed << std::setprecision(3);
 
@@ -113,7 +114,7 @@ void benchmark_conversion_options(const Palette &palette) {
 
   const int iterations = 5000;
 
-  for (const auto &[name, options] : test_configs) {
+  for (const auto& [name, options] : test_configs) {
     BenchmarkTimer timer;
 
     for (int i = 0; i < iterations; ++i) {
@@ -157,7 +158,7 @@ void benchmark_color_operations() {
 
   BenchmarkTimer timer2;
   for (int i = 0; i < iterations; ++i) {
-    const auto &c = colors[i % 1000];
+    const auto& c = colors[i % 1000];
     auto rgba = c.to_packed(color::Format::RGBA);
     auto bgra = c.to_packed(color::Format::BGRA);
     // Prevent optimization
@@ -169,7 +170,7 @@ void benchmark_color_operations() {
   // Benchmark premultiplication
   BenchmarkTimer timer3;
   for (int i = 0; i < iterations; ++i) {
-    const auto &c = colors[i % 1000];
+    const auto& c = colors[i % 1000];
     auto premult = c.premultiplied();
     // Prevent optimization
     volatile auto dummy = premult.to_packed(color::Format::RGBA);
@@ -197,7 +198,7 @@ int main() {
     return 1;
   }
 
-  const Palette &palette = palette_result.value();
+  const Palette& palette = palette_result.value();
 
   try {
     benchmark_tile_conversion(palette);
@@ -212,7 +213,7 @@ int main() {
     std::cout << "- Reusable color operations\n";
     std::cout << "- Proper BGR to RGB conversion\n";
 
-  } catch (const std::exception &e) {
+  } catch (const std::exception& e) {
     std::cerr << "Benchmark failed with exception: " << e.what() << "\n";
     return 1;
   }
