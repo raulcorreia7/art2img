@@ -81,9 +81,6 @@ using u32 = std::uint32_t;
 /// @brief 64-bit unsigned integer type
 using u64 = std::uint64_t;
 
-/// @brief 8-bit signed integer type
-using i8 = std::int8_t;
-
 /// @brief 16-bit signed integer type
 using i16 = std::int16_t;
 

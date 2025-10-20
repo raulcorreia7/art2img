@@ -169,7 +169,7 @@ Expose canonical dev/build/test commands in `README`. Use multi-stage Dockerfile
 
 **Prose**
 
-* Professional, concise, human. No emojis or decorative styling
+* Professional, concise, human. **NO EMOJIS** or decorative styling
 
 ---
 

@@ -29,6 +29,7 @@
 #include <sstream>
 
 #include <art2img/art.hpp>
+#include <art2img/detail/binary_reader.hpp>
 #include <art2img/types.hpp>
 
 namespace art2img {
@@ -40,26 +41,6 @@ using types::u32;
 using types::u8;
 
 namespace {
-
-/// @brief Read a 16-bit little-endian value from a byte span
-u16 read_u16_le(std::span<const byte> data, std::size_t offset) {
-  if (offset + 1 >= data.size()) {
-    return 0;
-  }
-  return static_cast<u16>(static_cast<u8>(data[offset])) |
-         (static_cast<u16>(static_cast<u8>(data[offset + 1])) << 8);
-}
-
-/// @brief Read a 32-bit little-endian value from a byte span
-u32 read_u32_le(std::span<const byte> data, std::size_t offset) {
-  if (offset + 3 >= data.size()) {
-    return 0;
-  }
-  return static_cast<u32>(static_cast<u8>(data[offset])) |
-         (static_cast<u32>(static_cast<u8>(data[offset + 1])) << 8) |
-         (static_cast<u32>(static_cast<u8>(data[offset + 2])) << 16) |
-         (static_cast<u32>(static_cast<u8>(data[offset + 3])) << 24);
-}
 
 /// @brief Validate tile dimensions are within reasonable bounds
 constexpr bool is_valid_tile_dimensions(u16 width, u16 height) noexcept {
@@ -180,16 +161,16 @@ std::expected<ArtData, Error> load_art_bundle(std::span<const byte> data,
 
   // Parse header
   std::size_t offset = 0;
-  art_data.version = read_u32_le(data, offset);
+  art_data.version = detail::read_u32_le(data, offset);
   offset += 4;
 
-  const u32 numtiles = read_u32_le(data, offset);
+  const u32 numtiles = detail::read_u32_le(data, offset);
   offset += 4;
 
-  art_data.tile_start = read_u32_le(data, offset);
+  art_data.tile_start = detail::read_u32_le(data, offset);
   offset += 4;
 
-  art_data.tile_end = read_u32_le(data, offset);
+  art_data.tile_end = detail::read_u32_le(data, offset);
   offset += 4;
 
   // Validate header consistency
@@ -224,19 +205,19 @@ std::expected<ArtData, Error> load_art_bundle(std::span<const byte> data,
 
   // Read widths
   for (u32 i = 0; i < tile_count; ++i) {
-    tile_widths[i] = read_u16_le(data, offset);
+    tile_widths[i] = detail::read_u16_le(data, offset);
     offset += 2;
   }
 
   // Read heights
   for (u32 i = 0; i < tile_count; ++i) {
-    tile_heights[i] = read_u16_le(data, offset);
+    tile_heights[i] = detail::read_u16_le(data, offset);
     offset += 2;
   }
 
   // Read picanm values
   for (u32 i = 0; i < tile_count; ++i) {
-    tile_picanms[i] = read_u32_le(data, offset);
+    tile_picanms[i] = detail::read_u32_le(data, offset);
     offset += 4;
   }
 
