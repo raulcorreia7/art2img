@@ -84,11 +84,11 @@ jobs:
       run: |
         cd build
         if [ "${{ runner.os }}" = "Windows" ]; then
-          ctest --output-on-failure --parallel 4 --timeout 300
+          ctest --output-on-failure --parallel 1 --timeout 300
         elif [ "${{ runner.os }}" = "macOS" ]; then
-          ctest --output-on-failure --parallel 4 --timeout 300
+          ctest --output-on-failure --parallel 1 --timeout 300
         else
-          ctest --output-on-failure --parallel 4 --timeout 300
+          ctest --output-on-failure --parallel 1 --timeout 300
         fi
         
     - name: Test Status Check
