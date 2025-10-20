@@ -8,19 +8,22 @@ Modern C++23 library and CLI tool for converting Build engine ART assets to PNG,
 # Build (Linux native)
 git clone https://github.com/raulcorreia7/art2img.git
 cd art2img
-make all
+make build
 
 # Convert ART files
-./build/linux_x64/cli/art2img_cli convert --input TILES.ART --output output/ --format png
+./build/linux_x64/cli/art2img TILES.ART --output output/ --format png
 ```
 
 ## Features
 
 - Modern C++23 API with `std::expected` error handling
 - High-performance conversion with optional parallel processing
-- CLI tool for batch processing
+- CLI tool for batch processing with directory support
 - Memory-safe with RAII and span-based views
-- Legacy v1.x compatibility wrapper
+- Animation data export support
+- Shade table application and transparency fixing
+- Lookup table remapping support
+- Cross-platform builds (Linux, Windows, macOS)
 
 ## Usage
 
@@ -32,7 +35,7 @@ make all
 auto palette = art2img::load_palette("PALETTE.DAT");
 auto art = art2img::load_art_bundle("TILES.ART");
 auto image = art2img::to_rgba(art2img::make_tile_view(*art, 0), *palette);
-auto encoded = art2img::encode_png(art2img::image_view(*image));
+auto encoded = art2img::encode_image(art2img::image_view(*image), art2img::ImageFormat::png);
 art2img::write_binary_file("tile.png", *encoded);
 ```
 
@@ -40,10 +43,16 @@ art2img::write_binary_file("tile.png", *encoded);
 
 ```bash
 # Basic conversion
-art2img convert --input TILES.ART --output output/ --format png
+art2img TILES.ART --output output/ --format png
 
 # With custom palette and parallel processing
-art2img convert --input TILES.ART --palette PALETTE.DAT --output output/ --format png --jobs 4
+art2img TILES.ART --palette PALETTE.DAT --output output/ --format png --jobs 4
+
+# Process directory of ART files
+art2img /path/to/art/files/ --output output/ --format png --verbose
+
+# With shading and transparency options
+art2img TILES.ART --palette PALETTE.DAT --output output/ --format png --shade 1 --no-transparency-fix
 ```
 
 ## Requirements
@@ -61,7 +70,7 @@ The project supports building for multiple platforms from Linux:
 make help
 
 # Native builds
-make all                    # Linux x64 (default)
+make build                  # Linux x64 (default)
 
 # Windows cross-compilation (requires MinGW)
 make windows-x64-mingw     # Windows 64-bit
@@ -74,7 +83,7 @@ make macos-arm64-osxcross  # macOS Apple Silicon
 make macos                  # All macOS variants
 
 # Build everything
-make all-platforms          # All supported platforms
+make windows macos         # All cross-platform targets
 ```
 
 ### Prerequisites for Cross-Compilation
@@ -120,13 +129,15 @@ cmake --build build-debug
 ## Testing
 
 ```bash
-cd build && ctest --output-on-failure
+make test                    # Run tests (Linux native)
+make build && cd build/linux_x64 && ctest --output-on-failure
 ```
 
 ## Documentation
 
 - [Architecture](docs/plan/architecture.md)
-- [Migration Guide](docs/plan/migration_guide.md)
+- [Implementation Tasks](docs/plan/tasks.md)
+- [API Iteration Plan](docs/plan/iteration.md)
 - [Format Specifications](docs/specs/)
 
 ## Dependencies
@@ -134,7 +145,6 @@ cd build && ctest --output-on-failure
 - **stb** - Image encoding
 - **doctest** - Testing framework
 - **CLI11** - Command-line parsing
-- **fmt** - String formatting
 
 All dependencies are fetched automatically via CPM.
 

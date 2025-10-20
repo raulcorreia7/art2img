@@ -9,6 +9,7 @@ file(GLOB_RECURSE TEST_SOURCES
     io/*.cpp
     integration/*.cpp
     animation/*.cpp
+    test_setup.cpp
 )
 
 
@@ -28,6 +29,8 @@ target_compile_definitions(art2img_tests PRIVATE
     TEST_OUTPUT_DIR="${CMAKE_BINARY_DIR}/tests_output"
 )
 
+# Clean and create test output directory
+file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/tests_output)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/tests_output)
 
 # ============================================================================

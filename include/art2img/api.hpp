@@ -33,7 +33,7 @@ namespace art2img {
  * @brief Version information
  */
 struct Version {
-  static constexpr int major = 2;
+  static constexpr int major = 1;
   static constexpr int minor = 0;
   static constexpr int patch = 0;
 
@@ -41,7 +41,7 @@ struct Version {
    * @brief Get version string
    * @return Version string in format "major.minor.patch"
    */
-  static constexpr const char* string() { return "2.0.0"; }
+  static constexpr const char* string() { return "1.0.0"; }
 };
 
 }  // namespace art2img

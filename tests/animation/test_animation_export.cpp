@@ -9,6 +9,7 @@
 /// - Legacy format compatibility with art2tga.c
 /// - Parallel processing of multiple ART files
 
+#include <atomic>
 #include <filesystem>
 #include <fstream>
 #include <regex>
@@ -313,8 +314,16 @@ TEST_SUITE("Animation Export Integration Tests") {
       const auto& art_data = art_result.value();
       CHECK(art_data.is_valid());
 
-      // Create unique config for this ART file to avoid race conditions
+      // Create unique directory and config for this ART file to avoid race conditions
+      static std::atomic<int> dir_counter{0};
+      int unique_id = dir_counter.fetch_add(1);
+      std::string unique_dir_name =
+          "parallel_test_" + std::to_string(unique_id);
+      auto unique_temp_dir = temp_dir / unique_dir_name;
+      test_helpers::ensure_test_output_dir(unique_temp_dir);
+
       art2img::AnimationExportConfig file_config = config;
+      file_config.output_dir = unique_temp_dir;
       file_config.ini_filename =
           art_file.filename().stem().string() + "_animdata.ini";
 
@@ -327,8 +336,14 @@ TEST_SUITE("Animation Export Integration Tests") {
 
       // Check that the unique INI file was created
       const std::filesystem::path ini_path =
-          temp_dir / file_config.ini_filename;
-      CHECK(std::filesystem::exists(ini_path));
+          unique_temp_dir / file_config.ini_filename;
+
+      // Verify the file exists and has expected content
+      REQUIRE(std::filesystem::exists(ini_path));
+      REQUIRE(std::filesystem::file_size(ini_path) > 0);
+
+      // Clean up the unique directory
+      test_helpers::cleanup_test_output_dir(unique_temp_dir);
     }
   }
 

@@ -1,9 +1,12 @@
 /// @file test_io.cpp
 /// @brief Unit tests for file I/O functions
 
+#include <atomic>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -19,7 +22,12 @@ namespace {
 
 /// @brief Create a temporary directory for testing
 std::filesystem::path create_temp_dir() {
-  auto temp_dir = test_helpers::get_unit_test_dir("io", "io_test");
+  // Use atomic counter to create unique directory names and avoid race conditions
+  static std::atomic<int> counter{0};
+  int unique_id = counter.fetch_add(1);
+
+  std::string unique_name = "io_test_" + std::to_string(unique_id);
+  auto temp_dir = test_helpers::get_unit_test_dir("io", unique_name);
   test_helpers::ensure_test_output_dir(temp_dir);
   return temp_dir;
 }
