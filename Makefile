@@ -91,7 +91,7 @@ macos: macos-x64-osxcross macos-arm64-osxcross
 
 # Run tests (Linux native)
 test: build
-	@cd $(BUILD_DIR)/linux_x64 && ctest --output-on-failure --parallel $(JOBS)
+	@cd $(BUILD_DIR)/linux_x64 && ctest --output-on-failure --parallel 1
 
 # Install project
 install: build
