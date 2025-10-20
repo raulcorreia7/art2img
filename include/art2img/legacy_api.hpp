@@ -10,6 +10,7 @@
 #include <cstdint>
 
 // Include the new vNext modules that we'll forward to
+#include <art2img/types.hpp>
 #include <art2img/art.hpp>
 #include <art2img/palette.hpp>
 #include <art2img/convert.hpp>
@@ -18,6 +19,7 @@
 #include <art2img/error.hpp>
 
 namespace art2img {
+namespace legacy {
 
 // ============================================================================
 // LEGACY EXCEPTIONS
