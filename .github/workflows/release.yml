@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: art2img
+            asset_name: art2img-linux-x64
+          - os: macos-latest
+            artifact_name: art2img
+            asset_name: art2img-macos-x64
+          - os: windows-latest
+            artifact_name: art2img.exe
+            asset_name: art2img-windows-x64.exe
+            arch: x64
+          - os: windows-latest
+            artifact_name: art2img.exe
+            asset_name: art2img-windows-x86.exe
+            arch: x86
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+        
+    - name: Configure CMake
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.arch && format('-A {0}', matrix.arch) || '' }}
+        
+    - name: Build
+      run: |
+        cmake --build build --config Release
+        
+    - name: Upload Release Asset
+      uses: softprops/action-gh-release@v1
+      with:
+        files: build/${{ matrix.artifact_name }}
