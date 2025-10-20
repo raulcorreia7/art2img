@@ -183,12 +183,16 @@ Parallelism (thread pool) wraps steps 3–6 only.
 
 ---
 
-## 8. Legacy Wrapper Contract
+## 8. API Migration Policy
 
-- Purpose: keep `ExtractorAPI`, `ArtFile`, `Palette`, `ImageWriter` available for downstream code.
-- Composition: header-only declarations + implementation in `src/legacy_api.cpp`.
-- Toggle: `ART2IMG_ENABLE_LEGACY` CMake option (default ON until external consumers migrate).
-- Behaviour: convert `std::expected` results to legacy return style (bool + `ExtractionResult`).
+**Legacy API Not Supported**: This version of art2img uses a completely redesigned modern C++23 API. No legacy wrapper is provided. Users must migrate to the new `art2img/api.hpp` surface.
+
+**Migration Benefits**:
+- Thread-safe functional design
+- Memory-safe RAII with span-based views
+- Modern `std::expected` error handling
+- Complete ART format coverage
+- Zero-copy tile access via `TileView`
 
 ---
 

@@ -14,40 +14,23 @@ Every task below is self-contained and written so an autonomous code agent can e
 
 ---
 
-## Milestone 0 — Repository Rebaseline
+## Milestone 1 — Project Setup
 
-### T0.0 – Snapshot existing tree to `repository/legacy`
-- **Inputs:** Entire repo except `AGENTS.md`, `QWEN.md`, `docs/plan/*` (keep current plan docs in place).
-- **Actions:**
-  1. Create directory `repository/legacy`.
-  2. Move all existing source/test/build/cmake/scripts files under `repository/legacy` preserving structure.
-  3. Leave planning docs (`docs/plan/*.md`), `AGENTS.md`, `QWEN.md`, and tooling configs (optionally) at root.
-  4. Add placeholder `.keep` files if needed to maintain empty dirs.
-- **Outputs:**
-  - `repository/legacy/<previous tree>` mirrors original layout.
-  - Root tree contains only planning docs, AGENTS/QWEN, and new architecture implementation files as they are created later.
-- **Acceptance:**
-  - `git status` shows all non-plan files relocated; no accidental deletions.
-  - `repository/legacy` builds/tests can still run once we wire legacy shim (future tasks).
-- **Notes:**
-  - Update `.gitignore` if necessary.
-  - Maintain executable bits and symlinks.
-
-### T0.1 – Scaffold fresh project tree
+### T1.0 – Scaffold project tree
 - **Inputs:** `docs/plan/architecture.md`, `docs/plan/tasks.md`.
 - **Actions:**
   1. Create directories: `include/art2img`, `src`, `tests`, `cmake` scaffolding for new core.
   2. Prepare minimal `CMakeLists.txt` referencing upcoming modules, set `CMAKE_CXX_STANDARD 23`.
-  3. Add placeholder README note referencing ongoing refactor.
+  3. Add placeholder README note referencing ongoing implementation.
 - **Outputs:** Skeleton tree ready for new modules (`include/art2img/*.hpp`, `src/*.cpp`, `tests/*`).
 - **Acceptance:** Root `CMakeLists.txt` configures without errors (even if no targets yet).
 
 
 ---
 
-## Milestone 1 — Core Infrastructure
+## Milestone 2 — Core Infrastructure
 
-### T1.1 – Implement `types.hpp`
+### T2.1 – Implement `types.hpp`
 - **Inputs:** Architecture section 4, constants inventory.
 - **Actions:**
   1. Define palette/image constants in `include/art2img/types.hpp`.
@@ -55,7 +38,7 @@ Every task below is self-contained and written so an autonomous code agent can e
 - **Outputs:** `include/art2img/types.hpp`, optional `tests/core/types/test_constants.cpp`.
 - **Acceptance:** Test compile (no runtime tests needed yet).
 
-### T1.2 – Implement `error.hpp`
+### T2.2 – Implement `error.hpp`
 - **Inputs:** Architecture section 4.1.
 - **Actions:**
   1. Define `errc` enum, custom error category, `Error` struct, helper functions returning `std::expected<std::monostate, Error>` failure objects.
@@ -63,7 +46,7 @@ Every task below is self-contained and written so an autonomous code agent can e
 - **Outputs:** `include/art2img/error.hpp`, `src/error.cpp`, tests under `tests/core/error`.
 - **Acceptance:** Unit tests pass (`ctest` subset).
 
-### T1.3 – Hook core target in CMake
+### T2.3 – Hook core target in CMake
 - **Inputs:** New headers (`types.hpp`, `error.hpp`).
 - **Actions:**
   1. Create `art2img_core` library target exporting headers.
@@ -73,9 +56,9 @@ Every task below is self-contained and written so an autonomous code agent can e
 
 ---
 
-## Milestone 2 — Palette Module
+## Milestone 3 — Palette Module
 
-### T2.1 – Implement palette loader
+### T3.1 – Implement palette loader
 - **Inputs:** Architecture sections 4.2, 9 (palette notes), sample assets (e.g., `tests/assets/PALETTE.DAT`).
 - **Actions:**
   1. Write `include/art2img/palette.hpp` API definitions.
@@ -83,20 +66,20 @@ Every task below is self-contained and written so an autonomous code agent can e
   3. Provide utility functions for palette entry conversion.
  4. Enforce validation rules from Architecture §14 (reject truncated payloads, clamp shade indices).
  5. Write unit tests with real + corrupted PALETTE files.
-- **Outputs:** Header, source, tests (`tests/palette/test_palette.cpp`), fixture referencing legacy asset path.
+- **Outputs:** Header, source, tests (`tests/palette/test_palette.cpp`), fixture referencing test asset path.
 - **Acceptance:** `cmake --build --target tests` + `ctest -R palette` pass.
 - **Notes:** Use `std::filesystem`, `std::span`, `std::expected`. Validate size before reading; map errors to `errc::invalid_palette`.
 
-### T2.2 – Document palette module usage
+### T3.2 – Document palette module usage
 - **Actions:** Update `docs/plan/architecture.md` (if needed) and add inline comments summarizing palette behaviour.
 - **Outputs:** Possibly new doc snippet or inline doc comments.
 - **Acceptance:** Documentation reflects final API.
 
 ---
 
-## Milestone 3 — ART Module
+## Milestone 4 — ART Module
 
-### T3.1 – Implement `art.hpp` + loader
+### T4.1 – Implement `art.hpp` + loader
 - **Inputs:** Architecture sections 4.3, 9 (art notes), assets `TILES*.ART`, `LOOKUP.DAT`.
 - **Actions:**
   1. Define `TileAnimation`, `TileView`, `ArtData`, `PaletteHint` in header.
@@ -108,16 +91,16 @@ Every task below is self-contained and written so an autonomous code agent can e
 - **Acceptance:** `ctest -R art` passes; memory spans validated (no out-of-range).
 - **Notes:** Compare tile ranges to architecture doc; error -> `errc::invalid_art` or `errc::io_failure`.
 
-### T3.2 – Helpers for tile iteration
+### T4.2 – Helpers for tile iteration
 - **Actions:** Provide helper functions if needed (within `art.cpp`) for `make_tile_view`, tile lookup by Build ID.
 - **Outputs:** Additional functions, doc updates.
 - **Acceptance:** Tests covering helper behaviour.
 
 ---
 
-## Milestone 4 — Conversion Module
+## Milestone 5 — Conversion Module
 
-### T4.1 – Implement `convert.hpp/.cpp`
+### T5.1 – Implement `convert.hpp/.cpp`
 - **Inputs:** Architecture section 4.4 & 9.
 - **Actions:**
   1. Define `ConversionOptions`, `Image`, `ImageView`, `ColumnMajorRowRange` in header.
@@ -126,16 +109,16 @@ Every task below is self-contained and written so an autonomous code agent can e
 - **Outputs:** Header, source, tests `tests/convert/test_convert.cpp`.
 - **Acceptance:** `ctest -R convert` passes; memory sanitizers optional.
 
-### T4.2 – Performance sanity check
+### T5.2 – Performance sanity check
 - **Actions:** Optional benchmarking harness to document conversion performance.
 - **Outputs:** Bench report (Markdown or test comment) summarizing findings.
 - **Acceptance:** No regressions observed (qualitative).
 
 ---
 
-## Milestone 5 — Encoding & IO
+## Milestone 6 — Encoding & IO
 
-### T5.1 – Implement `encode.hpp/.cpp`
+### T6.1 – Implement `encode.hpp/.cpp`
 - **Inputs:** Architecture section 4.5, 9 (encode notes), stb library (from dependencies).
 - **Actions:**
   1. Define format enum + option structs + EncodeOptions variant.
@@ -144,7 +127,7 @@ Every task below is self-contained and written so an autonomous code agent can e
 - **Outputs:** Header, source, tests `tests/encode/test_encode.cpp` (use small fixture Image).
 - **Acceptance:** `ctest -R encode` passes.
 
-### T5.2 – Implement `io.hpp/.cpp`
+### T6.2 – Implement `io.hpp/.cpp`
 - **Inputs:** Architecture section 4.5.
 - **Actions:**
   1. Provide file read/write helpers returning `std::expected`.
@@ -154,14 +137,14 @@ Every task below is self-contained and written so an autonomous code agent can e
 
 ---
 
-## Milestone 6 — Public API & CLI
+## Milestone 7 — Public API & CLI
 
-### T6.1 – Publish `api.hpp`
+### T7.1 – Publish `api.hpp`
 - **Actions:** Create header including `types`, `error`, `palette`, `art`, `convert`, `encode`, `io`.
 - **Outputs:** `include/art2img/api.hpp`.
 - **Acceptance:** Build compiles with single include.
 
-### T6.2 – Rebuild CLI on new pipeline
+### T7.2 – Rebuild CLI on new pipeline
 - **Inputs:** Architecture section 6, CLI design from docs/plan.
 - **Actions:**
   1. Create new CLI entry under `cli/` referencing `art2img/api.hpp`.
@@ -171,7 +154,7 @@ Every task below is self-contained and written so an autonomous code agent can e
 - **Outputs:** `cli/main.cpp`, support files, tests under `tests/cli`.
 - **Acceptance:** `ctest -R cli`, manual CLI run on sample ART.
 
-### T6.3 – Update build scripts for new CLI
+### T7.3 – Update build scripts for new CLI
 - **Actions:** Refresh `Makefile`, `scripts` (if needed) to point to new build targets.
 - **Outputs:** Updated automation referencing new CLI.
 - **Acceptance:** `make all`, `make test` succeed.
@@ -180,14 +163,14 @@ Every task below is self-contained and written so an autonomous code agent can e
 
 
 
-## Milestone 7 — Cleanup & Documentation
+## Milestone 8 — Cleanup & Documentation
 
-### T7.1 – Cleanup
+### T8.1 – Cleanup
 - **Actions:** Remove redundant code and ensure clean tree structure.
 - **Outputs:** Clean tree referencing only new modules.
 - **Acceptance:** `git status` shows removal of unused artifacts.
 
-### T7.2 – Documentation pass
+### T8.2 – Documentation pass
 - **Actions:** Update README, CLI usage instructions, dependency notes.
 - **Outputs:** Revised docs reflecting new API.
 - **Acceptance:** Docs render cleanly; cross-links valid.
@@ -208,43 +191,47 @@ Every task below is self-contained and written so an autonomous code agent can e
 ```mermaid
 gantt
     dateFormat  YYYY-MM-DD
-    title  art2img vNext Roadmap
+    title  art2img Implementation Roadmap
 
-    section Baseline
-    T0.0 Legacy Snapshot :done,    des1, 2024-07-01, 1d
-    T0.1 New Skeleton    :active,  des2, 2024-07-02, 1d
+    section Project Setup
+    T1.0 Project Skeleton :active,  des1, 2024-07-01, 1d
 
     section Core Infra
-    T1.1 Types/Error     :        des3, after des2, 1d
-    T1.2 CMake Core      :        des4, after des3, 1d
+    T2.1 Types/Error     :        des2, after des1, 1d
+    T2.2 CMake Core      :        des3, after des2, 1d
+    T2.3 Core Target     :        des4, after des3, 1d
 
     section Palette/Art
-    T2.1 Palette Loader  :        des5, after des4, 2d
-    T3.1 Art Loader      :        des6, after des5, 3d
+    T3.1 Palette Loader  :        des5, after des4, 2d
+    T3.2 Palette Docs    :        des6, after des5, 1d
+    T4.1 Art Loader      :        des7, after des6, 3d
+    T4.2 Art Helpers     :        des8, after des7, 1d
 
     section Convert/Encode/IO
-    T4.1 Convert Module  :        des7, after des6, 3d
-    T5.1 Encode IO       :        des8, after des7, 3d
+    T5.1 Convert Module  :        des9, after des8, 3d
+    T5.2 Convert Perf    :        des10, after des9, 1d
+    T6.1 Encode Module   :        des11, after des10, 3d
+    T6.2 IO Module       :        des12, after des11, 2d
 
     section API & CLI
-    T6.1 API Barrel      :        des9, after des8, 1d
-    T6.2 CLI Rebuild     :        des10, after des9, 3d
-
-    section Legacy
-    T7.1 Wrapper         :        des11, after des10, 3d
+    T7.1 API Barrel      :        des13, after des12, 1d
+    T7.2 CLI Rebuild     :        des14, after des13, 3d
+    T7.3 Build Scripts   :        des15, after des14, 1d
 
     section Cleanup
-    T8.2 Docs + QA       :        des12, after des11, 2d
+    T8.1 Cleanup         :        des16, after des15, 1d
+    T8.2 Documentation   :        des17, after des16, 2d
+    T8.3 Final QA        :        des18, after des17, 2d
 ```
 
 ---
 
 ## Build/Test Command Cheat Sheet
 
-- Configure: `cmake -S . -B build -DART2IMG_ENABLE_LEGACY=ON`
+- Configure: `cmake -S . -B build`
 - Build: `cmake --build build`
 - Tests: `cd build && ctest --output-on-failure`
-- Sanitizers: `cmake -S . -B build-asan -DART2IMG_ENABLE_LEGACY=ON -DENABLE_ASAN=ON -DENABLE_LEAK_SANITIZER=ON`
+- Sanitizers: `cmake -S . -B build-asan -DENABLE_ASAN=ON -DENABLE_LEAK_SANITIZER=ON`
 - CLI smoke: `./build/bin/art2img --help`
 
 ---
@@ -259,9 +246,8 @@ gantt
 
 ## Acceptance Gate (Final)
 
-To mark the refactor complete:
+To mark the implementation complete:
 1. New pipeline (`api.hpp` and modules) is the default include path.
 2. CLI uses new pipeline exclusively.
-3. Legacy wrapper builds/tests with toggle ON; project builds cleanly with toggle OFF.
-4. Documentation, build scripts, examples updated.
-5. Full QA (build + test + sanitizers) passes.
+3. Documentation, build scripts, examples updated.
+4. Full QA (build + test + sanitizers) passes.
