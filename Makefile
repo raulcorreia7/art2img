@@ -19,7 +19,7 @@ all: build
 
 # Native Linux build (current - unchanged)
 build:
-	@cmake -B build/linux_x64 -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
+	@cmake -S . -B build/linux_x64 -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
 	@cmake --build build/linux_x64 --parallel $(JOBS)
 
 # Prerequisite checks

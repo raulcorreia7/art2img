@@ -2,6 +2,7 @@
 
 #include <art2img/error.hpp>
 #include <art2img/types.hpp>
+#include <array>
 #include <expected>
 #include <filesystem>
 #include <span>
