@@ -32,9 +32,10 @@ struct AnimationTestFixture {
   art2img::AnimationExportConfig config;
 
   AnimationTestFixture() {
-    temp_dir =
-        test_helpers::get_unit_test_dir("animation", "test_animation_export");
-    test_helpers::ensure_test_output_dir(temp_dir);
+    // Create unique directory for each test instance to avoid race conditions
+    temp_dir = test_helpers::create_unique_test_dir(
+        test_helpers::get_unit_test_dir("animation", "test_animation_export"),
+        "fixture");
     config.output_dir = temp_dir;
     config.ini_filename = "test_animdata.ini";
   }
@@ -315,12 +316,8 @@ TEST_SUITE("Animation Export Integration Tests") {
       CHECK(art_data.is_valid());
 
       // Create unique directory and config for this ART file to avoid race conditions
-      static std::atomic<int> dir_counter{0};
-      int unique_id = dir_counter.fetch_add(1);
-      std::string unique_dir_name =
-          "parallel_test_" + std::to_string(unique_id);
-      auto unique_temp_dir = temp_dir / unique_dir_name;
-      test_helpers::ensure_test_output_dir(unique_temp_dir);
+      auto unique_temp_dir =
+          test_helpers::create_unique_test_dir(temp_dir, "parallel_test");
 
       art2img::AnimationExportConfig file_config = config;
       file_config.output_dir = unique_temp_dir;
@@ -457,9 +454,9 @@ TEST_SUITE("Animation Export Error Handling") {
   }
 
   TEST_CASE_FIXTURE(AnimationTestFixture, "file system permission errors") {
-    // Create a read-only directory to test permission errors
-    const std::filesystem::path readonly_dir = temp_dir / "readonly";
-    test_helpers::ensure_test_output_dir(readonly_dir);
+    // Create a unique read-only directory to test permission errors
+    const std::filesystem::path readonly_dir =
+        test_helpers::create_unique_test_dir(temp_dir, "readonly");
 
     // Make directory read-only (if possible on this system)
     std::error_code ec;
