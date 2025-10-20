@@ -67,3 +67,4 @@ TEST_SUITE("types::type_aliases") {
         CHECK(true);
     }
 }
+

@@ -20,15 +20,19 @@
 /// according to Architecture §14 validation rules.
 
 #include <art2img/palette.hpp>
+#include <art2img/palette/detail/palette_color.hpp>
 #include <fstream>
 #include <algorithm>
 #include <tuple>
 #include <cstring>
 
-using namespace art2img::types;
 
 namespace art2img
 {
+    using art2img::types::byte;
+    using art2img::types::u8;
+    using art2img::types::u16;
+    using art2img::types::u32;
 
     namespace
     {
@@ -43,29 +47,6 @@ namespace art2img
         constexpr bool is_valid_shade_index(u16 shade_count, u8 shade) noexcept
         {
             return shade < shade_count;
-        }
-
-        /// @brief Convert 6-bit color component to 8-bit
-        constexpr u8 scale_6bit_to_8bit(u8 value) noexcept
-        {
-            // Scale from 6-bit (0-63) to 8-bit (0-255) with proper rounding
-            // Formula: round(value * 255 / 63)
-            return static_cast<u8>((value * 255 + 31) / 63);
-        }
-
-        /// @brief Convert BGR to RGB (swap red and blue channels)
-        constexpr u32 bgr_to_rgb(u32 bgra) noexcept
-        {
-            const u8 b = static_cast<u8>(bgra & 0xFF);
-            const u8 g = static_cast<u8>((bgra >> 8) & 0xFF);
-            const u8 r = static_cast<u8>((bgra >> 16) & 0xFF);
-            const u8 a = static_cast<u8>((bgra >> 24) & 0xFF);
-            
-            // Return RGBA (swap R and B)
-            return (static_cast<u32>(a) << 24) |
-                   (static_cast<u32>(r) << 16) |
-                   (static_cast<u32>(g) << 8) |
-                   static_cast<u32>(b);
         }
 
         /// @brief Read a 16-bit little-endian value from a byte span
@@ -184,47 +165,19 @@ namespace art2img
 
     u32 palette_entry_to_rgba(const Palette &palette, u8 index)
     {
-        if (!is_valid_palette_index(index))
-        {
-            // Return black for invalid indices
-            return 0xFF000000;
-        }
-
-        const auto [r, g, b] = palette_entry_to_rgb(palette, index);
-        // Return RGBA format (standard RGB order)
-        return (0xFFu << 24) | (static_cast<u32>(r) << 16) |
-               (static_cast<u32>(g) << 8) | static_cast<u32>(b);
+        return palette::detail::make_palette_color(palette, index).to_packed(color::Format::RGBA);
     }
 
     u32 palette_shaded_entry_to_rgba(const Palette &palette, u8 shade, u8 index)
     {
-        const auto [r, g, b] = palette_shaded_entry_to_rgb(palette, shade, index);
-        // Return RGBA format (standard RGB order)
-        return (0xFFu << 24) | (static_cast<u32>(r) << 16) |
-               (static_cast<u32>(g) << 8) | static_cast<u32>(b);
+        return palette_shaded_entry_to_color(palette, shade, index).to_packed(color::Format::RGBA);
     }
 
     std::tuple<u8, u8, u8> palette_entry_to_rgb(
         const Palette &palette, u8 index)
     {
-        if (!is_valid_palette_index(index))
-        {
-            return {0, 0, 0}; // Black for invalid indices
-        }
-
-        // Palette stores BGR as 3 consecutive bytes per entry (6-bit values)
-        const std::size_t base_offset = static_cast<std::size_t>(index) * constants::COLOR_COMPONENTS;
-
-        const u8 b_6bit = palette.data[base_offset];     // Blue first
-        const u8 g_6bit = palette.data[base_offset + 1]; // Green second
-        const u8 r_6bit = palette.data[base_offset + 2]; // Red third
-
-        // Scale from 6-bit (0-63) to 8-bit (0-255)
-        const u8 r_8bit = scale_6bit_to_8bit(r_6bit);
-        const u8 g_8bit = scale_6bit_to_8bit(g_6bit);
-        const u8 b_8bit = scale_6bit_to_8bit(b_6bit);
-
-        return {r_8bit, g_8bit, b_8bit};
+        const auto color = palette::detail::make_palette_color(palette, index);
+        return {color.r, color.g, color.b};
     }
 
     std::tuple<u8, u8, u8> palette_shaded_entry_to_rgb(
@@ -252,25 +205,7 @@ namespace art2img
 
     color::Color palette_entry_to_color(const Palette &palette, u8 index)
     {
-        if (!is_valid_palette_index(index))
-        {
-            return color::constants::BLACK; // Black for invalid indices
-        }
-
-        // Palette stores BGR as 3 consecutive bytes per entry (6-bit values)
-        const std::size_t base_offset = static_cast<std::size_t>(index) * constants::COLOR_COMPONENTS;
-
-        const u8 b_6bit = palette.data[base_offset];     // Blue first
-        const u8 g_6bit = palette.data[base_offset + 1]; // Green second
-        const u8 r_6bit = palette.data[base_offset + 2]; // Red third
-
-        // Scale from 6-bit (0-63) to 8-bit (0-255)
-        const u8 r_8bit = scale_6bit_to_8bit(r_6bit);
-        const u8 g_8bit = scale_6bit_to_8bit(g_6bit);
-        const u8 b_8bit = scale_6bit_to_8bit(b_6bit);
-
-        // Return Color structure (RGB format, but source is BGR)
-        return color::Color(r_8bit, g_8bit, b_8bit, 255);
+        return palette::detail::make_palette_color(palette, index);
     }
 
     color::Color palette_shaded_entry_to_color(const Palette &palette, u8 shade, u8 index)
@@ -292,7 +227,7 @@ namespace art2img
         const u8 shaded_index = palette.shade_tables[shade_offset];
 
         // Convert the shaded palette entry to Color
-        return palette_entry_to_color(palette, shaded_index);
+        return palette::detail::make_palette_color(palette, shaded_index);
     }
 
 } // namespace art2img

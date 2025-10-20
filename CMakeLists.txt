@@ -57,6 +57,22 @@ endif()
 set(CPM_SOURCE_CACHE "${CMAKE_CURRENT_SOURCE_DIR}/.cache")
 include(cmake/CPM.cmake)
 
+# Add stb library for image encoding
+CPMAddPackage(
+    NAME stb
+    GITHUB_REPOSITORY nothings/stb
+    GIT_TAG fede005abaf93d9d7f3a679d1999b2db341b360f  # Latest commit on master branch
+)
+
+# Create interface library for stb since CPM doesn't create it automatically
+add_library(stb_headers INTERFACE)
+target_include_directories(stb_headers INTERFACE ${stb_SOURCE_DIR})
+# Suppress warnings from stb headers
+set_target_properties(stb_headers PROPERTIES
+    INTERFACE_COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:CXX>:-w>"
+)
+add_library(stb ALIAS stb_headers)
+
 # Enable testing support
 option(BUILD_TESTING "Build tests" ON)
 if(BUILD_TESTING)
@@ -76,6 +92,11 @@ endif()
 # Auto-discover source and header files
 file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 file(GLOB_RECURSE LIB_HEADERS CONFIGURE_DEPENDS "include/art2img/*.hpp")
+
+# Remove legacy API files if not enabled
+if(NOT ART2IMG_ENABLE_LEGACY)
+    list(FILTER LIB_SOURCES EXCLUDE REGEX "legacy_api")
+endif()
 
 # Validate files exist
 if(NOT LIB_SOURCES)
@@ -103,6 +124,13 @@ target_include_directories(art2img_core
         $<INSTALL_INTERFACE:include>
 )
 
+# Link stb library if available
+if(TARGET stb)
+    target_link_libraries(art2img_core PUBLIC stb)
+    # Add the STB implementation definition
+    target_compile_definitions(art2img_core PUBLIC STB_IMAGE_WRITE_IMPLEMENTATION)
+endif()
+
 # ============================================================================
 # 5. INSTALLATION
 # ============================================================================
@@ -116,9 +144,43 @@ install(TARGETS art2img_core
 install(DIRECTORY include/art2img
     DESTINATION include
 )
+# ============================================================================
+# 6. LEGACY API
+# ============================================================================
+# Option to build legacy API wrapper (default OFF)
+option(ART2IMG_ENABLE_LEGACY "Enable legacy API compatibility wrapper" OFF)
+
+if(ART2IMG_ENABLE_LEGACY)
+    # Add legacy API source files if enabled
+    file(GLOB LEGACY_SOURCES CONFIGURE_DEPENDS "src/legacy_api.cpp")
+    file(GLOB LEGACY_HEADERS CONFIGURE_DEPENDS "include/art2img/legacy_api.hpp")
+    
+    if(LEGACY_SOURCES AND LEGACY_HEADERS)
+        target_sources(art2img_core PRIVATE ${LEGACY_SOURCES})
+        target_sources(art2img_core PUBLIC ${LEGACY_HEADERS})
+        
+        # Add compile definition to indicate legacy support is enabled
+        target_compile_definitions(art2img_core PUBLIC ART2IMG_ENABLE_LEGACY)
+        
+        message(STATUS "Legacy API wrapper enabled")
+    else()
+        message(WARNING "Legacy API sources not found - legacy wrapper disabled")
+    endif()
+endif()
+
 
 # ============================================================================
-# 6. TESTING
+# 7. CLI
+# ============================================================================
+# Option to build CLI
+option(BUILD_CLI "Build CLI executable" ON)
+
+if(BUILD_CLI)
+    add_subdirectory(cli)
+endif()
+
+# ============================================================================
+# 8. TESTING
 # ============================================================================
 # Add tests directory if testing is enabled
 if(BUILD_TESTING)

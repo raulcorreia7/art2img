@@ -25,10 +25,12 @@
 #include <cstring>
 #include <filesystem>
 
-using namespace art2img::types;
-
 namespace art2img
 {
+    using types::byte;
+    using types::u8;
+    using types::u16;
+    using types::u32;
 
     namespace
     {

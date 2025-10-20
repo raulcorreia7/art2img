@@ -7,9 +7,11 @@
 #include <span>
 #include <vector>
 
-using namespace art2img::types;
-
 namespace art2img {
+
+using types::byte;
+using types::u8;
+using types::u16;
 
 /// @brief Immutable palette data structure containing RGB colors, shade tables, and translucent map
 struct Palette {

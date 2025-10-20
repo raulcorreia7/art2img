@@ -1,6 +1,7 @@
 #include <doctest/doctest.h>
 #include <art2img/palette.hpp>
 #include <art2img/types.hpp>
+#include <art2img/color_helpers.hpp>
 #include <fstream>
 #include <filesystem>
 #include <vector>
@@ -120,19 +121,21 @@ TEST_SUITE("palette module") {
         
         // Test various palette indices
         for (std::uint8_t i = 0; i < 10; ++i) {
-            auto rgba = palette_entry_to_rgba(palette, i);
+            const auto color = color::unpack_rgba(palette_entry_to_rgba(palette, i));
             // Check alpha channel is set to 0xFF
-            CHECK((rgba & 0xFF000000) == 0xFF000000);
+            CHECK(color.a == 255);
             // Check RGB components are reasonable
-            CHECK((rgba & 0x00FFFFFF) <= 0x00FFFFFF);
+            CHECK(color.r <= 255);
+            CHECK(color.g <= 255);
+            CHECK(color.b <= 255);
         }
         
         // Test edge case: the function accepts uint8_t, so all values 0-255 are valid
         // The validation happens inside the function based on PALETTE_SIZE constant
         for (std::uint8_t i = 250; i < 255; ++i) {
-            auto rgba = palette_entry_to_rgba(palette, i);
+            const auto color = color::unpack_rgba(palette_entry_to_rgba(palette, i));
             // All valid indices should return valid RGBA values
-            CHECK((rgba & 0xFF000000) == 0xFF000000); // Alpha should be set
+            CHECK(color.a == 255); // Alpha should be set
         }
     }
     
@@ -153,9 +156,9 @@ TEST_SUITE("palette module") {
         // Test shaded entries
         for (std::uint8_t shade = 0; shade < std::min(palette.shade_table_count, static_cast<std::uint16_t>(5)); ++shade) {
             for (std::uint8_t i = 0; i < 10; ++i) {
-                auto rgba = palette_shaded_entry_to_rgba(palette, shade, i);
+                const auto color = color::unpack_rgba(palette_shaded_entry_to_rgba(palette, shade, i));
                 // Check alpha channel is set to 0xFF
-                CHECK((rgba & 0xFF000000) == 0xFF000000);
+                CHECK(color.a == 255);
             }
         }
         

@@ -10,8 +10,16 @@
 #include <iterator>
 #include <cstddef>
 
-using namespace art2img::types;
 namespace art2img {
+
+using types::u8;
+using types::u16;
+using types::u32;
+using types::byte;
+using types::byte_span;
+using types::mutable_byte_span;
+using types::u8_span;
+using types::mutable_u8_span;
 
 /// @brief Options for converting indexed tiles to RGBA images
 struct ConversionOptions {
@@ -129,6 +137,7 @@ public:
         using difference_type = std::ptrdiff_t;
         using pointer = const value_type*;
         using reference = const value_type&;
+        friend class ColumnMajorRowRange;
         
         /// @brief Default constructor
         iterator() = default;
@@ -159,7 +168,6 @@ public:
         std::span<u8> scratch_;
         u16 current_row_ = 0;
         u16 max_rows_ = 0;
-        mutable std::vector<u8> row_buffer_;
     };
     
     /// @brief Default constructor
@@ -170,13 +178,13 @@ public:
     
     /// @brief Get begin iterator
     iterator begin() const;
-    
+
     /// @brief Get end iterator
     iterator end() const;
     
     /// @brief Check if range is valid
     constexpr bool is_valid() const noexcept {
-        return tile_ && tile_->is_valid() && !scratch_.empty();
+        return tile_ && tile_->is_valid() && scratch_.size() >= tile_->width;
     }
     
 private:
@@ -185,10 +193,13 @@ private:
 };
 
 // ============================================================================
+// ============================================================================
+
+// ============================================================================
 // CONVERSION FUNCTIONS
 // ============================================================================
 
-/// @brief Convert a tile view to RGBA image
+/// @brief Convert a tile view to RGBA image and linear row/column
 /// @param tile The tile view to convert
 /// @param palette The palette to use for color conversion
 /// @param options Conversion options
@@ -196,36 +207,36 @@ private:
 std::expected<Image, Error> to_rgba(
     const TileView& tile, 
     const Palette& palette, 
-    const ConversionOptions& options = {});
+    const ConversionOptions& = {});
 
 /// @brief Create a non-owning view over an image
 /// @param image The image to create a view for
 /// @return ImageView over the image
 ImageView image_view(const Image& image);
 
-/// @brief Copy column-major pixel data to row-major format
+/// @brief Convert column-major pixel data to row-major format
 /// @param tile The tile view with column-major data
 /// @param destination Destination buffer for row-major data
 /// @return Expected success on completion, Error on failure
-std::expected<std::monostate, Error> copy_column_major_to_row_major(
+std::expected<std::monostate, Error> convert_column_to_row_major(
     const TileView& tile, 
     std::span<u8> destination);
 
-/// @brief Sample a pixel index from column-major data
-/// @param tile The tile view to sample from
+/// @brief Get pixel value at coordinates from column-major data
+/// @param tile The tile view to read from
 /// @param x X coordinate (column)
 /// @param y Y coordinate (row)
 /// @return Expected palette index on success, Error on failure
-std::expected<u8, Error> sample_column_major_index(
+std::expected<u8, Error> get_pixel_column_major(
     const TileView& tile, 
     u16 x, 
     u16 y);
 
-/// @brief Create a range for iterating over tile rows
+/// @brief Create a row iterator for column-major tile data
 /// @param tile The tile view to iterate over
 /// @param scratch Scratch buffer for temporary row data
 /// @return ColumnMajorRowRange for row iteration
-ColumnMajorRowRange column_major_rows(
+ColumnMajorRowRange make_column_major_row_iterator(
     const TileView& tile, 
     std::span<u8> scratch);
 

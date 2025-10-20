@@ -186,7 +186,7 @@ int main() {
     std::cout << "========================================\n";
     
     // Load palette for testing
-    auto palette_result = load_palette("tests/assets/PALETTE.DAT");
+    auto palette_result = load_palette(TEST_ASSET_SOURCE_DIR "/PALETTE.DAT");
     if (!palette_result) {
         std::cerr << "Failed to load palette: " << palette_result.error().message << "\n";
         return 1;

@@ -8,7 +8,20 @@
 file(GLOB_RECURSE TEST_SOURCES
                             core/*.cpp
                             art/*.cpp
-                            convert/*.cpp)
+                            convert/*.cpp
+                            encode/*.cpp
+                            io/*.cpp
+                            integration/*.cpp)
+
+# Add legacy tests if enabled
+if(ART2IMG_ENABLE_LEGACY)
+    file(GLOB LEGACY_TEST_SOURCES CONFIGURE_DEPENDS legacy/*.cpp)
+    if(LEGACY_TEST_SOURCES)
+        list(APPEND TEST_SOURCES ${LEGACY_TEST_SOURCES})
+    endif()
+endif()
+
+
 
 # ============================================================================
 # 2. TEST EXECUTABLE
@@ -30,14 +43,17 @@ target_compile_definitions(art2img_tests PRIVATE TEST_ASSET_SOURCE_DIR="${CMAKE_
 # ============================================================================
 include(${DOCTEST_CMAKE_HELPER})
 doctest_discover_tests(art2img_tests
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     PROPERTIES TIMEOUT 300
 )
 
 # ============================================================================
-# 6. BENCHMARK EXECUTABLE (separate from unit tests)
+# 6. BENCHMARKS
 # ============================================================================
-add_executable(test_convert_benchmark convert/test_convert_benchmark.cpp)
-target_link_libraries(test_convert_benchmark PRIVATE art2img_core)
-target_include_directories(test_convert_benchmark PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
-target_compile_definitions(test_convert_benchmark PRIVATE TEST_ASSET_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets")
+# Add benchmarks directory (conditionally built)
+option(BUILD_BENCHMARKS "Build benchmarks" OFF)
+if(BUILD_BENCHMARKS)
+    add_subdirectory(benchmark)
+endif()
+
+

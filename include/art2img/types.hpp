@@ -5,10 +5,10 @@
 #include <vector>
 #include <string>
 
-// Include span if available (C++20+)
 #if __has_include(<span>)
 #include <span>
 #endif
+#include <span>
 
 namespace art2img {
 
@@ -145,15 +145,15 @@ struct Color {
     constexpr types::u32 to_packed(Format format = Format::RGBA) const noexcept {
         switch (format) {
             case Format::RGBA:
-                return (static_cast<types::u32>(a) << 24) |
-                       (static_cast<types::u32>(r) << 16) |
-                       (static_cast<types::u32>(g) << 8) |
-                       static_cast<types::u32>(b);
+                return (static_cast<types::u32>(r) << 24) |
+                       (static_cast<types::u32>(g) << 16) |
+                       (static_cast<types::u32>(b) << 8) |
+                       static_cast<types::u32>(a);
             case Format::BGRA:
-                return (static_cast<types::u32>(a) << 24) |
-                       (static_cast<types::u32>(b) << 16) |
-                       (static_cast<types::u32>(g) << 8) |
-                       static_cast<types::u32>(r);
+                return (static_cast<types::u32>(b) << 24) |
+                       (static_cast<types::u32>(g) << 16) |
+                       (static_cast<types::u32>(r) << 8) |
+                       static_cast<types::u32>(a);
             case Format::ARGB:
                 return (static_cast<types::u32>(a) << 24) |
                        (static_cast<types::u32>(r) << 16) |
@@ -180,16 +180,16 @@ struct Color {
     constexpr void from_packed(types::u32 packed, Format format) noexcept {
         switch (format) {
             case Format::RGBA:
-                r = static_cast<types::u8>((packed >> 16) & 0xFF);
-                g = static_cast<types::u8>((packed >> 8) & 0xFF);
-                b = static_cast<types::u8>(packed & 0xFF);
-                a = static_cast<types::u8>((packed >> 24) & 0xFF);
+                r = static_cast<types::u8>((packed >> 24) & 0xFF);
+                g = static_cast<types::u8>((packed >> 16) & 0xFF);
+                b = static_cast<types::u8>((packed >> 8) & 0xFF);
+                a = static_cast<types::u8>(packed & 0xFF);
                 break;
             case Format::BGRA:
-                b = static_cast<types::u8>((packed >> 16) & 0xFF);
-                g = static_cast<types::u8>((packed >> 8) & 0xFF);
-                r = static_cast<types::u8>(packed & 0xFF);
-                a = static_cast<types::u8>((packed >> 24) & 0xFF);
+                b = static_cast<types::u8>((packed >> 24) & 0xFF);
+                g = static_cast<types::u8>((packed >> 16) & 0xFF);
+                r = static_cast<types::u8>((packed >> 8) & 0xFF);
+                a = static_cast<types::u8>(packed & 0xFF);
                 break;
             case Format::ARGB:
                 a = static_cast<types::u8>((packed >> 24) & 0xFF);

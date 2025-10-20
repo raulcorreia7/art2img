@@ -14,126 +14,33 @@
 /// All functions use std::expected<T, Error> for error handling with proper validation
 /// according to Architecture §14 validation rules.
 
-#include <art2img/types.hpp>
 #include <art2img/convert.hpp>
+#include <art2img/color_helpers.hpp>
+#include <art2img/convert/detail/pixel_converter.hpp>
+#include <art2img/types.hpp>
 #include <algorithm>
 #include <cstring>
 #include <limits>
 
-using namespace art2img::types;
 namespace art2img
 {
 
     namespace
     {
+        using types::u16;
+        using types::u8;
 
         /// @brief Validate coordinates are within tile bounds
         constexpr bool is_valid_coordinates(const TileView &tile, u16 x, u16 y) noexcept
         {
             return x < tile.width && y < tile.height;
         }
-
-        /// @brief Apply palette remapping to a pixel index
-        u8 apply_remap(u8 pixel, u8_span remap) noexcept
-        {
-            if (remap.empty() || pixel >= remap.size())
-            {
-                return pixel; // No remapping available or out of bounds
-            }
-            return remap[pixel];
-        }
-
-        /// @brief Fix transparency for palette index 0
-        u32 fix_transparency(u32 rgba, u8 pixel_index, bool should_fix) noexcept
-        {
-            if (!should_fix || pixel_index != 0)
-            {
-                return rgba;
-            }
-            // Make index 0 fully transparent (keep RGB but set alpha to 0)
-            return rgba & 0x00FFFFFF; // Clear alpha byte
-        }
-
-        /// @brief Premultiply alpha channel
-        u32 premultiply_alpha(u32 rgba) noexcept
-        {
-            const u8 a = static_cast<u8>((rgba >> 24) & 0xFF);
-            const u8 r = static_cast<u8>((rgba >> 16) & 0xFF);
-            const u8 g = static_cast<u8>((rgba >> 8) & 0xFF);
-            const u8 b = static_cast<u8>(rgba & 0xFF);
-
-            const u16 alpha_factor = static_cast<u16>(a) + 1; // +1 for rounding
-            const u8 r_premult = static_cast<u8>((static_cast<u16>(r) * alpha_factor) >> 8);
-            const u8 g_premult = static_cast<u8>((static_cast<u16>(g) * alpha_factor) >> 8);
-            const u8 b_premult = static_cast<u8>((static_cast<u16>(b) * alpha_factor) >> 8);
-
-            return (static_cast<u32>(a) << 24) |
-                   (static_cast<u32>(r_premult) << 16) |
-                   (static_cast<u32>(g_premult) << 8) |
-                   static_cast<u32>(b_premult);
-        }
-
-        /// @brief Convert a single pixel through the full conversion pipeline
-        u32 convert_pixel(
-            u8 pixel_index,
-            const Palette &palette,
-            const ConversionOptions &options,
-            u8_span remap)
-        {
-
-            // Step 1: Apply remapping if requested and available
-            if (options.apply_lookup && !remap.empty())
-            {
-                pixel_index = apply_remap(pixel_index, remap);
-            }
-
-            // Step 2: Get color from palette (handles BGR->RGB conversion internally)
-            color::Color color;
-            if (palette.shade_table_count > 0)
-            {
-                color = palette_shaded_entry_to_color(palette, options.shade_index, pixel_index);
-            }
-            else
-            {
-                color = palette_entry_to_color(palette, pixel_index);
-            }
-
-            // Step 3: Fix transparency if requested
-            if (options.fix_transparency && pixel_index == 0)
-            {
-                color = color.make_transparent();
-            }
-
-            // Step 4: Premultiply alpha if requested
-            if (options.premultiply_alpha)
-            {
-                color = color.premultiplied();
-            }
-
-            // Step 5: Convert to RGBA format for output
-            return color.to_packed(color::Format::RGBA);
-        }
         /// @brief Write RGBA value to destination buffer (RGBA format)
-        void write_rgba(mutable_u8_span dest, std::size_t offset, u32 rgba) noexcept
+        void write_rgba(mutable_u8_span dest, std::size_t offset, const color::Color &color) noexcept
         {
-            if (offset + 3 < dest.size())
+            if (offset + constants::RGBA_BYTES_PER_PIXEL <= dest.size())
             {
-                dest[offset] = static_cast<u8>((rgba >> 16) & 0xFF);     // Red
-                dest[offset + 1] = static_cast<u8>((rgba >> 8) & 0xFF);  // Green
-                dest[offset + 2] = static_cast<u8>(rgba & 0xFF);         // Blue
-                dest[offset + 3] = static_cast<u8>((rgba >> 24) & 0xFF); // Alpha
-            }
-        }
-
-        /// @brief Write RGBA value to destination buffer (RGBA format)
-        void write_rgba(mutable_u8_span dest, std::size_t offset, color::Color color) noexcept
-        {
-            if (offset + 3 < dest.size())
-            {
-                dest[offset] = color.r;     // Red
-                dest[offset + 1] = color.g;  // Green
-                dest[offset + 2] = static_cast<u8>(rgba & 0xFF);         // Blue
-                dest[offset + 3] = static_cast<u8>((rgba >> 24) & 0xFF); // Alpha
+                color::write_rgba(dest.data() + offset, color);
             }
         }
 
@@ -143,13 +50,9 @@ namespace art2img
     // ColumnMajorRowRange Implementation
     // ============================================================================
 
-    ColumnMajorRowRange::iterator::iterator(const TileView &tile, mutable_u8_span scratch)
+    ColumnMajorRowRange::iterator::iterator(const TileView &tile, std::span<u8> scratch)
         : tile_(&tile), scratch_(scratch), current_row_(0), max_rows_(tile.height)
     {
-        if (tile.is_valid())
-        {
-            row_buffer_.resize(tile.width);
-        }
     }
 
     ColumnMajorRowRange::iterator::iterator(u16 current_row, u16 max_rows)
@@ -159,26 +62,28 @@ namespace art2img
 
     auto ColumnMajorRowRange::iterator::operator*() const -> value_type
     {
-        if (!tile_ || current_row_ >= max_rows_ || !tile_->is_valid())
+        if (!tile_ || current_row_ >= max_rows_ || !tile_->is_valid() || scratch_.size() < tile_->width)
         {
             return {};
         }
 
+        auto row_span = scratch_.first(tile_->width);
+
         // Extract row from column-major data
         for (u16 x = 0; x < tile_->width; ++x)
         {
-            const auto pixel_result = sample_column_major_index(*tile_, x, current_row_);
+            const auto pixel_result = get_pixel_column_major(*tile_, x, current_row_);
             if (pixel_result)
             {
-                row_buffer_[x] = pixel_result.value();
+                row_span[x] = pixel_result.value();
             }
             else
             {
-                row_buffer_[x] = 0; // Default to black on error
+                row_span[x] = 0; // Default to black on error
             }
         }
 
-        return row_buffer_;
+        return value_type(row_span.data(), row_span.size());
     }
 
     auto ColumnMajorRowRange::iterator::operator++() -> iterator &
@@ -196,6 +101,12 @@ namespace art2img
 
     bool ColumnMajorRowRange::iterator::operator==(const iterator &other) const noexcept
     {
+        const bool lhs_at_end = current_row_ >= max_rows_;
+        const bool rhs_at_end = other.current_row_ >= other.max_rows_;
+        if (lhs_at_end && rhs_at_end)
+        {
+            return true;
+        }
         return current_row_ == other.current_row_ && max_rows_ == other.max_rows_;
     }
 
@@ -204,19 +115,31 @@ namespace art2img
         return !(*this == other);
     }
 
-    ColumnMajorRowRange::ColumnMajorRowRange(const TileView &tile, mutable_u8_span scratch)
+    ColumnMajorRowRange::ColumnMajorRowRange(const TileView &tile, std::span<u8> scratch)
         : tile_(&tile), scratch_(scratch)
     {
     }
 
     auto ColumnMajorRowRange::begin() const -> iterator
     {
+        if (!is_valid())
+        {
+            return iterator(0, 0);
+        }
         return iterator(*tile_, scratch_);
     }
 
     auto ColumnMajorRowRange::end() const -> iterator
     {
-        return iterator(tile_->height, tile_->height);
+        if (!tile_ || scratch_.size() < tile_->width)
+        {
+            return iterator(0, 0);
+        }
+
+        iterator result(*tile_, scratch_);
+        result.current_row_ = tile_->height;
+        result.max_rows_ = tile_->height;
+        return result;
     }
 
     // ============================================================================
@@ -245,21 +168,22 @@ namespace art2img
                                                   std::to_string(tile.width) + "x" + std::to_string(tile.height));
         }
 
+        convert::detail::PixelConverter converter{palette, options, tile.remap};
+
         // Convert each pixel
         for (u16 y = 0; y < tile.height; ++y)
         {
             for (u16 x = 0; x < tile.width; ++x)
             {
                 // Sample pixel from column-major data
-                const auto pixel_result = sample_column_major_index(tile, x, y);
+                const auto pixel_result = get_pixel_column_major(tile, x, y);
                 if (!pixel_result)
                 {
                     return make_error_expected<Image>(pixel_result.error());
                 }
 
                 // Convert pixel through pipeline
-                const u32 rgba = convert_pixel(
-                    pixel_result.value(), palette, options, tile.remap);
+                const color::Color rgba = converter(pixel_result.value());
 
                 // Write to destination (row-major)
                 const std::size_t dest_offset = static_cast<std::size_t>(y) * result.stride +
@@ -276,9 +200,9 @@ namespace art2img
         return ImageView(image);
     }
 
-    std::expected<std::monostate, Error> copy_column_major_to_row_major(
+    std::expected<std::monostate, Error> convert_column_to_row_major(
         const TileView &tile,
-        mutable_u8_span destination)
+        std::span<u8> destination)
     {
 
         // Validate inputs
@@ -302,7 +226,7 @@ namespace art2img
         {
             for (u16 x = 0; x < tile.width; ++x)
             {
-                const auto pixel_result = sample_column_major_index(tile, x, y);
+                const auto pixel_result = get_pixel_column_major(tile, x, y);
                 if (!pixel_result)
                 {
                     return make_error_expected(pixel_result.error());
@@ -318,7 +242,7 @@ namespace art2img
         return make_success();
     }
 
-    std::expected<u8, Error> sample_column_major_index(
+    std::expected<u8, Error> get_pixel_column_major(
         const TileView &tile,
         u16 x,
         u16 y)
@@ -355,9 +279,9 @@ namespace art2img
         return tile.pixels[linear_index];
     }
 
-    ColumnMajorRowRange column_major_rows(
+    ColumnMajorRowRange make_column_major_row_iterator(
         const TileView &tile,
-        mutable_u8_span scratch)
+        std::span<u8> scratch)
     {
         return ColumnMajorRowRange(tile, scratch);
     }

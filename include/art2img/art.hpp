@@ -9,8 +9,14 @@
 #include <vector>
 #include <optional>
 
-using namespace art2img::types;
 namespace art2img {
+
+using types::byte;
+using types::u8;
+using types::i8;
+using types::u16;
+using types::u32;
+using types::u8_span;
 
 /// @brief Palette hint for automatic palette discovery
 enum class PaletteHint : u8 {
