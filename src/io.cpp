@@ -62,7 +62,9 @@ std::error_code map_system_error(const std::error_code& ec) {
       // File system errors
       case EIO:     // I/O error
       case ENOSPC:  // No space left on device
+#ifndef _WIN32
       case EDQUOT:  // Disk quota exceeded
+#endif
       case EFBIG:   // File too large
       case ENFILE:  // System file table full
       case EMFILE:  // Too many open files
@@ -78,11 +80,13 @@ std::error_code map_system_error(const std::error_code& ec) {
       case ENOTEMPTY:  // Directory not empty
       case EBUSY:      // Resource busy
 
-      // Network/mount related filesystem errors
-      case ESTALE:     // Stale file handle
-      case EREMOTE:    // Object is remote
+        // Network/mount related filesystem errors
+#ifndef _WIN32
+      case ESTALE:   // Stale file handle
+      case EREMOTE:  // Object is remote
 #ifdef EREMOTEIO
       case EREMOTEIO:  // Remote I/O error
+#endif
 #endif
 
         return make_error_code(errc::io_failure);
