@@ -31,7 +31,7 @@ std::string get_animation_type_string(TileAnimation::Type type)
         case TileAnimation::Type::none:
             return "none";
         case TileAnimation::Type::oscillating:
-            return "oscillating";
+            return "oscillation";
         case TileAnimation::Type::forward:
             return "forward";
         case TileAnimation::Type::backward:
@@ -73,8 +73,9 @@ std::expected<std::monostate, Error> export_animation_data(
                                                "Failed to create INI file: " + ini_path.string());
     }
 
-    // Write INI header (matches legacy format exactly)
-    ini_file << "[animations]\n";
+// Write INI header (matches legacy format exactly)
+    ini_file << "; This file contains animation data from ART file\n";
+    ini_file << "; Extracted by art2img\n\n";
 
     bool found_animated_tiles = false;
 
@@ -98,44 +99,49 @@ std::expected<std::monostate, Error> export_animation_data(
                                  (((picanm >> 6) & 0x03) != 0) ||    // animation type  
                                  (((picanm >> 24) & 0x0F) != 0);      // animation speed
 
-        // Write animation sequence if tile has animation data
+        // Write animation data if tile has animation data
         if (has_animation_data)
         {
             found_animated_tiles = true;
             
-            // Write tile animation data in the format expected by tests
-            ini_file << "tile" << tile_id << "_frames=" << (picanm & 0x3F) << "\n";
-            ini_file << "tile" << tile_id << "_speed=" << static_cast<u32>(anim.speed) << "\n";
-            ini_file << "tile" << tile_id << "_animtype=" << static_cast<u32>(anim.type) << "\n";
-            ini_file << "tile" << tile_id << "_xcenter=" << static_cast<i32>(anim.x_center_offset) << "\n";
-            ini_file << "tile" << tile_id << "_ycenter=" << static_cast<i32>(anim.y_center_offset) << "\n";
-            
-            // Include image file reference if format awareness is enabled
-            if (config.include_image_references) {
-                ini_file << "tile" << tile_id << "_image=" << config.base_name << "_" << tile_id << "." << get_image_extension(config.image_format) << "\n";
+            // Write animation section header with frame range (legacy format)
+            u32 frame_count = (picanm & 0x3F);
+            if (frame_count > 0) {
+                ini_file << "[tile" << std::setfill('0') << std::setw(4) << tile_id << "." << get_image_extension(config.image_format) 
+                         << " -> tile" << std::setfill('0') << std::setw(4) << (tile_id + frame_count) << "." << get_image_extension(config.image_format) << "]\n";
+            } else {
+                ini_file << "[tile" << std::setfill('0') << std::setw(4) << tile_id << "." << get_image_extension(config.image_format) << "]\n";
             }
+            
+            // Write animation parameters (legacy format)
+            ini_file << "   AnimationType=" << get_animation_type_string(anim.type) << "\n";
+            ini_file << "   AnimationSpeed=" << static_cast<u32>(anim.speed) << "\n";
             ini_file << "\n";
         }
 
-        // Write non-animated tiles if requested
-        if (config.include_non_animated)
+        // Write tile data section (always write for tiles with animation data, optionally for others)
+        if (has_animation_data || config.include_non_animated)
         {
-            ini_file << "tile" << tile_id << "_frames=0\n";
-            ini_file << "tile" << tile_id << "_speed=0\n";
-            ini_file << "tile" << tile_id << "_animtype=0\n";
-            ini_file << "tile" << tile_id << "_xcenter=" << static_cast<i32>(anim.x_center_offset) << "\n";
-            ini_file << "tile" << tile_id << "_ycenter=" << static_cast<i32>(anim.y_center_offset) << "\n";
+            // Write tile section header (legacy format)
+            ini_file << "[tile" << std::setfill('0') << std::setw(4) << tile_id << "." << get_image_extension(config.image_format) << "]\n";
+            
+            // Write tile parameters (legacy format)
+            ini_file << "   XCenterOffset=" << static_cast<i32>(anim.x_center_offset) << "\n";
+            ini_file << "   YCenterOffset=" << static_cast<i32>(anim.y_center_offset) << "\n";
+            ini_file << "   OtherFlags=" << (picanm >> 28) << "\n";  // Upper 4 bits as OtherFlags
             
             // Include image file reference if format awareness is enabled
             if (config.include_image_references) {
-                ini_file << "tile" << tile_id << "_image=" << config.base_name << "_" << tile_id << "." << get_image_extension(config.image_format) << "\n";
+                ini_file << "   ImageFile=" << config.base_name << "_" << tile_id << "_0." << get_image_extension(config.image_format) << "\n";
             }
+            
+            ini_file << "\n";
         }
-    }
+}
 
     ini_file.close();
 
-    if (false)
+    if (!found_animated_tiles && !config.include_non_animated)
     {
         return make_error_expected<std::monostate>(errc::no_animation,
                                                "No animated tiles found in ART file");
