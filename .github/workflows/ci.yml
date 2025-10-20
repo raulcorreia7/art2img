@@ -24,22 +24,12 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-      
+
     - name: Install dependencies (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
-        sudo apt-get install -y cmake lcov ninja-build
-        
-    - name: Install dependencies (macOS)
-      if: matrix.os == 'macos-latest'
-      run: |
-        brew install cmake ninja
-        
-    - name: Install dependencies (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        choco install cmake ninja
+        sudo apt-get install -y lcov
         
     - name: Cache CPM dependencies
       uses: actions/cache@v4
@@ -91,15 +81,14 @@ jobs:
     - name: Test
       if: always()
       shell: bash
-      continue-on-error: true
       run: |
         cd build
         if [ "${{ runner.os }}" = "Windows" ]; then
           ctest --output-on-failure --parallel 1 --timeout 300
         elif [ "${{ runner.os }}" = "macOS" ]; then
-          ctest --output-on-failure --parallel $(sysctl -n hw.ncpu) --timeout 300
+          ctest --output-on-failure --parallel 1 --timeout 300
         else
-          ctest --output-on-failure --parallel $(nproc) --timeout 300
+          ctest --output-on-failure --parallel 1 --timeout 300
         fi
         
     - name: Test Status Check
@@ -107,8 +96,13 @@ jobs:
       shell: bash
       run: |
         if [ "${{ job.status }}" = "failure" ]; then
-          echo "Tests failed on ${{ matrix.os }}"
-          echo "Check platform-specific test configuration"
+          echo "Job failed on ${{ matrix.os }}"
+          echo "Check the test logs above for specific failure details"
+          exit 1
+        elif [ "${{ job.status }}" = "success" ]; then
+          echo "All tests passed on ${{ matrix.os }}"
+        else
+          echo "Job status: ${{ job.status }} on ${{ matrix.os }}"
           exit 1
         fi
         
