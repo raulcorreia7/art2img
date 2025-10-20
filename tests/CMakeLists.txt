@@ -8,6 +8,7 @@ file(GLOB_RECURSE TEST_SOURCES
     encode/*.cpp
     io/*.cpp
     integration/*.cpp
+    animation/*.cpp
 )
 
 if(ART2IMG_ENABLE_LEGACY)
