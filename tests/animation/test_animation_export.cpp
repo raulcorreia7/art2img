@@ -162,9 +162,9 @@ TEST_SUITE("Animation Export Unit Tests") {
         CHECK(!ini_content.empty());
         
         // Should contain animation data for tile 100
-        CHECK(ini_content.find("tile100") != std::string::npos);
-        CHECK(ini_content.find("animtype") != std::string::npos);
-        CHECK(ini_content.find("frames") != std::string::npos);
+        CHECK(ini_content.find("[tile0100.") != std::string::npos);
+        CHECK(ini_content.find("AnimationType") != std::string::npos);
+        CHECK(ini_content.find("AnimationSpeed") != std::string::npos);
     }
 
     TEST_CASE_FIXTURE(AnimationTestFixture, "export_animation_data with non-animated tile") {
@@ -186,7 +186,7 @@ TEST_SUITE("Animation Export Unit Tests") {
         CHECK(!ini_content.empty());
         
         // Should contain tile data even if not animated (when include_non_animated is true)
-        CHECK(ini_content.find("tile200") != std::string::npos);
+        CHECK(ini_content.find("[tile0200.") != std::string::npos);
     }
 
     TEST_CASE_FIXTURE(AnimationTestFixture, "export_animation_data exclude non-animated") {
@@ -208,12 +208,12 @@ TEST_SUITE("Animation Export Unit Tests") {
         
         // INI should be empty or not contain non-animated tiles
         const std::string ini_content = read_ini_file();
-        CHECK(ini_content.find("tile300") == std::string::npos);
+        CHECK(ini_content.find("[tile0300.") == std::string::npos);
     }
 
     TEST_CASE_FIXTURE(AnimationTestFixture, "get_animation_type_string") {
         CHECK(art2img::get_animation_type_string(art2img::TileAnimation::Type::none) == "none");
-        CHECK(art2img::get_animation_type_string(art2img::TileAnimation::Type::oscillating) == "oscillating");
+        CHECK(art2img::get_animation_type_string(art2img::TileAnimation::Type::oscillating) == "oscillation");
         CHECK(art2img::get_animation_type_string(art2img::TileAnimation::Type::forward) == "forward");
         CHECK(art2img::get_animation_type_string(art2img::TileAnimation::Type::backward) == "backward");
     }
@@ -240,8 +240,8 @@ TEST_SUITE("Animation Export Unit Tests") {
         // Check INI content contains image reference
         const std::string ini_content = read_ini_file();
         CHECK(!ini_content.empty());
-        CHECK(ini_content.find("tile150") != std::string::npos);
-        CHECK(ini_content.find("tile150_image=testtile_150.bmp") != std::string::npos);
+        CHECK(ini_content.find("[tile0150.") != std::string::npos);
+        CHECK(ini_content.find("ImageFile=testtile_150_0.bmp") != std::string::npos);
     }
 
     TEST_CASE_FIXTURE(AnimationTestFixture, "disable image references in INI output") {
@@ -264,8 +264,8 @@ TEST_SUITE("Animation Export Unit Tests") {
         // Check INI content does NOT contain image reference
         const std::string ini_content = read_ini_file();
         CHECK(!ini_content.empty());
-        CHECK(ini_content.find("tile160") != std::string::npos);
-        CHECK(ini_content.find("tile160_image=") == std::string::npos);
+        CHECK(ini_content.find("[tile0160.") != std::string::npos);
+        CHECK(ini_content.find("ImageFile=") == std::string::npos);
     }
 }
 
@@ -331,12 +331,11 @@ TEST_SUITE("Animation Export Integration Tests") {
         art2img::TileAnimation anim(test_picanm);
         
         // Check that INI contains the expected values
-        CHECK(ini_content.find("tile1000") != std::string::npos);
-        CHECK(ini_content.find("animtype=") != std::string::npos);
-        CHECK(ini_content.find("frames=") != std::string::npos);
-        CHECK(ini_content.find("speed=") != std::string::npos);
-        CHECK(ini_content.find("xcenter=") != std::string::npos);
-        CHECK(ini_content.find("ycenter=") != std::string::npos);
+        CHECK(ini_content.find("[tile1000.") != std::string::npos);
+        CHECK(ini_content.find("AnimationType=") != std::string::npos);
+        CHECK(ini_content.find("AnimationSpeed=") != std::string::npos);
+        CHECK(ini_content.find("XCenterOffset=") != std::string::npos);
+        CHECK(ini_content.find("YCenterOffset=") != std::string::npos);
         
         // Verify specific values are present
         CHECK(ini_content.find(std::to_string(anim.frame_count)) != std::string::npos);
@@ -386,7 +385,7 @@ TEST_SUITE("Animation Export Integration Tests") {
         const std::string ini_content = read_ini_file();
         if (animated_count > 0) {
             CHECK(!ini_content.empty());
-            CHECK(ini_content.find("animtype=") != std::string::npos);
+            CHECK(ini_content.find("AnimationType=") != std::string::npos);
         }
     }
 }
@@ -411,7 +410,7 @@ TEST_SUITE("Animation Export Error Handling") {
         
         // INI should exist but be empty or contain no animation data
         const std::string ini_content = read_ini_file();
-        CHECK(ini_content.find("animtype=") == std::string::npos);
+        CHECK(ini_content.find("AnimationType=") == std::string::npos);
     }
 
     TEST_CASE_FIXTURE(AnimationTestFixture, "file system permission errors") {
