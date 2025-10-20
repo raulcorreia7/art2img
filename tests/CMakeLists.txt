@@ -2,13 +2,11 @@
 # TEST SOURCES
 # ============================================================================
 file(GLOB_RECURSE TEST_SOURCES
-    core/*.cpp
-    art/*.cpp
-    convert/*.cpp
-    encode/*.cpp
-    io/*.cpp
+    unit/*.cpp
+    unit/*/*.cpp
+    unit/*/*/*.cpp
     integration/*.cpp
-    animation/*.cpp
+    integration/*/*.cpp
     test_setup.cpp
 )
 

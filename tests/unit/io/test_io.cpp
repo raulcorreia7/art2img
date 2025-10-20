@@ -16,7 +16,7 @@
 
 #include <art2img/io.hpp>
 
-#include "../test_helpers.hpp"
+#include "../../test_helpers.hpp"
 
 using namespace art2img;
 

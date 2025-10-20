@@ -23,7 +23,7 @@
 #include <art2img/art.hpp>
 #include <art2img/error.hpp>
 
-#include "../test_helpers.hpp"
+#include "../../test_helpers.hpp"
 
 namespace {
 
