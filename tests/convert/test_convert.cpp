@@ -183,17 +183,23 @@ TEST_CASE("to_rgba with transparency fixing") {
     const auto palette = create_test_palette();
     const auto tile = create_test_tile(2, 2);
     
+    // Modify palette to make index 0 magenta for transparency testing
+    auto magenta_palette = palette;
+    magenta_palette.data[0] = 63;  // R (max 6-bit = 255 scaled)
+    magenta_palette.data[1] = 0;   // G
+    magenta_palette.data[2] = 63;  // B (max 6-bit = 255 scaled)
+    
     ConversionOptions options;
     options.fix_transparency = true;
     
-    const auto result = to_rgba(tile, palette, options);
+    const auto result = to_rgba(tile, magenta_palette, options);
     
     REQUIRE(result);
     const auto& image = result.value();
     
-    // Pixel (0,0) should have palette index 0 and be transparent
+    // Pixel (0,0) should have palette index 0 (magenta) and be transparent
     const std::size_t pixel_00_offset = 0 * 8 + 0 * 4;
-    CHECK(image.data[pixel_00_offset] == 0);     // R
+    CHECK(image.data[pixel_00_offset] == 0);     // R (set to black for transparent)
     CHECK(image.data[pixel_00_offset + 1] == 0); // G
     CHECK(image.data[pixel_00_offset + 2] == 0); // B
     CHECK(image.data[pixel_00_offset + 3] == 0); // A (transparent)

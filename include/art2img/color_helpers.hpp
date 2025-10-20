@@ -77,4 +77,10 @@ inline Color read_rgba(std::span<const types::u8, art2img::constants::RGBA_CHANN
 }
 #endif
 
+/// @brief Check if RGB values match Build Engine magenta (252, 0, 252) with tolerance
+constexpr inline bool is_build_engine_magenta(types::u8 r, types::u8 g, types::u8 b) noexcept
+{
+    return r >= 250u && b >= 250u && g <= 5u;
+}
+
 } // namespace art2img::color

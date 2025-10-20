@@ -26,11 +26,14 @@ struct ConversionOptions {
     /// @brief Apply palette remapping if available
     bool apply_lookup = false;
     
-    /// @brief Fix transparency (make index 0 fully transparent)
-    bool fix_transparency = false;
+    /// @brief Fix transparency (make Build Engine magenta fully transparent)
+    bool fix_transparency = true;
     
     /// @brief Premultiply alpha channel
     bool premultiply_alpha = false;
+    
+    /// @brief Apply matte hygiene (erosion + blur) to remove halo effects
+    bool matte_hygiene = false;
     
     /// @brief Shade table index to apply (0 = no shading)
     u8 shade_index = 0;
@@ -39,9 +42,9 @@ struct ConversionOptions {
     ConversionOptions() = default;
     
     /// @brief Constructor with all options
-    ConversionOptions(bool lookup, bool transparency, bool premult, u8 shade)
+    ConversionOptions(bool lookup, bool transparency, bool premult, bool matte, u8 shade)
         : apply_lookup(lookup), fix_transparency(transparency), 
-          premultiply_alpha(premult), shade_index(shade) {}
+          premultiply_alpha(premult), matte_hygiene(matte), shade_index(shade) {}
 };
 
 /// @brief Owning RGBA image container

@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <regex>
+#include "../test_helpers.hpp"
 
 namespace {
 
@@ -16,14 +17,14 @@ struct TestFixture {
     std::filesystem::path temp_dir;
 
     TestFixture() {
-        temp_dir = std::filesystem::temp_directory_path() / "test_export";
-        std::filesystem::create_directories(temp_dir);
+        temp_dir = test_helpers::get_unit_test_dir("export", "test_export");
+        test_helpers::ensure_test_output_dir(temp_dir);
         options.output_dir = temp_dir;
         options.format = art2img::ImageFormat::png;
     }
 
     ~TestFixture() {
-        std::filesystem::remove_all(temp_dir);
+        test_helpers::cleanup_test_output_dir(temp_dir);
     }
 };
 

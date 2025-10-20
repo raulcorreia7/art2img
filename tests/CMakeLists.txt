@@ -36,7 +36,13 @@ target_link_libraries(art2img_tests PRIVATE art2img_core doctest::doctest_with_m
 # ============================================================================
 # 4. TEST CONFIGURATION
 # ============================================================================
-target_compile_definitions(art2img_tests PRIVATE TEST_ASSET_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets")
+target_compile_definitions(art2img_tests PRIVATE 
+    TEST_ASSET_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets"
+    TEST_OUTPUT_DIR="${CMAKE_BINARY_DIR}/tests_output"
+)
+
+# Create test output directory in build directory
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/tests_output)
 
 # ============================================================================
 # 5. TEST DISCOVERY

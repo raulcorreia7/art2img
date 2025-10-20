@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <string>
 #include <system_error>
+#include <thread>
 
 namespace art2img {
 
@@ -59,7 +60,7 @@ std::expected<std::filesystem::path, Error> export_single_tile_internal(
     const ExportOptions& options) {
 
     // Convert tile to RGBA image
-    auto image_result = to_rgba(tile, palette);
+    auto image_result = to_rgba(tile, palette, options.conversion_options);
     if (!image_result) {
         return std::unexpected(image_result.error());
     }

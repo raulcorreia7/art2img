@@ -8,6 +8,7 @@
 #include <iostream>
 #include <sstream>
 #include <regex>
+#include "../test_helpers.hpp"
 
 namespace {
 
@@ -48,8 +49,8 @@ struct CliTestFixture {
     std::filesystem::path output_dir;
 
     CliTestFixture() {
-        temp_dir = std::filesystem::temp_directory_path() / "cli_test";
-        std::filesystem::create_directories(temp_dir);
+        temp_dir = test_helpers::get_cli_test_dir("cli_test");
+        test_helpers::ensure_test_output_dir(temp_dir);
 
         art_file = temp_dir / "test.art";
         palette_file = temp_dir / "palette.dat";
@@ -61,7 +62,7 @@ struct CliTestFixture {
     }
 
     ~CliTestFixture() {
-        std::filesystem::remove_all(temp_dir);
+        test_helpers::cleanup_test_output_dir(temp_dir);
     }
 
     std::vector<char*> make_argv(const std::vector<std::string>& args) {

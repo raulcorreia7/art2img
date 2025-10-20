@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <cstring>
+#include "../test_helpers.hpp"
 
 using namespace art2img;
 
@@ -17,37 +18,15 @@ namespace
     /// @brief Create a temporary directory for testing
     std::filesystem::path create_temp_dir()
     {
-        std::filesystem::path temp_dir = std::filesystem::temp_directory_path() / "art2img_test_XXXXXXXX";
-        
-        // Create a unique directory name
-        std::string template_str = temp_dir.string();
-        #ifdef _WIN32
-            // Windows doesn't have mkdtemp, use a simpler approach
-            static int counter = 0;
-            temp_dir = std::filesystem::temp_directory_path() / ("art2img_test_" + std::to_string(++counter));
-        #else
-            char* temp_dir_cstr = mkdtemp(&template_str[0]);
-            if (temp_dir_cstr)
-            {
-                temp_dir = temp_dir_cstr;
-            }
-            else
-            {
-                // Fallback
-                temp_dir = std::filesystem::temp_directory_path() / "art2img_test_fallback";
-            }
-        #endif
-        
-        std::filesystem::create_directories(temp_dir);
+        auto temp_dir = test_helpers::get_unit_test_dir("io", "io_test");
+        test_helpers::ensure_test_output_dir(temp_dir);
         return temp_dir;
     }
 
     /// @brief Clean up a temporary directory
     void cleanup_temp_dir(const std::filesystem::path& dir)
     {
-        std::error_code ec;
-        std::filesystem::remove_all(dir, ec);
-        // Ignore errors during cleanup
+        test_helpers::cleanup_test_output_dir(dir);
     }
 
     /// @brief Create test binary data

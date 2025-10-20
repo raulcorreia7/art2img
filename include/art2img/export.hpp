@@ -2,8 +2,11 @@
 
 #include <art2img/art.hpp>
 #include <art2img/encode.hpp>
+#include <art2img/convert.hpp>
+#include <art2img/error.hpp>
 #include <filesystem>
 #include <vector>
+#include <cstddef>
 
 namespace art2img {
 
@@ -14,6 +17,11 @@ struct ExportOptions {
     bool organize_by_format = false;               ///< Create subdirectories per format
     bool organize_by_art_file = false;             ///< Create subdirectories per ART file
     std::string filename_prefix = "tile";          ///< Prefix for generated filenames
+    ConversionOptions conversion_options;            ///< Options for tile to RGBA conversion
+    
+    // Parallel processing options
+    bool enable_parallel = true;                   ///< Enable parallel processing
+    std::size_t max_threads = 0;                   ///< Maximum threads (0 = auto-detect)
 };
 
 /// @brief Result of an export operation

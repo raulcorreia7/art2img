@@ -44,6 +44,106 @@ namespace art2img
             }
         }
 
+        /// @brief For pixels that are fully transparent, set them to neutral color to prevent halo effects
+        void clean_transparent_pixels(std::vector<u8> &rgba_data, u16 width, u16 height)
+        {
+            for (u16 y = 0; y < height; ++y)
+            {
+                for (u16 x = 0; x < width; ++x)
+                {
+                    const std::size_t idx = (static_cast<std::size_t>(y) * width + x) * 4;
+                    if (idx + 3 < rgba_data.size() && rgba_data[idx + 3] == 0)
+                    { // Fully transparent pixel
+                        // Set RGB to black to prevent magenta bleeding/halo effects
+                        rgba_data[idx + 0] = 0; // R
+                        rgba_data[idx + 1] = 0; // G
+                        rgba_data[idx + 2] = 0; // B
+                    }
+                }
+            }
+        }
+
+        /// @brief Apply matte hygiene (erosion + blur) to remove halo effects from alpha channel
+        void apply_matte_hygiene(std::vector<u8> &rgba_data, u16 width, u16 height)
+        {
+            // Extract alpha channel
+            std::vector<u8> alpha(static_cast<std::size_t>(width) * height);
+            for (u16 y = 0; y < height; ++y)
+            {
+                for (u16 x = 0; x < width; ++x)
+                {
+                    const std::size_t idx = (static_cast<std::size_t>(y) * width + x) * 4;
+                    const std::size_t alpha_idx = static_cast<std::size_t>(y) * width + x;
+                    if (idx + 3 < rgba_data.size())
+                    {
+                        alpha[alpha_idx] = rgba_data[idx + 3];
+                    }
+                    else
+                    {
+                        alpha[alpha_idx] = 0;
+                    }
+                }
+            }
+
+            // Erode alpha channel (remove edge pixels)
+            std::vector<u8> eroded = alpha;
+            if (width > 2 && height > 2)
+            {
+                for (u16 y = 1; y < height - 1; ++y)
+                {
+                    for (u16 x = 1; x < width - 1; ++x)
+                    {
+                        const std::size_t idx = static_cast<std::size_t>(y) * width + x;
+                        if (alpha[idx] > 0)
+                        {
+                            u8 min_neighbor = 255;
+                            min_neighbor = std::min(min_neighbor, alpha[idx - width]);     // top
+                            min_neighbor = std::min(min_neighbor, alpha[idx + width]);     // bottom
+                            min_neighbor = std::min(min_neighbor, alpha[idx - 1]);         // left
+                            min_neighbor = std::min(min_neighbor, alpha[idx + 1]);         // right
+                            eroded[idx] = min_neighbor;
+                        }
+                    }
+                }
+            }
+
+            // Blur eroded alpha (3x3 box blur)
+            std::vector<u8> blurred = eroded;
+            if (width > 2 && height > 2)
+            {
+                for (u16 y = 1; y < height - 1; ++y)
+                {
+                    for (u16 x = 1; x < width - 1; ++x)
+                    {
+                        const std::size_t idx = static_cast<std::size_t>(y) * width + x;
+                        u32 sum = 0;
+                        for (types::i16 dy = -1; dy <= 1; ++dy)
+                        {
+                            for (types::i16 dx = -1; dx <= 1; ++dx)
+                            {
+                                sum += eroded[idx + static_cast<std::size_t>(dy) * width + dx];
+                            }
+                        }
+                        blurred[idx] = static_cast<u8>(sum / 9);
+                    }
+                }
+            }
+
+            // Apply processed alpha back to RGBA data
+            for (u16 y = 0; y < height; ++y)
+            {
+                for (u16 x = 0; x < width; ++x)
+                {
+                    const std::size_t idx = (static_cast<std::size_t>(y) * width + x) * 4;
+                    const std::size_t alpha_idx = static_cast<std::size_t>(y) * width + x;
+                    if (idx + 3 < rgba_data.size())
+                    {
+                        rgba_data[idx + 3] = blurred[alpha_idx];
+                    }
+                }
+            }
+        }
+
     } // anonymous namespace
 
     // ============================================================================
@@ -189,6 +289,40 @@ namespace art2img
                 const std::size_t dest_offset = static_cast<std::size_t>(y) * result.stride +
                                                 static_cast<std::size_t>(x) * constants::RGBA_BYTES_PER_PIXEL;
                 write_rgba(result.data, dest_offset, rgba);
+            }
+        }
+
+        // Apply transparency processing pipeline
+        if (options.fix_transparency)
+        {
+            // Clean transparent pixels to prevent halo effects
+            clean_transparent_pixels(result.data, result.width, result.height);
+        }
+
+        // Apply matte hygiene for advanced halo removal
+        if (options.matte_hygiene)
+        {
+            apply_matte_hygiene(result.data, result.width, result.height);
+            
+            // Re-apply premultiplication after matte hygiene if needed
+            if (options.premultiply_alpha)
+            {
+                for (std::size_t i = 0; i < result.data.size(); i += 4)
+                {
+                    const u8 alpha = result.data[i + 3];
+                    if (alpha == 0)
+                    {
+                        result.data[i + 0] = 0;
+                        result.data[i + 1] = 0;
+                        result.data[i + 2] = 0;
+                    }
+                    else if (alpha < 255)
+                    {
+                        result.data[i + 0] = static_cast<u8>((result.data[i + 0] * alpha + 127) / 255);
+                        result.data[i + 1] = static_cast<u8>((result.data[i + 1] * alpha + 127) / 255);
+                        result.data[i + 2] = static_cast<u8>((result.data[i + 2] * alpha + 127) / 255);
+                    }
+                }
             }
         }
 

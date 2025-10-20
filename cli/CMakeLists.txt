@@ -27,7 +27,9 @@ CPMAddPackage(
 # ============================================================================
 
 # Create the CLI executable
-add_executable(art2img_cli main.cpp)
+add_executable(art2img_cli 
+    main.cpp
+)
 
 # Set C++ standard
 set_target_properties(art2img_cli PROPERTIES
