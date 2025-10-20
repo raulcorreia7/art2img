@@ -11,20 +11,21 @@ permissions:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
-            artifact_name: art2img
+            artifact_path: build/cli/art2img_cli
             asset_name: art2img-linux-x64
           - os: macos-latest
-            artifact_name: art2img
+            artifact_path: build/cli/art2img_cli
             asset_name: art2img-macos-x64
           - os: windows-latest
-            artifact_name: art2img.exe
+            artifact_path: build/cli/Release/art2img_cli.exe
             asset_name: art2img-windows-x64.exe
             arch: x64
           - os: windows-latest
-            artifact_name: art2img.exe
+            artifact_path: build/cli/Release/art2img_cli.exe
             asset_name: art2img-windows-x86.exe
             arch: Win32
     
@@ -33,16 +34,76 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-        
-    - name: Configure CMake
+
+    - name: Install dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.arch && format('-A {0}', matrix.arch) || '' }}
+        sudo apt-get update
+        sudo apt-get install -y lcov
         
-    - name: Build
+    - name: Cache CPM dependencies
+      uses: actions/cache@v4
+      with:
+        path: .cache
+        key: ${{ runner.os }}-cpm-${{ hashFiles('cmake/CPM.cmake', '**/CMakeLists.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-cpm-
+          
+    - name: Configure CMake (Windows)
+      if: runner.os == 'Windows'
       run: |
-        cmake --build build --config Release
+        if [ "${{ matrix.arch }}" = "Win32" ]; then
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -A Win32
+        else
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -A x64
+        fi
+        
+    - name: Configure CMake (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        if [ "${{ runner.os }}" = "macOS" ]; then
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+        else
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+        fi
+        
+    - name: Build (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        cmake --build build --config Release --parallel
+        
+    - name: Build (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        if [ "${{ runner.os }}" = "macOS" ]; then
+          cmake --build build --config Release
+        else
+          cmake --build build --config Release --parallel
+        fi
+        
+    - name: Build Verification
+      shell: bash
+      run: |
+        if [ ! -f "${{ matrix.artifact_path }}" ]; then
+          echo "Build artifact not found at ${{ matrix.artifact_path }}"
+          find build -name "art2img*" -type f 2>/dev/null || echo "No art2img artifacts found"
+          exit 1
+        fi
+        echo "Build artifact found at ${{ matrix.artifact_path }}"
+        
+    - name: Test Release Build
+      shell: bash
+      run: |
+        cd build
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          ctest --output-on-failure --parallel 1 --timeout 300 -C Release
+        elif [ "${{ runner.os }}" = "macOS" ]; then
+          ctest --output-on-failure --parallel 1 --timeout 300 -C Release
+        else
+          ctest --output-on-failure --parallel 1 --timeout 300 -C Release
+        fi
         
     - name: Upload Release Asset
       uses: softprops/action-gh-release@v1
       with:
-        files: build/${{ matrix.artifact_name }}
+        files: ${{ matrix.artifact_path }}
