@@ -1,10 +1,11 @@
-#include <CLI/CLI.hpp>
 #include <filesystem>
 #include <format>
 #include <iostream>
 #include <mutex>
 #include <thread>
 #include <vector>
+
+#include <CLI/CLI.hpp>
 
 // Include the new art2img API
 #include <art2img/api.hpp>
@@ -23,8 +24,8 @@ struct CliConfig {
   bool quiet = false;
   bool verbose = false;
   bool parallel = true;
-  size_t jobs = 0;      // 0 means auto-detect
-  int shade_index = -1; // -1 means no shading
+  size_t jobs = 0;       // 0 means auto-detect
+  int shade_index = -1;  // -1 means no shading
   bool apply_lookup = true;
   bool premultiply_alpha = false;
   bool export_animation = false;
@@ -50,11 +51,13 @@ struct ProgressTracker {
   void print_progress() {
     std::lock_guard<std::mutex> lock(mutex);
     if (total > 0) {
-      double percent =
-          (static_cast<double>(completed + failed) / total) * 100.0;
-      std::cout << std::format(
-          "\rProgress: {}/{} ({:.1f}%) - Completed: {}, Failed: {}",
-          completed + failed, total, percent, completed, failed);
+      double percent = (static_cast<double>(completed + failed) / total) * 100.0;
+      std::cout << std::format("\rProgress: {}/{} ({:.1f}%) - Completed: {}, Failed: {}",
+                               completed + failed,
+                               total,
+                               percent,
+                               completed,
+                               failed);
       std::cout.flush();
     }
   }
@@ -65,25 +68,23 @@ struct ProgressTracker {
  */
 std::string image_format_to_string(ImageFormat format) {
   switch (format) {
-  case ImageFormat::png:
-    return "png";
-  case ImageFormat::tga:
-    return "tga";
-  case ImageFormat::bmp:
-    return "bmp";
-  default:
-    return "png";
+    case ImageFormat::png:
+      return "png";
+    case ImageFormat::tga:
+      return "tga";
+    case ImageFormat::bmp:
+      return "bmp";
+    default:
+      return "png";
   }
 }
 
 /**
  * @brief Parse string to ImageFormat enum
  */
-std::expected<ImageFormat, std::string>
-parse_format(const std::string &format_str) {
+std::expected<ImageFormat, std::string> parse_format(const std::string& format_str) {
   std::string lower_format = format_str;
-  std::transform(lower_format.begin(), lower_format.end(), lower_format.begin(),
-                 ::tolower);
+  std::transform(lower_format.begin(), lower_format.end(), lower_format.begin(), ::tolower);
 
   if (lower_format == "png")
     return ImageFormat::png;
@@ -99,10 +100,11 @@ parse_format(const std::string &format_str) {
 /**
  * @brief Process a single tile
  */
-std::expected<std::monostate, Error>
-process_tile(const TileView &tile, const Palette &palette,
-             const ConversionOptions &conv_opts, ImageFormat format,
-             const std::filesystem::path &output_path) {
+std::expected<std::monostate, Error> process_tile(const TileView& tile,
+                                                  const Palette& palette,
+                                                  const ConversionOptions& conv_opts,
+                                                  ImageFormat format,
+                                                  const std::filesystem::path& output_path) {
   if (!tile.is_valid()) {
     return make_success();
   }
@@ -134,20 +136,18 @@ process_tile(const TileView &tile, const Palette &palette,
 /**
  * @brief Process a single ART file
  */
-int process_art_file(const CliConfig &config, ProgressTracker &progress) {
+int process_art_file(const CliConfig& config, ProgressTracker& progress) {
   // Load palette
   auto palette_result = load_palette(config.palette_file);
   if (!palette_result) {
-    std::cerr << "Error loading palette: " << palette_result.error().message
-              << std::endl;
+    std::cerr << "Error loading palette: " << palette_result.error().message << std::endl;
     return 1;
   }
 
   // Load ART bundle
   auto art_result = load_art_bundle(config.input_path);
   if (!art_result) {
-    std::cerr << "Error loading ART file: " << art_result.error().message
-              << std::endl;
+    std::cerr << "Error loading ART file: " << art_result.error().message << std::endl;
     return 1;
   }
 
@@ -187,8 +187,7 @@ int process_art_file(const CliConfig &config, ProgressTracker &progress) {
   // Process tiles
   if (config.parallel && config.jobs != 1) {
     // Parallel processing
-    size_t num_threads =
-        config.jobs > 0 ? config.jobs : std::thread::hardware_concurrency();
+    size_t num_threads = config.jobs > 0 ? config.jobs : std::thread::hardware_concurrency();
     std::vector<std::thread> threads;
     std::mutex tiles_mutex;
     size_t current_tile = 0;
@@ -204,15 +203,15 @@ int process_art_file(const CliConfig &config, ProgressTracker &progress) {
             tile_index = current_tile++;
           }
 
-          const auto &tile = art_result->tiles[tile_index];
-          std::string output_filename =
-              std::format("{}_{:04d}.{}", base_name, tile_index,
-                          image_format_to_string(output_format));
+          const auto& tile = art_result->tiles[tile_index];
+          std::string output_filename = std::format("{}_{:04d}.{}",
+                                                    base_name,
+                                                    tile_index,
+                                                    image_format_to_string(output_format));
           std::filesystem::path output_path =
               std::filesystem::path(config.output_dir) / output_filename;
 
-          auto result = process_tile(tile, *palette_result, conv_opts,
-                                     output_format, output_path);
+          auto result = process_tile(tile, *palette_result, conv_opts, output_format, output_path);
           if (result) {
             progress.update(1, 0);
           } else {
@@ -220,7 +219,8 @@ int process_art_file(const CliConfig &config, ProgressTracker &progress) {
             if (!config.quiet) {
               std::lock_guard<std::mutex> lock(progress.mutex);
               std::cerr << std::format("\nError processing tile {}: {}",
-                                       tile_index, result.error().message)
+                                       tile_index,
+                                       result.error().message)
                         << std::endl;
             }
           }
@@ -232,27 +232,25 @@ int process_art_file(const CliConfig &config, ProgressTracker &progress) {
       });
     }
 
-    for (auto &thread : threads) {
+    for (auto& thread : threads) {
       thread.join();
     }
   } else {
     // Sequential processing
     for (size_t i = 0; i < art_result->tiles.size(); ++i) {
-      const auto &tile = art_result->tiles[i];
-      std::string output_filename = std::format(
-          "{}_{:04d}.{}", base_name, i, image_format_to_string(output_format));
+      const auto& tile = art_result->tiles[i];
+      std::string output_filename =
+          std::format("{}_{:04d}.{}", base_name, i, image_format_to_string(output_format));
       std::filesystem::path output_path =
           std::filesystem::path(config.output_dir) / output_filename;
 
-      auto result = process_tile(tile, *palette_result, conv_opts,
-                                 output_format, output_path);
+      auto result = process_tile(tile, *palette_result, conv_opts, output_format, output_path);
       if (result) {
         progress.update(1, 0);
       } else {
         progress.update(0, 1);
         if (!config.quiet) {
-          std::cerr << std::format("Error processing tile {}: {}", i,
-                                   result.error().message)
+          std::cerr << std::format("Error processing tile {}: {}", i, result.error().message)
                     << std::endl;
         }
       }
@@ -273,40 +271,39 @@ int process_art_file(const CliConfig &config, ProgressTracker &progress) {
 /**
  * @brief Process a directory of ART files
  */
-int process_art_directory(const CliConfig &config) {
+int process_art_directory(const CliConfig& config) {
   int exit_code = 0;
   ProgressTracker total_progress;
 
   // Count total ART files
-  for (const auto &entry :
-       std::filesystem::directory_iterator(config.input_path)) {
+  for (const auto& entry : std::filesystem::directory_iterator(config.input_path)) {
     if (entry.is_regular_file() && entry.path().extension() == ".ART") {
       total_progress.total++;
     }
   }
 
   if (total_progress.total == 0) {
-    std::cerr << "No ART files found in directory: " << config.input_path
-              << std::endl;
+    std::cerr << "No ART files found in directory: " << config.input_path << std::endl;
     return 1;
   }
 
   if (config.verbose) {
     std::cout << std::format("Found {} ART files in directory: {}",
-                             total_progress.total, config.input_path)
+                             total_progress.total,
+                             config.input_path)
               << std::endl;
   }
 
   // Process each ART file
   size_t processed = 0;
-  for (const auto &entry :
-       std::filesystem::directory_iterator(config.input_path)) {
+  for (const auto& entry : std::filesystem::directory_iterator(config.input_path)) {
     if (entry.is_regular_file() && entry.path().extension() == ".ART") {
       CliConfig file_config = config;
       file_config.input_path = entry.path().string();
 
       if (config.verbose) {
-        std::cout << std::format("\nProcessing file {}/{}: {}", ++processed,
+        std::cout << std::format("\nProcessing file {}/{}: {}",
+                                 ++processed,
                                  total_progress.total,
                                  entry.path().filename().string())
                   << std::endl;
@@ -321,7 +318,8 @@ int process_art_directory(const CliConfig &config) {
       if (!config.quiet) {
         std::cout << std::format("File {}: {} tiles completed, {} tiles failed",
                                  entry.path().filename().string(),
-                                 file_progress.completed, file_progress.failed)
+                                 file_progress.completed,
+                                 file_progress.failed)
                   << std::endl;
       }
     }
@@ -330,60 +328,49 @@ int process_art_directory(const CliConfig &config) {
   return exit_code;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   CLI::App app{"art2img v2.0 - Duke Nukem 3D ART File Converter"};
 
   CliConfig config;
 
   // Required arguments
-  app.add_option("input", config.input_path,
-                 "Input ART file or directory containing ART files")
+  app.add_option("input", config.input_path, "Input ART file or directory containing ART files")
       ->required();
 
   // Optional arguments
-  app.add_option("-o,--output", config.output_dir,
-                 "Output directory (default: current directory)")
+  app.add_option("-o,--output", config.output_dir, "Output directory (default: current directory)")
       ->capture_default_str();
 
-  app.add_option("-p,--palette", config.palette_file,
-                 "Palette file path (default: auto-detect)")
+  app.add_option("-p,--palette", config.palette_file, "Palette file path (default: auto-detect)")
       ->capture_default_str();
 
-  app.add_option("-f,--format", config.format,
-                 "Output format: png, tga, bmp (default: png)")
+  app.add_option("-f,--format", config.format, "Output format: png, tga, bmp (default: png)")
       ->capture_default_str();
 
   // Conversion options
-  app.add_flag("--no-transparency-fix", config.fix_transparency,
-               "Disable transparency fix")
+  app.add_flag("--no-transparency-fix", config.fix_transparency, "Disable transparency fix")
       ->capture_default_str();
 
-  app.add_option("--shade", config.shade_index,
-                 "Apply shade table index (-1 to disable)")
+  app.add_option("--shade", config.shade_index, "Apply shade table index (-1 to disable)")
       ->capture_default_str();
 
-  app.add_flag("--no-lookup", config.apply_lookup,
-               "Disable lookup table application")
+  app.add_flag("--no-lookup", config.apply_lookup, "Disable lookup table application")
       ->capture_default_str();
 
-  app.add_flag("--premultiply-alpha", config.premultiply_alpha,
-               "Premultiply alpha channel")
+  app.add_flag("--premultiply-alpha", config.premultiply_alpha, "Premultiply alpha channel")
       ->capture_default_str();
 
   // Threading options
   app.add_flag("--no-parallel", config.parallel, "Disable parallel processing")
       ->capture_default_str();
 
-  app.add_option("-j,--jobs", config.jobs,
-                 "Number of parallel jobs (0 for auto-detect)")
+  app.add_option("-j,--jobs", config.jobs, "Number of parallel jobs (0 for auto-detect)")
       ->capture_default_str();
 
   // Verbosity
-  app.add_flag("-q,--quiet", config.quiet, "Suppress non-error output")
-      ->capture_default_str();
+  app.add_flag("-q,--quiet", config.quiet, "Suppress non-error output")->capture_default_str();
 
-  app.add_flag("-v,--verbose", config.verbose, "Verbose output")
-      ->capture_default_str();
+  app.add_flag("-v,--verbose", config.verbose, "Verbose output")->capture_default_str();
 
   // Version flag
   app.set_version_flag("--version", "art2img v2.0");
@@ -392,8 +379,7 @@ int main(int argc, char *argv[]) {
 
   // Validate input path
   if (!std::filesystem::exists(config.input_path)) {
-    std::cerr << "Error: Input path does not exist: " << config.input_path
-              << std::endl;
+    std::cerr << "Error: Input path does not exist: " << config.input_path << std::endl;
     return 1;
   }
 
@@ -411,8 +397,7 @@ int main(int argc, char *argv[]) {
     if (std::filesystem::exists(default_palette)) {
       config.palette_file = default_palette.string();
       if (config.verbose) {
-        std::cout << "Using auto-detected palette: " << config.palette_file
-                  << std::endl;
+        std::cout << "Using auto-detected palette: " << config.palette_file << std::endl;
       }
     } else {
       std::cerr << "Warning: No palette file specified and PALETTE.DAT not "
@@ -425,8 +410,7 @@ int main(int argc, char *argv[]) {
 
   // Validate palette file
   if (!std::filesystem::exists(config.palette_file)) {
-    std::cerr << "Error: Palette file does not exist: " << config.palette_file
-              << std::endl;
+    std::cerr << "Error: Palette file does not exist: " << config.palette_file << std::endl;
     return 1;
   }
 
@@ -446,11 +430,10 @@ int main(int argc, char *argv[]) {
     result = process_art_file(config, progress);
 
     if (!config.quiet) {
-      std::cout
-          << std::format(
-                 "Conversion complete: {} tiles processed, {} tiles failed",
-                 progress.completed, progress.failed)
-          << std::endl;
+      std::cout << std::format("Conversion complete: {} tiles processed, {} tiles failed",
+                               progress.completed,
+                               progress.failed)
+                << std::endl;
     }
   }
 
