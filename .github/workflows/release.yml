@@ -17,16 +17,24 @@ jobs:
           - os: ubuntu-latest
             artifact_path: build/cli/art2img_cli
             asset_name: art2img-linux-x64
+            archive_name: art2img-${{ github.ref_name }}-linux-x64
+            archive_ext: .tar.gz
           - os: macos-latest
             artifact_path: build/cli/art2img_cli
             asset_name: art2img-macos-x64
+            archive_name: art2img-${{ github.ref_name }}-macos-x64
+            archive_ext: .tar.gz
           - os: windows-latest
             artifact_path: build/cli/Release/art2img_cli.exe
             asset_name: art2img-windows-x64.exe
+            archive_name: art2img-${{ github.ref_name }}-windows-x64
+            archive_ext: .zip
             arch: x64
           - os: windows-latest
             artifact_path: build/cli/Release/art2img_cli.exe
             asset_name: art2img-windows-x86.exe
+            archive_name: art2img-${{ github.ref_name }}-windows-x86
+            archive_ext: .zip
             arch: Win32
     
     runs-on: ${{ matrix.os }}
@@ -99,7 +107,89 @@ jobs:
           ctest --output-on-failure --parallel 1 --timeout 300 -C Release
         fi
         
-    - name: Upload Release Asset
+    - name: Create Archive Directory
+      shell: bash
+      run: |
+        mkdir -p archive_temp
+        cp "${{ matrix.artifact_path }}" "archive_temp/"
+        cp README.md "archive_temp/" 2>/dev/null || echo "No README.md found"
+        cp LICENSE "archive_temp/" 2>/dev/null || echo "No LICENSE found"
+        cp USAGE.md "archive_temp/" 2>/dev/null || echo "No USAGE.md found"
+        
+    - name: Create Archive (Unix)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        cd archive_temp
+        tar -czf "../${{ matrix.archive_name }}${{ matrix.archive_ext }}" .
+        cd ..
+        echo "Created archive: ${{ matrix.archive_name }}${{ matrix.archive_ext }}"
+        
+    - name: Create Archive (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        cd archive_temp
+        7z a "../${{ matrix.archive_name }}${{ matrix.archive_ext }}" .
+        cd ..
+        echo "Created archive: ${{ matrix.archive_name }}${{ matrix.archive_ext }}"
+        
+    - name: Generate Checksum
+      shell: bash
+      run: |
+        # Generate checksum for the binary
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          certutil -hashfile "${{ matrix.artifact_path }}" SHA256 | grep -E '^[a-fA-F0-9]{64}$' > "${{ matrix.asset_name }}.sha256"
+        else
+          sha256sum "${{ matrix.artifact_path }}" | cut -d' ' -f1 > "${{ matrix.asset_name }}.sha256"
+        fi
+        
+        # Generate checksum for the archive
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          certutil -hashfile "${{ matrix.archive_name }}${{ matrix.archive_ext }}" SHA256 | grep -E '^[a-fA-F0-9]{64}$' > "${{ matrix.archive_name }}${{ matrix.archive_ext }}.sha256"
+        else
+          sha256sum "${{ matrix.archive_name }}${{ matrix.archive_ext }}" | cut -d' ' -f1 > "${{ matrix.archive_name }}${{ matrix.archive_ext }}.sha256"
+        fi
+        
+    - name: Upload Release Assets
       uses: softprops/action-gh-release@v1
       with:
-        files: ${{ matrix.artifact_path }}
+        files: |
+          ${{ matrix.artifact_path }}
+          ${{ matrix.archive_name }}${{ matrix.archive_ext }}
+          ${{ matrix.asset_name }}.sha256
+          ${{ matrix.archive_name }}${{ matrix.archive_ext }}.sha256
+
+  source:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Create Source Archives
+      run: |
+        # Create source directory
+        mkdir -p source_temp
+        cp -r . source_temp/art2img
+        rm -rf source_temp/art2img/.git
+        
+        # Create source archives
+        cd source_temp
+        tar -czf "../art2img-${{ github.ref_name }}.tar.gz" art2img
+        zip -r "../art2img-${{ github.ref_name }}.zip" art2img
+        cd ..
+        
+        # Generate checksums for source archives
+        sha256sum "art2img-${{ github.ref_name }}.tar.gz" | cut -d' ' -f1 > "art2img-${{ github.ref_name }}.tar.gz.sha256"
+        sha256sum "art2img-${{ github.ref_name }}.zip" | cut -d' ' -f1 > "art2img-${{ github.ref_name }}.zip.sha256"
+        
+    - name: Upload Source Assets
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          art2img-${{ github.ref_name }}.tar.gz
+          art2img-${{ github.ref_name }}.zip
+          art2img-${{ github.ref_name }}.tar.gz.sha256
+          art2img-${{ github.ref_name }}.zip.sha256
