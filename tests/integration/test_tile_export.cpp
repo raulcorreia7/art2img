@@ -405,8 +405,17 @@ TEST_SUITE("Tile Export Integration") {
         std::mutex cout_mutex;
         std::atomic<size_t> total_processed{0};
 
-        // First, load all ART files and collect all tiles for maximum parallelism
-        std::vector<std::tuple<std::string, art2img::ArtData, std::size_t>> all_tiles;
+        // Pre-compute all tiles and filenames to avoid redundant operations
+        struct TileInfo {
+            std::size_t art_data_idx;
+            std::size_t tile_idx;
+            art2img::TileView tile;
+            std::string filename;
+        };
+        
+        std::vector<art2img::ArtData> art_data_storage;
+        std::vector<TileInfo> all_tiles;
+        
         for (const auto& art_path : art_files) {
             std::string art_filename = art_path.filename().string();
             art_filename = art_filename.substr(0, art_filename.find_last_of('.'));
@@ -417,20 +426,24 @@ TEST_SUITE("Tile Export Integration") {
                 std::cerr << "Failed to load " << art_filename << std::endl;
                 continue;
             }
-            const auto& art_data = art_result.value();
 
             {
                 std::lock_guard<std::mutex> lock(cout_mutex);
-                std::cout << "Loaded " << art_filename << " with " << art_data.tile_count() << " tiles" << std::endl;
+                std::cout << "Loaded " << art_filename << " with " << art_result.value().tile_count() << " tiles" << std::endl;
             }
 
-            // Collect all valid tiles from this ART file
+            // Store the ArtData to keep it alive
+            std::size_t art_data_idx = art_data_storage.size();
+            art_data_storage.push_back(std::move(art_result.value()));
+            const auto& art_data = art_data_storage.back();
+
+            // Pre-compute all valid tiles from this ART file
             for (std::size_t tile_idx = 0; tile_idx < art_data.tile_count(); ++tile_idx) {
                 auto tile_result = art_data.get_tile(tile_idx);
                 if (tile_result.has_value()) {
                     const auto& tile = tile_result.value();
                     if (tile.is_valid()) {
-                        all_tiles.emplace_back(art_filename, art_data, tile_idx);
+                        all_tiles.push_back({art_data_idx, tile_idx, tile, art_filename});
                     }
                 }
             }
@@ -438,7 +451,9 @@ TEST_SUITE("Tile Export Integration") {
 
         std::cout << "Total valid tiles to export across all formats: " << all_tiles.size() << std::endl;
 
-        // Process each tile in parallel for each format - maximum concurrency
+        // Process each format with batched parallel tasks
+        constexpr std::size_t BATCH_SIZE = 64; // Process 64 tiles per task to reduce async overhead
+        
         for (const auto format : formats) {
             std::string format_name;
             switch (format) {
@@ -448,27 +463,26 @@ TEST_SUITE("Tile Export Integration") {
                 default: format_name = "unknown"; break;
             }
 
-            std::cout << "Starting massively parallel export for format: " << format_name << " (" << all_tiles.size() << " tiles)" << std::endl;
+            std::cout << "Starting batched parallel export for format: " << format_name << " (" << all_tiles.size() << " tiles)" << std::endl;
 
-            // Launch async tasks for each tile-format combination
-            for (const auto& [art_filename, art_data, tile_idx] : all_tiles) {
-                futures.push_back(std::async(std::launch::async, [&, art_filename, tile_idx, format]() {
-                    auto tile_result = art_data.get_tile(tile_idx);
-                    if (!tile_result.has_value()) {
-                        return;
-                    }
-                    const auto& tile = tile_result.value();
-                    if (!tile.is_valid()) {
-                        return;
-                    }
+            // Launch batched async tasks
+            for (std::size_t i = 0; i < all_tiles.size(); i += BATCH_SIZE) {
+                futures.push_back(std::async(std::launch::async, [&, i, format, format_name]() {
+                    std::size_t end = std::min(i + BATCH_SIZE, all_tiles.size());
+                    
+                    for (std::size_t j = i; j < end; ++j) {
+                        const auto& tile_info = all_tiles[j];
+                        const auto& art_data = art_data_storage[tile_info.art_data_idx];
+                        
+                        const auto output_path = comprehensive_dump_dir / 
+                            (tile_info.filename + "_tile_" + std::to_string(tile_info.tile_idx) + "." + format_name);
 
-                    const auto output_path = comprehensive_dump_dir / (art_filename + "_tile_" + std::to_string(tile_idx) + "." + format_name);
-
-                    auto export_result = export_single_tile(tile, palette, format, output_path);
-                    if (export_result.has_value()) {
-                        if (export_result.value().exported_tiles == 1) {
-                            verify_output_file(export_result.value().output_files[0]);
-                            total_processed++;
+                        auto export_result = export_single_tile(tile_info.tile, palette, format, output_path);
+                        if (export_result.has_value()) {
+                            if (export_result.value().exported_tiles == 1) {
+                                verify_output_file(export_result.value().output_files[0]);
+                                total_processed++;
+                            }
                         }
                     }
                 }));
