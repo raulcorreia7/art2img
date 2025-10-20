@@ -376,6 +376,7 @@ std::expected<std::monostate, Error> write_text_file(
     return make_error_expected<std::monostate>(
         mapped_ec, "Failed to open text file for writing: " + path.string());
   }
+
   // Write content to file
   file << content;
   if (!file) {
@@ -391,6 +392,15 @@ std::expected<std::monostate, Error> write_text_file(
     const std::error_code mapped_ec = map_system_error(ec);
     return make_error_expected<std::monostate>(
         mapped_ec, "Failed to flush text file: " + path.string());
+  }
+
+  // Close file explicitly to ensure data is written
+  file.close();
+  if (!file) {
+    const std::error_code ec = std::error_code(errno, std::system_category());
+    const std::error_code mapped_ec = map_system_error(ec);
+    return make_error_expected<std::monostate>(
+        mapped_ec, "Failed to close text file: " + path.string());
   }
 
   return make_success();
