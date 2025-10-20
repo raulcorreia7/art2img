@@ -17,6 +17,7 @@
 #include <iomanip>
 
 #include <art2img/art.hpp>
+#include <art2img/detail/format_utils.hpp>
 #include <art2img/encode.hpp>
 #include <art2img/error.hpp>
 #include <art2img/types.hpp>
@@ -38,20 +39,6 @@ std::string get_animation_type_string(TileAnimation::Type type) {
       return "backward";
     default:
       return "unknown";
-  }
-}
-
-/// @brief Get file extension for the given image format
-std::string get_image_extension(ImageFormat format) {
-  switch (format) {
-    case ImageFormat::png:
-      return "png";
-    case ImageFormat::tga:
-      return "tga";
-    case ImageFormat::bmp:
-      return "bmp";
-    default:
-      return "bin";
   }
 }
 
@@ -107,13 +94,14 @@ std::expected<std::monostate, Error> export_animation_data(
       u32 frame_count = (picanm & 0x3F);
       if (frame_count > 0) {
         ini_file << "[tile" << std::setfill('0') << std::setw(4) << tile_id
-                 << "." << get_image_extension(config.image_format)
+                 << "." << detail::get_file_extension(config.image_format)
                  << " -> tile" << std::setfill('0') << std::setw(4)
                  << (tile_id + frame_count) << "."
-                 << get_image_extension(config.image_format) << "]\n";
+                 << detail::get_file_extension(config.image_format) << "]\n";
       } else {
         ini_file << "[tile" << std::setfill('0') << std::setw(4) << tile_id
-                 << "." << get_image_extension(config.image_format) << "]\n";
+                 << "." << detail::get_file_extension(config.image_format)
+                 << "]\n";
       }
 
       // Write animation parameters (legacy format)
@@ -128,7 +116,7 @@ std::expected<std::monostate, Error> export_animation_data(
     if (has_animation_data || config.include_non_animated) {
       // Write tile section header (legacy format)
       ini_file << "[tile" << std::setfill('0') << std::setw(4) << tile_id << "."
-               << get_image_extension(config.image_format) << "]\n";
+               << detail::get_file_extension(config.image_format) << "]\n";
 
       // Write tile parameters (legacy format)
       ini_file << "   XCenterOffset=" << static_cast<i32>(anim.x_center_offset)
@@ -141,7 +129,8 @@ std::expected<std::monostate, Error> export_animation_data(
       // Include image file reference if format awareness is enabled
       if (config.include_image_references) {
         ini_file << "   ImageFile=" << config.base_name << "_" << tile_id
-                 << "_0." << get_image_extension(config.image_format) << "\n";
+                 << "_0." << detail::get_file_extension(config.image_format)
+                 << "\n";
       }
 
       ini_file << "\n";

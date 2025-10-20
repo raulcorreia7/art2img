@@ -16,6 +16,7 @@
 #include <vector>
 
 #include <art2img/color_helpers.hpp>
+#include <art2img/detail/format_utils.hpp>
 #include <art2img/encode.hpp>
 
 #ifndef STB_IMAGE_WRITE_IMPLEMENTATION
@@ -342,18 +343,6 @@ std::expected<std::monostate, Error> validate_image_for_encoding(
         "Invalid image dimensions or stride for encoding");
   }
   return make_success();
-}
-
-const char* format_to_string(ImageFormat format) {
-  switch (format) {
-    case ImageFormat::png:
-      return "PNG";
-    case ImageFormat::tga:
-      return "TGA";
-    case ImageFormat::bmp:
-      return "BMP";
-  }
-  return "Unknown";
 }
 
 }  // namespace art2img
