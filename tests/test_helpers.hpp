@@ -4,11 +4,25 @@
 
 #pragma once
 
+#include <atomic>
 #include <filesystem>
 #include <iostream>
+#include <mutex>
 #include <string>
 
 namespace test_helpers {
+
+// Global mutex for thread-safe directory operations
+inline std::mutex& get_test_dir_mutex() {
+  static std::mutex mutex;
+  return mutex;
+}
+
+// Atomic counter for unique test identifiers
+inline std::atomic<int>& get_test_counter() {
+  static std::atomic<int> counter{0};
+  return counter;
+}
 
 /// @brief Get the main test output directory (build-relative)
 /// @return Path to test output directory
@@ -45,9 +59,10 @@ inline std::filesystem::path get_cli_test_dir(const std::string& test_name) {
   return get_test_output_dir() / "cli" / test_name;
 }
 
-/// @brief Ensure test output directory exists
+/// @brief Ensure test output directory exists (thread-safe)
 /// @param dir Directory path to create
 inline void ensure_test_output_dir(const std::filesystem::path& dir) {
+  std::lock_guard<std::mutex> lock(get_test_dir_mutex());
   std::error_code ec;
   std::filesystem::create_directories(dir, ec);
   if (ec) {
@@ -56,15 +71,45 @@ inline void ensure_test_output_dir(const std::filesystem::path& dir) {
   }
 }
 
-/// @brief Clean up test output directory
+/// @brief Clean up test output directory (thread-safe)
 /// @param dir Directory path to remove
 inline void cleanup_test_output_dir(const std::filesystem::path& dir) {
+  std::lock_guard<std::mutex> lock(get_test_dir_mutex());
   std::error_code ec;
   std::filesystem::remove_all(dir, ec);
   if (ec) {
     std::cerr << "Warning: Failed to clean up test directory: " << dir.string()
               << " - " << ec.message() << std::endl;
   }
+}
+
+/// @brief Generate unique test directory name (thread-safe)
+/// @param prefix Optional prefix for the directory name
+/// @return Unique directory name
+inline std::string generate_unique_test_name(
+    const std::string& prefix = "test") {
+  int unique_id = get_test_counter().fetch_add(1);
+  return prefix + "_" + std::to_string(unique_id);
+}
+
+/// @brief Get unique test directory path (thread-safe)
+/// @param base_dir Base directory for the test
+/// @param prefix Optional prefix for the unique directory name
+/// @return Unique directory path
+inline std::filesystem::path get_unique_test_dir(
+    const std::filesystem::path& base_dir, const std::string& prefix = "test") {
+  return base_dir / generate_unique_test_name(prefix);
+}
+
+/// @brief Create and ensure unique test directory (thread-safe)
+/// @param base_dir Base directory for the test
+/// @param prefix Optional prefix for the unique directory name
+/// @return Unique directory path that has been created
+inline std::filesystem::path create_unique_test_dir(
+    const std::filesystem::path& base_dir, const std::string& prefix = "test") {
+  auto unique_dir = get_unique_test_dir(base_dir, prefix);
+  ensure_test_output_dir(unique_dir);
+  return unique_dir;
 }
 
 /// @brief Print test output directory info (for debugging)
