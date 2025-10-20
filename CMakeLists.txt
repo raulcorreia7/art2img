@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.20)
 # PROJECT SETUP
 # ============================================================================
 project(art2img 
-    VERSION 2.0.0
+    VERSION 1.0.0
     DESCRIPTION "ART file to image converter library"
     LANGUAGES CXX
     HOMEPAGE_URL "https://github.com/raulcorreia7/art2img"
@@ -69,6 +69,16 @@ if(BUILD_TESTING)
         VERSION 2.4.12
         GITHUB_REPOSITORY "doctest/doctest"
         GIT_TAG "v2.4.12"
+    )
+endif()
+
+option(BUILD_BENCHMARKS "Build benchmarks" OFF)
+if(BUILD_BENCHMARKS)
+    CPMAddPackage(
+        NAME benchmark
+        VERSION 1.8.3
+        GITHUB_REPOSITORY "google/benchmark"
+        GIT_TAG "v1.8.3"
     )
 endif()
 
@@ -137,4 +147,8 @@ endif()
 
 if(BUILD_TESTING)
     add_subdirectory(tests)
+endif()
+
+if(BUILD_BENCHMARKS)
+    add_subdirectory(benchmark)
 endif()
