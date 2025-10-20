@@ -168,8 +168,8 @@ Every task below is self-contained and written so an autonomous code agent can e
   2. Implement option parsing (reuse CLI11 dependency), translation into pipeline steps.
   3. Use thread pool (optional) around tile conversion/encoding; ensure sequential fallback works.
   4. Update CLI integration tests (new Bats scripts) to use new binary.
-- **Outputs:** `cli/main.cpp`, support files, tests under `tests/cli` and `tests/bats`.
-- **Acceptance:** `ctest -R cli`, Bats suite, manual CLI run on sample ART.
+- **Outputs:** `cli/main.cpp`, support files, tests under `tests/cli`.
+- **Acceptance:** `ctest -R cli`, manual CLI run on sample ART.
 
 ### T6.3 – Update build scripts for new CLI
 - **Actions:** Refresh `Makefile`, `scripts` (if needed) to point to new build targets.
