@@ -47,10 +47,18 @@ jobs:
       run: |
         cmake --build build --config Debug
         
-    - name: Test
+    - name: Test (Windows)
+      if: runner.os == 'Windows'
+      shell: powershell
       run: |
         cd build
-        ctest --output-on-failure --parallel ${{ runner.os == 'Windows' && '1' || (runner.os == 'macOS' && 'sysctl -n hw.ncpu' || 'nproc') }}
+        ctest --output-on-failure --parallel 1
+        
+    - name: Test (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        cd build
+        ctest --output-on-failure --parallel ${{ runner.os == 'macOS' && 'sysctl -n hw.ncpu' || 'nproc' }}
         
     - name: Upload coverage (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
