@@ -7,7 +7,7 @@ BUILD_TYPE ?= Release
 JOBS ?= $(shell nproc)
 
 # Main targets
-.PHONY: all build clean test install help fmt lint
+.PHONY: all build clean test install help fmt fmt-check lint
 .PHONY: windows-x64-mingw windows-x86-mingw windows-mingw
 .PHONY: windows-x64-native windows-x86-native windows-native windows
 .PHONY: macos-x64-osxcross macos-arm64-osxcross macos-osxcross
@@ -96,13 +96,24 @@ install: build
 clean:
 	@rm -rf build/
 
-# Format code (if clang-format target exists)
-fmt: build
-	@cd build/linux_x64 && cmake --build . --target clang-format 2>/dev/null || echo "clang-format target not available"
+# Format code using clang-format directly
+fmt:
+	@echo "Formatting source code..."
+	@find . -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i
+	@echo "Code formatted successfully"
 
-# Run linting (if clang-tidy target exists)
-lint: build
-	@cd build/linux_x64 && cmake --build . --target clang-tidy 2>/dev/null || echo "clang-tidy target not available"
+# Check formatting without modifying files
+fmt-check:
+	@echo "Checking code formatting..."
+	@find . -name '*.cpp' -o -name '*.hpp' | xargs clang-format --dry-run --Werror
+	@echo "Code formatting check passed"
+
+# Run linting using clang-tidy directly
+lint:
+	@echo "Running static analysis..."
+	@cmake -B build/lint -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=OFF
+	@cd build/lint && run-clang-tidy -config '{}' -p . $(find .. -name '*.cpp' -o -name '*.hpp') || true
+	@echo "Static analysis completed"
 
 # Help
 help:
@@ -141,7 +152,8 @@ help:
 	@echo "  make test                   - Run tests (Linux)"
 	@echo "  make install                - Install the project"
 	@echo "  make clean                  - Remove all build directories"
-	@echo "  make fmt                    - Format source code"
+	@echo "  make fmt                    - Format source code (in-place)"
+	@echo "  make fmt-check              - Check formatting without modifying"
 	@echo "  make lint                   - Run static analysis"
 	@echo ""
 	@echo "Variables:"
