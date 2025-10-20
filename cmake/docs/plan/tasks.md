@@ -167,7 +167,7 @@ Every task below is self-contained and written so an autonomous code agent can e
   1. Create new CLI entry under `cli/` referencing `art2img/api.hpp` (fresh implementation, no legacy dependencies).
   2. Implement option parsing (reuse CLI11 dependency), translation into pipeline steps.
   3. Use thread pool (optional) around tile conversion/encoding; ensure sequential fallback works.
-  4. Update CLI integration tests (new Bats scripts) to use new binary.
+   4. Update CLI integration tests to use new binary.
 - **Outputs:** `cli/main.cpp`, support files, tests under `tests/cli`.
 - **Acceptance:** `ctest -R cli`, manual CLI run on sample ART.
 
@@ -212,7 +212,7 @@ Every task below is self-contained and written so an autonomous code agent can e
 ### T8.3 – Final QA sweep
 - **Actions:**
   1. `cmake --build` for release + debug configurations.
-  2. Run full test suite: `ctest`, Bats, CLI smoke.
+   2. Run full test suite: `ctest`, CLI smoke.
   3. Run static analysis (`clang-tidy` profile) and sanitizers (ASAN/UBSAN/LSAN) per Architecture §14.
   4. Package artifacts if part of release flow.
 - **Outputs:** QA summary (notes or CI logs) demonstrating green pipeline and clean analysis/sanitizer runs.
