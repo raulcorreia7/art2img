@@ -11,8 +11,10 @@
 /// - Edge cases and error conditions
 
 #include <art2img/convert.hpp>
+#include <art2img/convert/detail/row_range.hpp>
 #include <art2img/palette.hpp>
 #include <art2img/art.hpp>
+#include <art2img/color_helpers.hpp>
 #include <doctest/doctest.h>
 #include <vector>
 #include <array>
@@ -27,37 +29,39 @@ using namespace art2img;
 Palette create_test_palette() {
     Palette palette;
     
-    // Set up basic BGR colors (6-bit values, will be scaled to 8-bit)
+    // Set up basic RGB colors (6-bit values, will be scaled to 8-bit)
     // Index 0: Black (for transparency testing)
-    palette.data[0] = 0;   // B
+    palette.data[0] = 0;   // R
     palette.data[1] = 0;   // G
-    palette.data[2] = 0;   // R
+    palette.data[2] = 0;   // B
     
     // Index 1: Red
-    palette.data[3] = 0;   // B
+    palette.data[3] = 63;  // R (max 6-bit)
     palette.data[4] = 0;   // G
-    palette.data[5] = 63;  // R (max 6-bit)
+    palette.data[5] = 0;   // B
     
     // Index 2: Green
-    palette.data[6] = 0;   // B
+    palette.data[6] = 0;   // R
     palette.data[7] = 63;  // G (max 6-bit)
-    palette.data[8] = 0;   // R
+    palette.data[8] = 0;   // B
     
     // Index 3: Blue
-    palette.data[9] = 63;  // B (max 6-bit)
+    palette.data[9] = 0;   // R
     palette.data[10] = 0;  // G
-    palette.data[11] = 0;  // R
+    palette.data[11] = 63;  // B (max 6-bit)
     
     // Index 4: White
-    palette.data[12] = 63; // B (max 6-bit)
+    palette.data[12] = 63; // R (max 6-bit)
     palette.data[13] = 63; // G (max 6-bit)
-    palette.data[14] = 63; // R (max 6-bit)
+    palette.data[14] = 63; // B (max 6-bit)
     
     // Add a simple shade table (just map each color to the next one)
-    palette.shade_table_count = 1;
-    palette.shade_tables.resize(256);
+    // Provide two shade tables: index 0 is identity (no shading), index 1 shifts colors
+    palette.shade_table_count = 2;
+    palette.shade_tables.resize(2 * 256);
     for (int i = 0; i < 256; ++i) {
-        palette.shade_tables[i] = static_cast<std::uint8_t>((i + 1) % 256);
+        palette.shade_tables[i] = static_cast<std::uint8_t>(i);              // Shade 0: identity
+        palette.shade_tables[256 + i] = static_cast<std::uint8_t>((i + 1) % 256); // Shade 1: rotate
     }
     
     return palette;
@@ -129,12 +133,12 @@ std::uint32_t get_expected_rgba(std::uint8_t palette_index) {
     const std::uint8_t scale = 4; // 255 / 63
     
     switch (palette_index) {
-        case 0: return 0xFF000000; // Black (fully opaque)
-        case 1: return 0xFF0000FF; // Red (scaled)
-        case 2: return 0xFF00FF00; // Green (scaled)
-        case 3: return 0xFFFF0000; // Blue (scaled)
-        case 4: return 0xFFFFFFFF; // White (scaled)
-        default: return 0xFF000000; // Default to black
+        case 0: return color::pack_rgba(0, 0, 0);       // Black (fully opaque)
+        case 1: return color::pack_rgba(255, 0, 0);     // Red
+        case 2: return color::pack_rgba(0, 255, 0);     // Green
+        case 3: return color::pack_rgba(0, 0, 255);     // Blue
+        case 4: return color::pack_rgba(255, 255, 255); // White
+        default: return color::pack_rgba(0, 0, 0);      // Default to black
     }
 }
 
@@ -162,16 +166,16 @@ TEST_CASE("to_rgba basic conversion") {
     // Check some expected pixel values
     // Pixel (0,0) should have palette index 0 (black)
     const std::size_t pixel_00_offset = 0 * 12 + 0 * 4;
-    CHECK(image.data[pixel_00_offset] == 0);     // B
+    CHECK(image.data[pixel_00_offset] == 0);     // R
     CHECK(image.data[pixel_00_offset + 1] == 0); // G
-    CHECK(image.data[pixel_00_offset + 2] == 0); // R
+    CHECK(image.data[pixel_00_offset + 2] == 0); // B
     CHECK(image.data[pixel_00_offset + 3] == 255); // A
-    
+
     // Pixel (1,0) should have palette index 1 (red)
     const std::size_t pixel_10_offset = 0 * 12 + 1 * 4;
-    CHECK(image.data[pixel_10_offset] == 255);     // B (red in BGRA)
+    CHECK(image.data[pixel_10_offset] == 255);     // R (red)
     CHECK(image.data[pixel_10_offset + 1] == 0);   // G
-    CHECK(image.data[pixel_10_offset + 2] == 0);   // R
+    CHECK(image.data[pixel_10_offset + 2] == 0);   // B
     CHECK(image.data[pixel_10_offset + 3] == 255); // A
 }
 
@@ -189,9 +193,9 @@ TEST_CASE("to_rgba with transparency fixing") {
     
     // Pixel (0,0) should have palette index 0 and be transparent
     const std::size_t pixel_00_offset = 0 * 8 + 0 * 4;
-    CHECK(image.data[pixel_00_offset] == 0);     // B
+    CHECK(image.data[pixel_00_offset] == 0);     // R
     CHECK(image.data[pixel_00_offset + 1] == 0); // G
-    CHECK(image.data[pixel_00_offset + 2] == 0); // R
+    CHECK(image.data[pixel_00_offset + 2] == 0); // B
     CHECK(image.data[pixel_00_offset + 3] == 0); // A (transparent)
     
     // Other pixels should be opaque
@@ -204,7 +208,7 @@ TEST_CASE("to_rgba with shading") {
     const auto tile = create_test_tile(2, 2);
     
     ConversionOptions options;
-    options.shade_index = 0; // Use first (and only) shade table
+    options.shade_index = 1; // Use second shade table (first applies shading)
     
     const auto result = to_rgba(tile, palette, options);
     
@@ -213,9 +217,9 @@ TEST_CASE("to_rgba with shading") {
     
     // With shading, palette index 0 should become 1 (red)
     const std::size_t pixel_00_offset = 0 * 8 + 0 * 4;
-    CHECK(image.data[pixel_00_offset] == 255);     // B (red in BGRA)
+    CHECK(image.data[pixel_00_offset] == 255);     // R
     CHECK(image.data[pixel_00_offset + 1] == 0);   // G
-    CHECK(image.data[pixel_00_offset + 2] == 0);   // R
+    CHECK(image.data[pixel_00_offset + 2] == 0);   // B
     CHECK(image.data[pixel_00_offset + 3] == 255); // A
 }
 
@@ -234,9 +238,9 @@ TEST_CASE("to_rgba with premultiplied alpha") {
     
     // Transparent pixel should remain black with alpha 0
     const std::size_t pixel_00_offset = 0 * 8 + 0 * 4;
-    CHECK(image.data[pixel_00_offset] == 0);     // B
+    CHECK(image.data[pixel_00_offset] == 0);     // R
     CHECK(image.data[pixel_00_offset + 1] == 0); // G
-    CHECK(image.data[pixel_00_offset + 2] == 0); // R
+    CHECK(image.data[pixel_00_offset + 2] == 0); // B
     CHECK(image.data[pixel_00_offset + 3] == 0); // A (transparent)
 }
 
@@ -264,9 +268,9 @@ TEST_CASE("to_rgba with remapping") {
     
     // Pixel (0,0) should have palette index 0 remapped to 1 (red)
     const std::size_t pixel_00_offset = 0 * 8 + 0 * 4;
-    CHECK(image.data[pixel_00_offset] == 255);     // B (red in BGRA)
+    CHECK(image.data[pixel_00_offset] == 255);     // R (red)
     CHECK(image.data[pixel_00_offset + 1] == 0);   // G
-    CHECK(image.data[pixel_00_offset + 2] == 0);   // R
+    CHECK(image.data[pixel_00_offset + 2] == 0);   // B
     CHECK(image.data[pixel_00_offset + 3] == 255); // A
 }
 
@@ -323,12 +327,12 @@ TEST_CASE("image_view creation") {
     CHECK(view.is_valid());
 }
 
-TEST_CASE("copy_column_major_to_row_major") {
+TEST_CASE("convert_column_to_row_major") {
     const auto tile = create_test_tile(3, 2);
     
     std::vector<std::uint8_t> destination(6); // 3 * 2 pixels
     
-    const auto result = copy_column_major_to_row_major(tile, destination);
+    const auto result = convert_column_to_row_major(tile, destination);
     
     REQUIRE(result);
     
@@ -342,46 +346,45 @@ TEST_CASE("copy_column_major_to_row_major") {
     CHECK(destination[5] == 3); // (2,1)
 }
 
-TEST_CASE("copy_column_major_to_row_major with insufficient buffer") {
+TEST_CASE("convert_column_to_row_major with insufficient buffer") {
     const auto tile = create_test_tile(3, 2);
     
     std::vector<std::uint8_t> too_small(5); // Need 6 bytes
     
-    const auto result = copy_column_major_to_row_major(tile, too_small);
+    const auto result = convert_column_to_row_major(tile, too_small);
     
     REQUIRE(!result);
     CHECK(result.error().code == errc::conversion_failure);
 }
 
-TEST_CASE("sample_column_major_index") {
+TEST_CASE("get_pixel_column_major") {
     const auto tile = create_test_tile(3, 2);
     
     // Test valid coordinates
-    const auto pixel_00 = sample_column_major_index(tile, 0, 0);
+    const auto pixel_00 = get_pixel_column_major(tile, 0, 0);
     REQUIRE(pixel_00);
     CHECK(pixel_00.value() == 0);
     
-    const auto pixel_10 = sample_column_major_index(tile, 1, 0);
+    const auto pixel_10 = get_pixel_column_major(tile, 1, 0);
     REQUIRE(pixel_10);
     CHECK(pixel_10.value() == 1);
     
-    const auto pixel_01 = sample_column_major_index(tile, 0, 1);
+    const auto pixel_01 = get_pixel_column_major(tile, 0, 1);
     REQUIRE(pixel_01);
     CHECK(pixel_01.value() == 1);
     
     // Test out-of-bounds coordinates
-    const auto pixel_out_x = sample_column_major_index(tile, 3, 0);
+    const auto pixel_out_x = get_pixel_column_major(tile, 3, 0);
     REQUIRE(!pixel_out_x);
     
-    const auto pixel_out_y = sample_column_major_index(tile, 0, 2);
+    const auto pixel_out_y = get_pixel_column_major(tile, 0, 2);
     REQUIRE(!pixel_out_y);
 }
 
-TEST_CASE("column_major_rows iteration") {
+TEST_CASE("make_column_major_row_iterator iteration") {
     const auto tile = create_test_tile(3, 2);
-    std::vector<std::uint8_t> scratch(3); // One row of pixels
-    
-    const auto row_range = column_major_rows(tile, scratch);
+    auto rows_owner = convert::detail::ColumnMajorRowRangeOwner(tile);
+    auto& row_range = rows_owner.get();
     REQUIRE(row_range.is_valid());
     
     auto it = row_range.begin();
@@ -434,9 +437,9 @@ TEST_CASE("conversion with single pixel tile") {
     CHECK(image.stride == 4);
     
     // Should be green
-    CHECK(image.data[0] == 0);   // B
+    CHECK(image.data[0] == 0);   // R
     CHECK(image.data[1] == 255); // G
-    CHECK(image.data[2] == 0);   // R
+    CHECK(image.data[2] == 0);   // B
     CHECK(image.data[3] == 255); // A
 }
 
@@ -478,7 +481,7 @@ TEST_CASE("conversion pipeline order") {
     // Apply all options: remap -> shade -> transparency fix -> premultiply
     ConversionOptions options;
     options.apply_lookup = true;
-    options.shade_index = 0; // Will map 1 -> 2 (using first shade table)
+    options.shade_index = 1; // Use shading table that maps 1 -> 2
     options.fix_transparency = true; // Will not affect index 2
     options.premultiply_alpha = true;
     
@@ -488,9 +491,9 @@ TEST_CASE("conversion pipeline order") {
     const auto& image = result.value();
     
     // Final color should be green (index 2) with full opacity
-    CHECK(image.data[0] == 0);   // B
+    CHECK(image.data[0] == 0);   // R
     CHECK(image.data[1] == 255); // G
-    CHECK(image.data[2] == 0);   // R
+    CHECK(image.data[2] == 0);   // B
     CHECK(image.data[3] == 255); // A
 }
 
