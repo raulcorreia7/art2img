@@ -25,6 +25,8 @@
 #include <fstream>
 #include <tuple>
 
+#include <art2img/detail/binary_reader.hpp>
+#include <art2img/detail/validation.hpp>
 #include <art2img/palette.hpp>
 #include <art2img/palette/detail/palette_color.hpp>
 
@@ -34,28 +36,7 @@ using art2img::types::u16;
 using art2img::types::u32;
 using art2img::types::u8;
 
-namespace {
-
-/// @brief Validate palette index bounds
-constexpr bool is_valid_palette_index(u8 index) noexcept {
-  return index < constants::PALETTE_SIZE;
-}
-
-/// @brief Validate shade table index bounds
-constexpr bool is_valid_shade_index(u16 shade_count, u8 shade) noexcept {
-  return shade < shade_count;
-}
-
-/// @brief Read a 16-bit little-endian value from a byte span
-u16 read_u16_le(std::span<const byte> data, std::size_t offset) {
-  if (offset + 1 >= data.size()) {
-    return 0;
-  }
-  return static_cast<u16>(static_cast<u8>(data[offset])) |
-         (static_cast<u16>(static_cast<u8>(data[offset + 1])) << 8);
-}
-
-}  // anonymous namespace
+namespace {}  // anonymous namespace
 
 std::expected<Palette, Error> load_palette(const std::filesystem::path& path) {
   // Open file in binary mode
@@ -108,7 +89,7 @@ std::expected<Palette, Error> load_palette(std::span<const byte> data) {
 
   // Read shade table count (little-endian 16-bit)
   std::size_t offset = constants::PALETTE_DATA_SIZE;
-  palette.shade_table_count = read_u16_le(data, offset);
+  palette.shade_table_count = detail::read_u16_le(data, offset);
   offset += 2;
 
   // Validate shade table count
@@ -172,11 +153,11 @@ std::tuple<u8, u8, u8> palette_entry_to_rgb(const Palette& palette, u8 index) {
 std::tuple<u8, u8, u8> palette_shaded_entry_to_rgb(const Palette& palette,
                                                    u8 shade, u8 index) {
   // Validate inputs
-  if (!is_valid_palette_index(index)) {
+  if (!detail::is_valid_palette_index(index)) {
     return {0, 0, 0};  // Black for invalid indices
   }
 
-  if (!is_valid_shade_index(palette.shade_table_count, shade) ||
+  if (!detail::is_valid_shade_index(palette.shade_table_count, shade) ||
       !palette.has_shade_tables()) {
     // If shade is invalid or no shade tables, return unshaded color
     return palette_entry_to_rgb(palette, index);
@@ -198,11 +179,11 @@ color::Color palette_entry_to_color(const Palette& palette, u8 index) {
 color::Color palette_shaded_entry_to_color(const Palette& palette, u8 shade,
                                            u8 index) {
   // Validate inputs
-  if (!is_valid_palette_index(index)) {
-    return color::constants::BLACK;  // Black for invalid indices
+  if (!detail::is_valid_palette_index(index)) {
+    return {0, 0, 0};  // Black for invalid indices
   }
 
-  if (!is_valid_shade_index(palette.shade_table_count, shade) ||
+  if (!detail::is_valid_shade_index(palette.shade_table_count, shade) ||
       !palette.has_shade_tables()) {
     // If shade is invalid or no shade tables, return unshaded color
     return palette_entry_to_color(palette, index);
