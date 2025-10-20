@@ -34,7 +34,7 @@ constexpr inline Color unpack_rgba(types::u32 packed) noexcept {
 }
 
 /// @brief Store a Color into a raw RGBA byte buffer
-inline void write_rgba(types::u8 *destination, const Color &color) noexcept {
+inline void write_rgba(types::u8* destination, const Color& color) noexcept {
   destination[0] = color.r;
   destination[1] = color.g;
   destination[2] = color.b;
@@ -42,7 +42,7 @@ inline void write_rgba(types::u8 *destination, const Color &color) noexcept {
 }
 
 /// @brief Load a Color from a raw RGBA byte buffer
-inline Color read_rgba(const types::u8 *source) noexcept {
+inline Color read_rgba(const types::u8* source) noexcept {
   return make_rgba(source[0], source[1], source[2], source[3]);
 }
 
@@ -50,7 +50,7 @@ inline Color read_rgba(const types::u8 *source) noexcept {
 /// @brief Store a Color into a sized RGBA span
 inline void write_rgba(
     std::span<types::u8, art2img::constants::RGBA_CHANNEL_COUNT> destination,
-    const Color &color) noexcept {
+    const Color& color) noexcept {
   destination[0] = color.r;
   destination[1] = color.g;
   destination[2] = color.b;
@@ -58,9 +58,9 @@ inline void write_rgba(
 }
 
 /// @brief Load a Color from a sized RGBA span
-inline Color
-read_rgba(std::span<const types::u8, art2img::constants::RGBA_CHANNEL_COUNT>
-              source) noexcept {
+inline Color read_rgba(
+    std::span<const types::u8, art2img::constants::RGBA_CHANNEL_COUNT>
+        source) noexcept {
   return make_rgba(source[0], source[1], source[2], source[3]);
 }
 #endif
@@ -72,4 +72,4 @@ constexpr inline bool is_build_engine_magenta(types::u8 r, types::u8 g,
   return r >= 250u && b >= 250u && g <= 5u;
 }
 
-} // namespace art2img::color
+}  // namespace art2img::color

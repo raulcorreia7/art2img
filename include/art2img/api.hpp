@@ -41,7 +41,7 @@ struct Version {
    * @brief Get version string
    * @return Version string in format "major.minor.patch"
    */
-  static constexpr const char *string() { return "2.0.0"; }
+  static constexpr const char* string() { return "2.0.0"; }
 };
 
-} // namespace art2img
+}  // namespace art2img

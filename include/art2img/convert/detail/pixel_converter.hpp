@@ -7,17 +7,17 @@
 namespace art2img::convert::detail {
 
 struct PixelConverter {
-  const Palette &palette;
-  const ConversionOptions &options;
+  const Palette& palette;
+  const ConversionOptions& options;
   types::u8_span remap;
 
   color::Color operator()(types::u8 pixel_index) const noexcept;
 
-private:
+ private:
   types::u8 remap_index(types::u8 index) const noexcept;
   color::Color select_palette_color(types::u8 index) const noexcept;
   color::Color apply_transparency(color::Color color,
                                   types::u8 index) const noexcept;
 };
 
-} // namespace art2img::convert::detail
+}  // namespace art2img::convert::detail

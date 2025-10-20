@@ -1,13 +1,14 @@
 #pragma once
 
-#include <art2img/error.hpp>
-#include <art2img/palette.hpp>
-#include <art2img/types.hpp>
 #include <expected>
 #include <filesystem>
 #include <optional>
 #include <span>
 #include <vector>
+
+#include <art2img/error.hpp>
+#include <art2img/palette.hpp>
+#include <art2img/types.hpp>
 
 namespace art2img {
 
@@ -40,10 +41,10 @@ struct TileAnimation {
 
   /// @brief Animation type (bits 6-7 of picanm)
   enum class Type : u8 {
-    none = 0,        ///< 00 = no animation
-    oscillating = 1, ///< 01 = oscillating animation
-    forward = 2,     ///< 10 = animate forward
-    backward = 3     ///< 11 = animate backward
+    none = 0,         ///< 00 = no animation
+    oscillating = 1,  ///< 01 = oscillating animation
+    forward = 2,      ///< 10 = animate forward
+    backward = 3      ///< 11 = animate backward
   } type = Type::none;
 
   /// @brief Animation speed/timing (bits 24-27 of picanm)
@@ -146,49 +147,47 @@ struct ArtData {
 /// @param path Path to the ART file
 /// @param hint Palette hint for auto-discovery of sidecar files
 /// @return Expected ArtData on success, Error on failure
-std::expected<ArtData, Error>
-load_art_bundle(const std::filesystem::path &path,
-                PaletteHint hint = PaletteHint::none);
+std::expected<ArtData, Error> load_art_bundle(
+    const std::filesystem::path& path, PaletteHint hint = PaletteHint::none);
 
 /// @brief Load an ART bundle from a byte span
 /// @param data Span containing the raw ART file data
 /// @param hint Palette hint for auto-discovery of sidecar files
 /// @return Expected ArtData on success, Error on failure
-std::expected<ArtData, Error>
-load_art_bundle(std::span<const std::byte> data,
-                PaletteHint hint = PaletteHint::none);
+std::expected<ArtData, Error> load_art_bundle(
+    std::span<const std::byte> data, PaletteHint hint = PaletteHint::none);
 
 /// @brief Create a tile view from art data by index
 /// @param art_data The art data container
 /// @param index Tile index (0-based)
 /// @return TileView if index is valid, empty optional otherwise
-std::optional<TileView> make_tile_view(const ArtData &art_data,
+std::optional<TileView> make_tile_view(const ArtData& art_data,
                                        std::size_t index);
 
 /// @brief Create a tile view from art data by tile ID
 /// @param art_data The art data container
 /// @param tile_id The tile ID to look up
 /// @return TileView if tile_id is found, empty optional otherwise
-std::optional<TileView> make_tile_view_by_id(const ArtData &art_data,
+std::optional<TileView> make_tile_view_by_id(const ArtData& art_data,
                                              u32 tile_id);
 
 /// @brief Discover sidecar palette file for an ART file
 /// @param art_path Path to the ART file
 /// @return Path to discovered palette file, or empty path if not found
-std::filesystem::path
-discover_sidecar_palette(const std::filesystem::path &art_path);
+std::filesystem::path discover_sidecar_palette(
+    const std::filesystem::path& art_path);
 
 /// @brief Discover LOOKUP.DAT file for remap tables
 /// @param art_path Path to the ART file (used as reference directory)
 /// @return Path to LOOKUP.DAT file, or empty path if not found
-std::filesystem::path
-discover_lookup_file(const std::filesystem::path &art_path);
+std::filesystem::path discover_lookup_file(
+    const std::filesystem::path& art_path);
 
 /// @brief Load LOOKUP.DAT remap data
 /// @param lookup_path Path to LOOKUP.DAT file
 /// @return Expected vector of remap data on success, Error on failure
-std::expected<std::vector<types::u8>, Error>
-load_lookup_data(std::span<const types::byte> data);
+std::expected<std::vector<types::u8>, Error> load_lookup_data(
+    std::span<const types::byte> data);
 
 /// @brief Animation data export configuration
 struct AnimationExportConfig {
@@ -218,13 +217,12 @@ struct AnimationExportConfig {
 /// @param art_data The art data container
 /// @param config Export configuration
 /// @return Expected monostate on success, Error on failure
-std::expected<std::monostate, Error>
-export_animation_data(const ArtData &art_data,
-                      const AnimationExportConfig &config = {});
+std::expected<std::monostate, Error> export_animation_data(
+    const ArtData& art_data, const AnimationExportConfig& config = {});
 
 /// @brief Get animation type string from enum value
 /// @param type Animation type enum
 /// @return String representation of animation type
 std::string get_animation_type_string(TileAnimation::Type type);
 
-} // namespace art2img
+}  // namespace art2img

@@ -2,10 +2,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string>
 #include <vector>
-
-#include <span>
 
 namespace art2img {
 
@@ -26,10 +25,10 @@ constexpr std::size_t PALETTE_BITS_PER_COMPONENT = 6;
 
 /// @brief Maximum value for a 6-bit color component
 constexpr std::uint8_t PALETTE_COMPONENT_MAX =
-    (1 << PALETTE_BITS_PER_COMPONENT) - 1; // 63
+    (1 << PALETTE_BITS_PER_COMPONENT) - 1;  // 63
 
 /// @brief Scale factor to convert 6-bit to 8-bit color values
-constexpr std::uint8_t PALETTE_SCALE_FACTOR = 255 / PALETTE_COMPONENT_MAX; // 4
+constexpr std::uint8_t PALETTE_SCALE_FACTOR = 255 / PALETTE_COMPONENT_MAX;  // 4
 
 /// @brief Number of shade tables in a full palette
 constexpr std::size_t SHADE_TABLE_COUNT = 32;
@@ -59,7 +58,7 @@ constexpr std::size_t RGBA_BYTES_PER_PIXEL = 4;
 /// @brief Number of color channels in RGBA format
 constexpr std::size_t RGBA_CHANNEL_COUNT = 4;
 
-} // namespace constants
+}  // namespace constants
 
 /// @brief Common type aliases used throughout the library
 namespace types {
@@ -106,27 +105,27 @@ using u8_span = std::span<const u8>;
 /// @brief Span of mutable 8-bit values
 using mutable_u8_span = std::span<u8>;
 
-} // namespace types
+}  // namespace types
 
 /// @brief Color structures and format handling
 namespace color {
 
 /// @brief Color format enumeration for different pixel layouts
 enum class Format {
-  RGBA, ///< Red, Green, Blue, Alpha (standard)
-  BGRA, ///< Blue, Green, Red, Alpha (Windows/DirectX)
-  ARGB, ///< Alpha, Red, Green, Blue (some graphics APIs)
-  ABGR, ///< Alpha, Blue, Green, Red (rare)
-  RGB,  ///< Red, Green, Blue (no alpha)
-  BGR,  ///< Blue, Green, Red (no alpha, common in legacy formats)
+  RGBA,  ///< Red, Green, Blue, Alpha (standard)
+  BGRA,  ///< Blue, Green, Red, Alpha (Windows/DirectX)
+  ARGB,  ///< Alpha, Red, Green, Blue (some graphics APIs)
+  ABGR,  ///< Alpha, Blue, Green, Red (rare)
+  RGB,   ///< Red, Green, Blue (no alpha)
+  BGR,   ///< Blue, Green, Red (no alpha, common in legacy formats)
 };
 
 /// @brief Basic RGBA color structure with normalized 8-bit components
 struct Color {
-  types::u8 r{0};   ///< Red component (0-255)
-  types::u8 g{0};   ///< Green component (0-255)
-  types::u8 b{0};   ///< Blue component (0-255)
-  types::u8 a{255}; ///< Alpha component (0-255, 255 = opaque)
+  types::u8 r{0};    ///< Red component (0-255)
+  types::u8 g{0};    ///< Green component (0-255)
+  types::u8 b{0};    ///< Blue component (0-255)
+  types::u8 a{255};  ///< Alpha component (0-255, 255 = opaque)
 
   /// @brief Default constructor (black, opaque)
   constexpr Color() = default;
@@ -144,71 +143,71 @@ struct Color {
   /// @brief Convert to packed 32-bit integer in specified format
   constexpr types::u32 to_packed(Format format = Format::RGBA) const noexcept {
     switch (format) {
-    case Format::RGBA:
-      return (static_cast<types::u32>(r) << 24) |
-             (static_cast<types::u32>(g) << 16) |
-             (static_cast<types::u32>(b) << 8) | static_cast<types::u32>(a);
-    case Format::BGRA:
-      return (static_cast<types::u32>(b) << 24) |
-             (static_cast<types::u32>(g) << 16) |
-             (static_cast<types::u32>(r) << 8) | static_cast<types::u32>(a);
-    case Format::ARGB:
-      return (static_cast<types::u32>(a) << 24) |
-             (static_cast<types::u32>(r) << 16) |
-             (static_cast<types::u32>(g) << 8) | static_cast<types::u32>(b);
-    case Format::ABGR:
-      return (static_cast<types::u32>(a) << 24) |
-             (static_cast<types::u32>(b) << 16) |
-             (static_cast<types::u32>(g) << 8) | static_cast<types::u32>(r);
-    case Format::RGB:
-      return (static_cast<types::u32>(r) << 16) |
-             (static_cast<types::u32>(g) << 8) | static_cast<types::u32>(b);
-    case Format::BGR:
-      return (static_cast<types::u32>(b) << 16) |
-             (static_cast<types::u32>(g) << 8) | static_cast<types::u32>(r);
+      case Format::RGBA:
+        return (static_cast<types::u32>(r) << 24) |
+               (static_cast<types::u32>(g) << 16) |
+               (static_cast<types::u32>(b) << 8) | static_cast<types::u32>(a);
+      case Format::BGRA:
+        return (static_cast<types::u32>(b) << 24) |
+               (static_cast<types::u32>(g) << 16) |
+               (static_cast<types::u32>(r) << 8) | static_cast<types::u32>(a);
+      case Format::ARGB:
+        return (static_cast<types::u32>(a) << 24) |
+               (static_cast<types::u32>(r) << 16) |
+               (static_cast<types::u32>(g) << 8) | static_cast<types::u32>(b);
+      case Format::ABGR:
+        return (static_cast<types::u32>(a) << 24) |
+               (static_cast<types::u32>(b) << 16) |
+               (static_cast<types::u32>(g) << 8) | static_cast<types::u32>(r);
+      case Format::RGB:
+        return (static_cast<types::u32>(r) << 16) |
+               (static_cast<types::u32>(g) << 8) | static_cast<types::u32>(b);
+      case Format::BGR:
+        return (static_cast<types::u32>(b) << 16) |
+               (static_cast<types::u32>(g) << 8) | static_cast<types::u32>(r);
     }
-    return 0; // Should never reach here
+    return 0;  // Should never reach here
   }
 
   /// @brief Set from packed 32-bit integer in specified format
   constexpr void from_packed(types::u32 packed, Format format) noexcept {
     switch (format) {
-    case Format::RGBA:
-      r = static_cast<types::u8>((packed >> 24) & 0xFF);
-      g = static_cast<types::u8>((packed >> 16) & 0xFF);
-      b = static_cast<types::u8>((packed >> 8) & 0xFF);
-      a = static_cast<types::u8>(packed & 0xFF);
-      break;
-    case Format::BGRA:
-      b = static_cast<types::u8>((packed >> 24) & 0xFF);
-      g = static_cast<types::u8>((packed >> 16) & 0xFF);
-      r = static_cast<types::u8>((packed >> 8) & 0xFF);
-      a = static_cast<types::u8>(packed & 0xFF);
-      break;
-    case Format::ARGB:
-      a = static_cast<types::u8>((packed >> 24) & 0xFF);
-      r = static_cast<types::u8>((packed >> 16) & 0xFF);
-      g = static_cast<types::u8>((packed >> 8) & 0xFF);
-      b = static_cast<types::u8>(packed & 0xFF);
-      break;
-    case Format::ABGR:
-      a = static_cast<types::u8>((packed >> 24) & 0xFF);
-      b = static_cast<types::u8>((packed >> 16) & 0xFF);
-      g = static_cast<types::u8>((packed >> 8) & 0xFF);
-      r = static_cast<types::u8>(packed & 0xFF);
-      break;
-    case Format::RGB:
-      r = static_cast<types::u8>((packed >> 16) & 0xFF);
-      g = static_cast<types::u8>((packed >> 8) & 0xFF);
-      b = static_cast<types::u8>(packed & 0xFF);
-      a = 255; // No alpha channel, default to opaque
-      break;
-    case Format::BGR:
-      b = static_cast<types::u8>((packed >> 16) & 0xFF);
-      g = static_cast<types::u8>((packed >> 8) & 0xFF);
-      r = static_cast<types::u8>(packed & 0xFF);
-      a = 255; // No alpha channel, default to opaque
-      break;
+      case Format::RGBA:
+        r = static_cast<types::u8>((packed >> 24) & 0xFF);
+        g = static_cast<types::u8>((packed >> 16) & 0xFF);
+        b = static_cast<types::u8>((packed >> 8) & 0xFF);
+        a = static_cast<types::u8>(packed & 0xFF);
+        break;
+      case Format::BGRA:
+        b = static_cast<types::u8>((packed >> 24) & 0xFF);
+        g = static_cast<types::u8>((packed >> 16) & 0xFF);
+        r = static_cast<types::u8>((packed >> 8) & 0xFF);
+        a = static_cast<types::u8>(packed & 0xFF);
+        break;
+      case Format::ARGB:
+        a = static_cast<types::u8>((packed >> 24) & 0xFF);
+        r = static_cast<types::u8>((packed >> 16) & 0xFF);
+        g = static_cast<types::u8>((packed >> 8) & 0xFF);
+        b = static_cast<types::u8>(packed & 0xFF);
+        break;
+      case Format::ABGR:
+        a = static_cast<types::u8>((packed >> 24) & 0xFF);
+        b = static_cast<types::u8>((packed >> 16) & 0xFF);
+        g = static_cast<types::u8>((packed >> 8) & 0xFF);
+        r = static_cast<types::u8>(packed & 0xFF);
+        break;
+      case Format::RGB:
+        r = static_cast<types::u8>((packed >> 16) & 0xFF);
+        g = static_cast<types::u8>((packed >> 8) & 0xFF);
+        b = static_cast<types::u8>(packed & 0xFF);
+        a = 255;  // No alpha channel, default to opaque
+        break;
+      case Format::BGR:
+        b = static_cast<types::u8>((packed >> 16) & 0xFF);
+        g = static_cast<types::u8>((packed >> 8) & 0xFF);
+        r = static_cast<types::u8>(packed & 0xFF);
+        a = 255;  // No alpha channel, default to opaque
+        break;
     }
   }
 
@@ -224,7 +223,7 @@ struct Color {
   /// @brief Premultiply alpha (RGB *= A/255)
   constexpr Color premultiplied() const noexcept {
     const types::u16 alpha_factor =
-        static_cast<types::u16>(a) + 1; // +1 for rounding
+        static_cast<types::u16>(a) + 1;  // +1 for rounding
     return Color(static_cast<types::u8>(
                      (static_cast<types::u16>(r) * alpha_factor) >> 8),
                  static_cast<types::u8>(
@@ -246,12 +245,12 @@ struct Color {
   constexpr bool is_opaque() const noexcept { return a == 255; }
 
   /// @brief Equality comparison
-  constexpr bool operator==(const Color &other) const noexcept {
+  constexpr bool operator==(const Color& other) const noexcept {
     return r == other.r && g == other.g && b == other.b && a == other.a;
   }
 
   /// @brief Inequality comparison
-  constexpr bool operator!=(const Color &other) const noexcept {
+  constexpr bool operator!=(const Color& other) const noexcept {
     return !(*this == other);
   }
 };
@@ -264,9 +263,9 @@ constexpr Color RED{255, 0, 0, 255};
 constexpr Color GREEN{0, 255, 0, 255};
 constexpr Color BLUE{0, 0, 255, 255};
 constexpr Color TRANSPARENT_BLACK{0, 0, 0, 0};
-} // namespace constants
+}  // namespace constants
 
-} // namespace color
+}  // namespace color
 
 /// @brief Image format enumeration for encoding and export
 enum class ImageFormat : types::u8 {
@@ -287,4 +286,4 @@ struct ArtData;
 struct Image;
 struct ImageView;
 
-} // namespace art2img
+}  // namespace art2img

@@ -1,14 +1,15 @@
 #pragma once
 
-#include <art2img/art.hpp>
-#include <art2img/error.hpp>
-#include <art2img/palette.hpp>
-#include <art2img/types.hpp>
 #include <cstddef>
 #include <expected>
 #include <iterator>
 #include <span>
 #include <vector>
+
+#include <art2img/art.hpp>
+#include <art2img/error.hpp>
+#include <art2img/palette.hpp>
+#include <art2img/types.hpp>
 
 namespace art2img {
 
@@ -44,8 +45,11 @@ struct ConversionOptions {
   /// @brief Constructor with all options
   ConversionOptions(bool lookup, bool transparency, bool premult, bool matte,
                     u8 shade)
-      : apply_lookup(lookup), fix_transparency(transparency),
-        premultiply_alpha(premult), matte_hygiene(matte), shade_index(shade) {}
+      : apply_lookup(lookup),
+        fix_transparency(transparency),
+        premultiply_alpha(premult),
+        matte_hygiene(matte),
+        shade_index(shade) {}
 };
 
 /// @brief Owning RGBA image container
@@ -67,7 +71,8 @@ struct Image {
 
   /// @brief Constructor with dimensions
   Image(u16 w, u16 h)
-      : width(w), height(h),
+      : width(w),
+        height(h),
         stride(static_cast<std::size_t>(w) * constants::RGBA_BYTES_PER_PIXEL) {
     data.resize(stride * static_cast<std::size_t>(h));
   }
@@ -108,8 +113,10 @@ struct ImageView {
   ImageView() = default;
 
   /// @brief Constructor from Image
-  explicit ImageView(const Image &image)
-      : data(image.data), width(image.width), height(image.height),
+  explicit ImageView(const Image& image)
+      : data(image.data),
+        width(image.width),
+        height(image.height),
         stride(image.stride) {}
 
   /// @brief Constructor from span and dimensions
@@ -130,22 +137,22 @@ struct ImageView {
 
 /// @brief Range object for iterating over column-major data by rows
 class ColumnMajorRowRange {
-public:
+ public:
   /// @brief Iterator for row data
   class iterator {
-  public:
+   public:
     using iterator_category = std::forward_iterator_tag;
     using value_type = std::span<const u8>;
     using difference_type = std::ptrdiff_t;
-    using pointer = const value_type *;
-    using reference = const value_type &;
+    using pointer = const value_type*;
+    using reference = const value_type&;
     friend class ColumnMajorRowRange;
 
     /// @brief Default constructor
     iterator() = default;
 
     /// @brief Constructor for begin iterator
-    iterator(const TileView &tile, std::span<u8> scratch);
+    iterator(const TileView& tile, std::span<u8> scratch);
 
     /// @brief Constructor for end iterator
     iterator(u16 current_row, u16 max_rows);
@@ -154,19 +161,19 @@ public:
     value_type operator*() const;
 
     /// @brief Pre-increment operator
-    iterator &operator++();
+    iterator& operator++();
 
     /// @brief Post-increment operator
     iterator operator++(int);
 
     /// @brief Equality comparison
-    bool operator==(const iterator &other) const noexcept;
+    bool operator==(const iterator& other) const noexcept;
 
     /// @brief Inequality comparison
-    bool operator!=(const iterator &other) const noexcept;
+    bool operator!=(const iterator& other) const noexcept;
 
-  private:
-    const TileView *tile_ = nullptr;
+   private:
+    const TileView* tile_ = nullptr;
     std::span<u8> scratch_;
     u16 current_row_ = 0;
     u16 max_rows_ = 0;
@@ -176,7 +183,7 @@ public:
   ColumnMajorRowRange() = default;
 
   /// @brief Constructor from tile view and scratch buffer
-  ColumnMajorRowRange(const TileView &tile, std::span<u8> scratch);
+  ColumnMajorRowRange(const TileView& tile, std::span<u8> scratch);
 
   /// @brief Get begin iterator
   iterator begin() const;
@@ -189,8 +196,8 @@ public:
     return tile_ && tile_->is_valid() && scratch_.size() >= tile_->width;
   }
 
-private:
-  const TileView *tile_ = nullptr;
+ private:
+  const TileView* tile_ = nullptr;
   std::span<u8> scratch_;
 };
 
@@ -206,35 +213,35 @@ private:
 /// @param palette The palette to use for color conversion
 /// @param options Conversion options
 /// @return Expected Image on success, Error on failure
-std::expected<Image, Error> to_rgba(const TileView &tile,
-                                    const Palette &palette,
-                                    const ConversionOptions & = {});
+std::expected<Image, Error> to_rgba(const TileView& tile,
+                                    const Palette& palette,
+                                    const ConversionOptions& = {});
 
 /// @brief Create a non-owning view over an image
 /// @param image The image to create a view for
 /// @return ImageView over the image
-ImageView image_view(const Image &image);
+ImageView image_view(const Image& image);
 
 /// @brief Convert column-major pixel data to row-major format
 /// @param tile The tile view with column-major data
 /// @param destination Destination buffer for row-major data
 /// @return Expected success on completion, Error on failure
-std::expected<std::monostate, Error>
-convert_column_to_row_major(const TileView &tile, std::span<u8> destination);
+std::expected<std::monostate, Error> convert_column_to_row_major(
+    const TileView& tile, std::span<u8> destination);
 
 /// @brief Get pixel value at coordinates from column-major data
 /// @param tile The tile view to read from
 /// @param x X coordinate (column)
 /// @param y Y coordinate (row)
 /// @return Expected palette index on success, Error on failure
-std::expected<u8, Error> get_pixel_column_major(const TileView &tile, u16 x,
+std::expected<u8, Error> get_pixel_column_major(const TileView& tile, u16 x,
                                                 u16 y);
 
 /// @brief Create a row iterator for column-major tile data
 /// @param tile The tile view to iterate over
 /// @param scratch Scratch buffer for temporary row data
 /// @return ColumnMajorRowRange for row iteration
-ColumnMajorRowRange make_column_major_row_iterator(const TileView &tile,
+ColumnMajorRowRange make_column_major_row_iterator(const TileView& tile,
                                                    std::span<u8> scratch);
 
-} // namespace art2img
+}  // namespace art2img

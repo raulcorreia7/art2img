@@ -1,12 +1,13 @@
 #pragma once
 
-#include <art2img/error.hpp>
-#include <art2img/types.hpp>
 #include <array>
 #include <expected>
 #include <filesystem>
 #include <span>
 #include <vector>
+
+#include <art2img/error.hpp>
+#include <art2img/types.hpp>
 
 namespace art2img {
 
@@ -66,7 +67,7 @@ struct Palette {
 /// @brief Load a palette from a file path
 /// @param path Path to the PALETTE.DAT file
 /// @return Expected Palette on success, Error on failure
-std::expected<Palette, Error> load_palette(const std::filesystem::path &path);
+std::expected<Palette, Error> load_palette(const std::filesystem::path& path);
 
 /// @brief Load a palette from a byte span
 /// @param data Span containing the raw PALETTE.DAT data
@@ -77,42 +78,42 @@ std::expected<Palette, Error> load_palette(std::span<const std::byte> data);
 /// @param palette The palette to read from
 /// @param index Palette index (0-255)
 /// @return 32-bit RGBA value with 8-bit components (0xFF for alpha)
-std::uint32_t palette_entry_to_rgba(const Palette &palette, u8 index);
+std::uint32_t palette_entry_to_rgba(const Palette& palette, u8 index);
 
 /// @brief Convert a shaded palette entry to 32-bit RGBA format
 /// @param palette The palette to read from
 /// @param shade Shade table index (0 to shade_table_count-1)
 /// @param index Original palette index (0-255)
 /// @return 32-bit RGBA value with 8-bit components (0xFF for alpha)
-std::uint32_t palette_shaded_entry_to_rgba(const Palette &palette, u8 shade,
+std::uint32_t palette_shaded_entry_to_rgba(const Palette& palette, u8 shade,
                                            u8 index);
 
 /// @brief Get the RGB components of a palette entry as 8-bit values
 /// @param palette The palette to read from
 /// @param index Palette index (0-255)
 /// @return Tuple of (red, green, blue) components scaled to 8-bit
-std::tuple<u8, u8, u8> palette_entry_to_rgb(const Palette &palette, u8 index);
+std::tuple<u8, u8, u8> palette_entry_to_rgb(const Palette& palette, u8 index);
 
 /// @brief Get the RGB components of a shaded palette entry as 8-bit values
 /// @param palette The palette to read from
 /// @param shade Shade table index (0 to shade_table_count-1)
 /// @param index Original palette index (0-255)
 /// @return Tuple of (red, green, blue) components scaled to 8-bit
-std::tuple<u8, u8, u8> palette_shaded_entry_to_rgb(const Palette &palette,
+std::tuple<u8, u8, u8> palette_shaded_entry_to_rgb(const Palette& palette,
                                                    u8 shade, u8 index);
 
 /// @brief Convert a palette entry to a Color structure
 /// @param palette The palette to read from
 /// @param index Palette index (0-255)
 /// @return Color structure with RGBA values (palette data is BGR format)
-color::Color palette_entry_to_color(const Palette &palette, u8 index);
+color::Color palette_entry_to_color(const Palette& palette, u8 index);
 
 /// @brief Convert a shaded palette entry to a Color structure
 /// @param palette The palette to read from
 /// @param shade Shade table index (0 to shade_table_count-1)
 /// @param index Original palette index (0-255)
 /// @return Color structure with RGBA values (palette data is BGR format)
-color::Color palette_shaded_entry_to_color(const Palette &palette, u8 shade,
+color::Color palette_shaded_entry_to_color(const Palette& palette, u8 shade,
                                            u8 index);
 
-} // namespace art2img
+}  // namespace art2img

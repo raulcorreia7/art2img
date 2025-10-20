@@ -60,15 +60,15 @@ struct Error {
 
 /// @brief Custom error category for art2img error codes
 class error_category : public std::error_category {
-public:
+ public:
   /// @brief Get the name of this error category
-  const char *name() const noexcept override;
+  const char* name() const noexcept override;
 
   /// @brief Get the error message for a given error code
   std::string message(int ev) const override;
 
   /// @brief Get the singleton instance of the error category
-  static const std::error_category &instance();
+  static const std::error_category& instance();
 };
 
 /// @brief Create a std::error_code from art2img errc
@@ -77,20 +77,20 @@ std::error_code make_error_code(errc e) noexcept;
 /// @brief Create a failure std::expected with the given error
 template <typename T = std::monostate>
 std::expected<T, Error> make_error_expected(errc e,
-                                            const std::string &message) {
+                                            const std::string& message) {
   return std::unexpected(Error(e, message));
 }
 
 /// @brief Create a failure std::expected from a system error
 template <typename T = std::monostate>
-std::expected<T, Error> make_error_expected(const std::error_code &ec,
-                                            const std::string &message) {
+std::expected<T, Error> make_error_expected(const std::error_code& ec,
+                                            const std::string& message) {
   return std::unexpected(Error(ec, message));
 }
 
 /// @brief Create a failure std::expected from an Error object
 template <typename T = std::monostate>
-std::expected<T, Error> make_error_expected(const Error &error) {
+std::expected<T, Error> make_error_expected(const Error& error) {
   return std::unexpected(error);
 }
 
@@ -100,13 +100,15 @@ inline std::expected<std::monostate, Error> make_success() {
 }
 
 /// @brief Helper to create a success std::expected with a value
-template <typename T> std::expected<T, Error> make_success(T &&value) {
+template <typename T>
+std::expected<T, Error> make_success(T&& value) {
   return std::forward<T>(value);
 }
 
-} // namespace art2img
+}  // namespace art2img
 
 /// @brief Enable std::error_code construction from art2img::errc
 namespace std {
-template <> struct is_error_code_enum<art2img::errc> : std::true_type {};
-} // namespace std
+template <>
+struct is_error_code_enum<art2img::errc> : std::true_type {};
+}  // namespace std

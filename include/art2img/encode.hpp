@@ -1,11 +1,12 @@
 #pragma once
 
-#include <art2img/convert.hpp>
-#include <art2img/error.hpp>
-#include <art2img/types.hpp>
 #include <expected>
 #include <variant>
 #include <vector>
+
+#include <art2img/convert.hpp>
+#include <art2img/error.hpp>
+#include <art2img/types.hpp>
 
 namespace art2img {
 
@@ -25,7 +26,8 @@ struct PngOptions {
 
   /// @brief Constructor with explicit values
   PngOptions(u8 level, bool filters, bool grayscale)
-      : compression_level(level), use_filters(filters),
+      : compression_level(level),
+        use_filters(filters),
         convert_to_grayscale(grayscale) {}
 };
 
@@ -77,31 +79,30 @@ using EncodeOptions =
 /// @param image The image view to encode
 /// @param options PNG encoding options (optional)
 /// @return Expected vector of encoded bytes on success, Error on failure
-std::expected<std::vector<byte>, Error>
-encode_png(const ImageView &image, const PngOptions &options = {});
+std::expected<std::vector<byte>, Error> encode_png(
+    const ImageView& image, const PngOptions& options = {});
 
 /// @brief Encode an image view to TGA format
 /// @param image The image view to encode
 /// @param options TGA encoding options (optional)
 /// @return Expected vector of encoded bytes on success, Error on failure
-std::expected<std::vector<byte>, Error>
-encode_tga(const ImageView &image, const TgaOptions &options = {});
+std::expected<std::vector<byte>, Error> encode_tga(
+    const ImageView& image, const TgaOptions& options = {});
 
 /// @brief Encode an image view to BMP format
 /// @param image The image view to encode
 /// @param options BMP encoding options (optional)
 /// @return Expected vector of encoded bytes on success, Error on failure
-std::expected<std::vector<byte>, Error>
-encode_bmp(const ImageView &image, const BmpOptions &options = {});
+std::expected<std::vector<byte>, Error> encode_bmp(
+    const ImageView& image, const BmpOptions& options = {});
 
 /// @brief Encode an image view to the specified format
 /// @param image The image view to encode
 /// @param format The target image format
 /// @param options Encoding options (optional, format-specific)
 /// @return Expected vector of encoded bytes on success, Error on failure
-std::expected<std::vector<byte>, Error>
-encode_image(const ImageView &image, ImageFormat format,
-             EncodeOptions options = {});
+std::expected<std::vector<byte>, Error> encode_image(
+    const ImageView& image, ImageFormat format, EncodeOptions options = {});
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -115,12 +116,12 @@ EncodeOptions get_default_options(ImageFormat format);
 /// @brief Validate image view dimensions and stride for encoding
 /// @param image The image view to validate
 /// @return Expected success on valid image, Error on failure
-std::expected<std::monostate, Error>
-validate_image_for_encoding(const ImageView &image);
+std::expected<std::monostate, Error> validate_image_for_encoding(
+    const ImageView& image);
 
 /// @brief Get a string representation of the image format
 /// @param format The image format
 /// @return String name of the format
-const char *format_to_string(ImageFormat format);
+const char* format_to_string(ImageFormat format);
 
-} // namespace art2img
+}  // namespace art2img
