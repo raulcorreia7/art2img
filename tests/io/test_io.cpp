@@ -211,7 +211,7 @@ TEST_SUITE("io") {
     REQUIRE(result.has_value());
 
     // Add filesystem synchronization barrier to prevent race conditions
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
     // Verify file was written correctly
     std::ifstream file(test_file);
