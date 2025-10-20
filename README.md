@@ -112,10 +112,6 @@ build/
 cmake -S . -B build
 cmake --build build
 
-# With legacy support
-cmake -S . -B build -DART2IMG_ENABLE_LEGACY=ON
-cmake --build build
-
 # Debug with sanitizers
 cmake -S . -B build-debug -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON
 cmake --build build-debug
@@ -144,4 +140,4 @@ All dependencies are fetched automatically via CPM.
 
 ## License
 
-See [repository/legacy/LICENSE](repository/legacy/LICENSE) for license information.
+See [LICENSE](LICENSE) for license information.

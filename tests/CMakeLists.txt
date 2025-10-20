@@ -11,12 +11,7 @@ file(GLOB_RECURSE TEST_SOURCES
     animation/*.cpp
 )
 
-if(ART2IMG_ENABLE_LEGACY)
-    file(GLOB LEGACY_TEST_SOURCES CONFIGURE_DEPENDS legacy/*.cpp)
-    if(LEGACY_TEST_SOURCES)
-        list(APPEND TEST_SOURCES ${LEGACY_TEST_SOURCES})
-    endif()
-endif()
+
 
 # ============================================================================
 # TEST EXECUTABLE

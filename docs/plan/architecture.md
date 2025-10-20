@@ -10,7 +10,6 @@ This document is the single source of truth for the upcoming `art2img` refactor.
 - Core design: stateless functions + plain structs
 - Error handling: `std::expected<T, Error>` everywhere
 - Pipeline: palette → art bundle → tile view → RGBA conversion → encoding → IO
-- Compatibility: one optional `legacy_api` facade that wraps the new functions
 
 ---
 
@@ -26,7 +25,6 @@ This document is the single source of truth for the upcoming `art2img` refactor.
 | `encode` | Encode `ImageView` to PNG/TGA/BMP bytes | `include/art2img/encode.hpp` |
 | `io` | Binary read/write helpers | `include/art2img/io.hpp` |
 | `api` | Barrel include for the new surface | `include/art2img/api.hpp` |
-| `legacy_api` | Self-contained wrapper matching the old API | `include/art2img/legacy_api.hpp` |
 
 Implementation files mirror the header names under `src/`.
 
@@ -37,8 +35,6 @@ Implementation files mirror the header names under `src/`.
 ### 3.1 Layered Stack
 
 ```
-+------------------------------+
-|         legacy_api           |
 +------------------------------+
 |             CLI              |
 +------------------------------+
@@ -55,9 +51,6 @@ graph TD
   subgraph CLI
     CLIProc[CLI Processor]
   end
-  subgraph LegacyShim
-    LegacyAPI[legacy_api]
-  end
   subgraph Core
     Types[types]
     Error[error]
@@ -69,7 +62,6 @@ graph TD
   end
 
   CLIProc --> Pipeline
-  LegacyAPI --> Pipeline
   Pipeline((Functional Pipeline))
 
   Pipeline --> Palette
@@ -214,9 +206,8 @@ Parallelism (thread pool) wraps steps 3–6 only.
 ## 10. Testing Strategy
 
 - Unit: doctest suites per module, including corruption fixtures.
-- Regression: compare encoded outputs vs. golden files produced by the legacy pipeline.
+- Regression: compare encoded outputs vs. golden files.
 - Integration: Bats CLI runs (single file, directory, shading, transparency, failure paths).
-- Legacy: reuse existing `tests/api/library_api` and integration tests under the legacy toggle.
 - Sanitizers: ASAN / UBSAN / LSAN jobs triggered via CMake options.
 
 ---
@@ -225,7 +216,6 @@ Parallelism (thread pool) wraps steps 3–6 only.
 
 - CMake: C++23, interface libraries, CPM packages pinned to tags (CLI11 v2.5.0, doctest 2.4.12, fmt 11.0.2, stb release tag).
 - Lint: clang-format (shared style file), clang-tidy (`modernize-use-std-span`, `bugprone-*`, `performance-*`).
-- Presets: provide `-DART2IMG_ENABLE_LEGACY=OFF` for pure vNext builds.
 
 ---
 
@@ -233,19 +223,16 @@ Parallelism (thread pool) wraps steps 3–6 only.
 
 1. Implement modules per `docs/plan/tasks.md` milestones.
 2. Rewire CLI/tests once conversion + encoding + IO are ready.
-3. Add legacy wrapper and toggle; ensure compatibility tests stay green.
-4. Remove old class-based headers/sources.
-5. Update README + migration guide.
-6. Flip CI defaults to disable legacy once consumers migrate.
+3. Remove old class-based headers/sources.
+4. Update README.
 
 ---
 
 ## 13. Acceptance Criteria
 
-- New headers (`api.hpp`, etc.) form the only public surface when legacy is disabled.
+- New headers (`api.hpp`, etc.) form the public surface.
 - All new functions return `std::expected<T, Error>`; no exceptions escape the core.
 - CLI/tests use the functional pipeline directly.
-- `legacy_api` is optional, self-contained, and forwards correctly.
 - Documentation/build scripts reflect the final structure.
 
 ---

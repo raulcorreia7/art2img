@@ -88,10 +88,6 @@ endif()
 file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 file(GLOB_RECURSE LIB_HEADERS CONFIGURE_DEPENDS "include/art2img/*.hpp")
 
-if(NOT ART2IMG_ENABLE_LEGACY)
-    list(FILTER LIB_SOURCES EXCLUDE REGEX "legacy_api")
-endif()
-
 add_library(art2img_core ${LIB_SOURCES} ${LIB_HEADERS})
 
 target_include_directories(art2img_core
@@ -118,24 +114,7 @@ install(DIRECTORY include/art2img
     DESTINATION include
 )
 
-# ============================================================================
-# LEGACY API
-# ============================================================================
-option(ART2IMG_ENABLE_LEGACY "Enable legacy API compatibility wrapper" OFF)
 
-if(ART2IMG_ENABLE_LEGACY)
-    file(GLOB LEGACY_SOURCES CONFIGURE_DEPENDS "src/legacy_api.cpp")
-    file(GLOB LEGACY_HEADERS CONFIGURE_DEPENDS "include/art2img/legacy_api.hpp")
-    
-    if(LEGACY_SOURCES AND LEGACY_HEADERS)
-        target_sources(art2img_core PRIVATE ${LEGACY_SOURCES})
-        target_sources(art2img_core PUBLIC ${LEGACY_HEADERS})
-        target_compile_definitions(art2img_core PUBLIC ART2IMG_ENABLE_LEGACY)
-        message(STATUS "Legacy API wrapper enabled")
-    else()
-        message(WARNING "Legacy API sources not found - legacy wrapper disabled")
-    endif()
-endif()
 
 # ============================================================================
 # SUBDIRECTORIES

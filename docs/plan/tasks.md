@@ -41,7 +41,7 @@ Every task below is self-contained and written so an autonomous code agent can e
   3. Add placeholder README note referencing ongoing refactor.
 - **Outputs:** Skeleton tree ready for new modules (`include/art2img/*.hpp`, `src/*.cpp`, `tests/*`).
 - **Acceptance:** Root `CMakeLists.txt` configures without errors (even if no targets yet).
-- **Notes:** Keep existing scripts under `repository/legacy` untouched.
+
 
 ---
 
@@ -76,13 +76,13 @@ Every task below is self-contained and written so an autonomous code agent can e
 ## Milestone 2 — Palette Module
 
 ### T2.1 – Implement palette loader
-- **Inputs:** Architecture sections 4.2, 9 (palette notes), sample assets under `repository/legacy` (e.g., `tests/assets/PALETTE.DAT`).
+- **Inputs:** Architecture sections 4.2, 9 (palette notes), sample assets (e.g., `tests/assets/PALETTE.DAT`).
 - **Actions:**
   1. Write `include/art2img/palette.hpp` API definitions.
   2. Implement `src/palette.cpp` loading from path/span, parsing raw RGB + shade tables + translucent map.
   3. Provide utility functions for palette entry conversion.
  4. Enforce validation rules from Architecture §14 (reject truncated payloads, clamp shade indices).
- 5. Write unit tests with real + corrupted PALETTE files (copy fixtures from legacy assets).
+ 5. Write unit tests with real + corrupted PALETTE files.
 - **Outputs:** Header, source, tests (`tests/palette/test_palette.cpp`), fixture referencing legacy asset path.
 - **Acceptance:** `cmake --build --target tests` + `ctest -R palette` pass.
 - **Notes:** Use `std::filesystem`, `std::span`, `std::expected`. Validate size before reading; map errors to `errc::invalid_palette`.
@@ -97,7 +97,7 @@ Every task below is self-contained and written so an autonomous code agent can e
 ## Milestone 3 — ART Module
 
 ### T3.1 – Implement `art.hpp` + loader
-- **Inputs:** Architecture sections 4.3, 9 (art notes), legacy assets `TILES*.ART`, `LOOKUP.DAT`.
+- **Inputs:** Architecture sections 4.3, 9 (art notes), assets `TILES*.ART`, `LOOKUP.DAT`.
 - **Actions:**
   1. Define `TileAnimation`, `TileView`, `ArtData`, `PaletteHint` in header.
   2. Implement loader in `src/art.cpp` for path/span: parse header, metadata, allocate contiguous buffers, build `TileView`s referencing `pixels`/`remaps`.
@@ -127,7 +127,7 @@ Every task below is self-contained and written so an autonomous code agent can e
 - **Acceptance:** `ctest -R convert` passes; memory sanitizers optional.
 
 ### T4.2 – Performance sanity check
-- **Actions:** Optional benchmarking harness to compare conversion speed vs. legacy (document results or baseline).
+- **Actions:** Optional benchmarking harness to document conversion performance.
 - **Outputs:** Bench report (Markdown or test comment) summarizing findings.
 - **Acceptance:** No regressions observed (qualitative).
 
@@ -164,7 +164,7 @@ Every task below is self-contained and written so an autonomous code agent can e
 ### T6.2 – Rebuild CLI on new pipeline
 - **Inputs:** Architecture section 6, CLI design from docs/plan.
 - **Actions:**
-  1. Create new CLI entry under `cli/` referencing `art2img/api.hpp` (fresh implementation, no legacy dependencies).
+  1. Create new CLI entry under `cli/` referencing `art2img/api.hpp`.
   2. Implement option parsing (reuse CLI11 dependency), translation into pipeline steps.
   3. Use thread pool (optional) around tile conversion/encoding; ensure sequential fallback works.
   4. Update CLI integration tests (new Bats scripts) to use new binary.
@@ -178,35 +178,18 @@ Every task below is self-contained and written so an autonomous code agent can e
 
 ---
 
-## Milestone 7 — Legacy Wrapper
 
-### T7.1 – Implement `legacy_api.hpp/.cpp`
-- **Inputs:** Legacy code under `repository/legacy`, architecture section 8.
-- **Actions:**
-  1. Recreate legacy structs denoting old API surfaces in header (ExtractorAPI, ArtFile, Palette, ImageWriter, etc.).
-  2. Implement functions in `src/legacy_api.cpp` by forwarding into vNext modules.
-  3. Provide translation from `std::expected` to legacy return types (bools/exceptions/ExtractionResult).
-  4. Bring over necessary helpers (animation manifest, etc.) in minimal form.
-- **Outputs:** Header, source, tests ensuring parity with key legacy scenarios (copy subsets of existing tests from `repository/legacy/tests`).
-- **Acceptance:** `ctest -R legacy` passes; old integration tests adapted to new location succeed.
 
-### T7.2 – Legacy toggle
-- **Actions:** Add `ART2IMG_ENABLE_LEGACY` option in CMake; conditionally build wrapper/tests.
-- **Outputs:** CMake updates, documentation note.
-- **Acceptance:** `cmake -DART2IMG_ENABLE_LEGACY=OFF` configures/builds; default ON for transition.
+## Milestone 7 — Cleanup & Documentation
 
----
-
-## Milestone 8 — Cleanup & Documentation
-
-### T8.1 – Deprecate old sources
-- **Actions:** Remove redundant code remaining in root after relocation (if any); ensure `repository/legacy` stays for reference.
-- **Outputs:** Clean tree referencing only new modules + legacy wrapper.
+### T7.1 – Cleanup
+- **Actions:** Remove redundant code and ensure clean tree structure.
+- **Outputs:** Clean tree referencing only new modules.
 - **Acceptance:** `git status` shows removal of unused artifacts.
 
-### T8.2 – Documentation pass
-- **Actions:** Update README, migration guide (under `docs/plan/migration_guide.md`), CLI usage instructions, dependency notes.
-- **Outputs:** Revised docs reflecting new API, legacy toggle instructions, migration steps.
+### T7.2 – Documentation pass
+- **Actions:** Update README, CLI usage instructions, dependency notes.
+- **Outputs:** Revised docs reflecting new API.
 - **Acceptance:** Docs render cleanly; cross-links valid.
 
 ### T8.3 – Final QA sweep
@@ -268,7 +251,7 @@ gantt
 
 ## Dependencies & Assets
 
-- Legacy assets remain under `repository/legacy/tests/assets` for reuse in new tests.
+- Assets remain under `tests/assets` for reuse in new tests.
 - External libs via CPM: CLI11 v2.5.0, doctest 2.4.12, fmt 11.0.2, stb (tagged release).
 - Thread pool: evaluate reuse of `BS_thread_pool` or switch to standard `<execution>` once stable (optional).
 

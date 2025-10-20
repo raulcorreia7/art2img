@@ -24,7 +24,7 @@ load "common"
 }
 
 @test "CLI fails with missing palette" {
-    run ./build/bin/art2img_cli repository/legacy/tests/assets/TILES000.ART
+    run ./build/bin/art2img_cli tests/assets/TILES000.ART
     [ "$status" -eq 1 ]
     [[ "$output" =~ "Error: Palette file does not exist" ]]
 }
@@ -34,8 +34,8 @@ load "common"
     temp_output=$(mktemp -d)
     
     # Run conversion
-    run ./build/bin/art2img_cli repository/legacy/tests/assets/TILES000.ART \
-        -p repository/legacy/tests/assets/PALETTE.DAT \
+    run ./build/bin/art2img_cli tests/assets/TILES000.ART \
+        -p tests/assets/PALETTE.DAT \
         -o "$temp_output" \
         -f png \
         -v
@@ -54,8 +54,8 @@ load "common"
     for format in png tga bmp; do
         temp_output=$(mktemp -d)
         
-        run ./build/bin/art2img_cli repository/legacy/tests/assets/TILES000.ART \
-            -p repository/legacy/tests/assets/PALETTE.DAT \
+        run ./build/bin/art2img_cli tests/assets/TILES000.ART \
+            -p tests/assets/PALETTE.DAT \
             -o "$temp_output" \
             -f "$format" \
             -q
@@ -72,9 +72,9 @@ load "common"
     
     # Create a temp directory with some ART files
     temp_art_dir=$(mktemp -d)
-    cp repository/legacy/tests/assets/TILES000.ART "$temp_art_dir/"
-    cp repository/legacy/tests/assets/TILES001.ART "$temp_art_dir/"
-    cp repository/legacy/tests/assets/PALETTE.DAT "$temp_art_dir/"
+    cp tests/assets/TILES000.ART "$temp_art_dir/"
+    cp tests/assets/TILES001.ART "$temp_art_dir/"
+    cp tests/assets/PALETTE.DAT "$temp_art_dir/"
     
     run ./build/bin/art2img_cli "$temp_art_dir" \
         -o "$temp_output" \
@@ -96,8 +96,8 @@ load "common"
     temp_output=$(mktemp -d)
     
     # Test sequential processing
-    run ./build/bin/art2img_cli repository/legacy/tests/assets/TILES000.ART \
-        -p repository/legacy/tests/assets/PALETTE.DAT \
+    run ./build/bin/art2img_cli tests/assets/TILES000.ART \
+        -p tests/assets/PALETTE.DAT \
         -o "$temp_output" \
         -f png \
         --no-parallel \
@@ -107,8 +107,8 @@ load "common"
     [ -f "$temp_output/TILES000_0000.png" ]
     
     # Test parallel processing with specific job count
-    run ./build/bin/art2img_cli repository/legacy/tests/assets/TILES001.ART \
-        -p repository/legacy/tests/assets/PALETTE.DAT \
+    run ./build/bin/art2img_cli tests/assets/TILES001.ART \
+        -p tests/assets/PALETTE.DAT \
         -o "$temp_output" \
         -f png \
         -j 2 \
@@ -121,8 +121,8 @@ load "common"
 }
 
 @test "CLI rejects invalid format" {
-    run ./build/bin/art2img_cli repository/legacy/tests/assets/TILES000.ART \
-        -p repository/legacy/tests/assets/PALETTE.DAT \
+    run ./build/bin/art2img_cli tests/assets/TILES000.ART \
+        -p tests/assets/PALETTE.DAT \
         -f invalid_format
     
     [ "$status" -eq 1 ]
