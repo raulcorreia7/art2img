@@ -11,6 +11,8 @@
 
 namespace art2img {
 
+
+
 using types::byte;
 using types::u8;
 using types::i8;
@@ -206,6 +208,12 @@ struct AnimationExportConfig {
     
     /// @brief INI filename (default: animdata.ini)
     std::string ini_filename = "animdata.ini";
+    
+    /// @brief Image format for exported tiles
+    ImageFormat image_format = ImageFormat::png;
+    
+    /// @brief Include image file references in INI output
+    bool include_image_references = true;
 };
 
 /// @brief Export animation data from ART file to INI format
