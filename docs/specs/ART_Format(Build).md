@@ -78,7 +78,7 @@ bits 31-28  | bits 27-24 (4 bit unsigned integer)  | bits 23-16 (8 bit signed in
 unused?  | Animation speed  | Y-center offset  | X-center offset  | Animation type: 
 
   * 00 = no animation
-  * 01 = oscillating animation
+  * 01 = oscillation animation
   * 10 = animate forward
   * 11 = animate backward
 
