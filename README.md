@@ -1,97 +1,85 @@
-<div align="center">
-  <h1>art2img v0.2.0</h1>
-  <p><strong>Convert Duke Nukem 3D ART files to modern image formats</strong></p>
-</div>
+# art2img
 
-A professional tool for game modders to convert Duke Nukem 3D ART files to PNG, TGA, or BMP with transparency and animation support.
+**Convert Build Engine ART files to modern image formats**
 
-## Quick Start for Modders
+A command-line utility for converting Duke Nukem 3D and other Build Engine ART files to PNG, TGA, or BMP formats. Designed for game modders who need to extract and modify game assets.
 
-After building (see below), run:
+## Quick Start
+
+### Option 1: Download Pre-built Binaries (Recommended)
+Pre-built binaries for Windows, Linux, and macOS are available on the [Releases page](https://github.com/raulcorreia7/art2img/releases).
+
+### Option 2: Build from Source
+
+**Requirements:** CMake and a C++ compiler
 
 ```bash
-# Basic conversion (Linux/Mac)
-./art2img tiles.art
+# Clone and build
+make build
 
-# Basic conversion (Windows)
-./art2img.exe tiles.art
+# The executable will be at: build/linux-x64/cli/art2img_cli
+# Or for Windows: build/windows-x64/cli/art2img_cli.exe
+```
+
+## Basic Usage
+
+```bash
+# Convert a single ART file to PNG
+art2img_cli TILES.ART
 
 # Convert to specific format with output directory
-./art2img tiles.art -f tga -o output/
+art2img_cli TILES.ART --format tga --output output/
 
 # Convert all ART files in a directory
-./art2img art/ -o images/
+art2img_cli art_folder/ --output images/
 
-# For games with transparency (Green Slime, etc.)
-./art2img tiles.art -F  # Enable transparency fix
+# Disable transparency fix (for some games)
+art2img_cli TILES.ART --no-transparency-fix
 
-# Extract animation data
-./art2img art/ -m -o game/  # Merge animation data
+# Extract animation data with custom INI filename
+art2img_cli art_folder/ --export-animation --anim-ini-filename my_anim.ini --output game/
 ```
 
-## Command-Line Options
+## Key Features
+
+- **Multiple Formats**: Convert to PNG, TGA, or BMP
+- **Transparency Support**: Automatic magenta transparency fixing
+- **Animation Export**: Extract animation data with INI files
+- **Batch Processing**: Convert entire directories of ART files
+- **Custom Palettes**: Use custom palette files if needed
+- **Cross-Platform**: Works on Windows, Linux, and macOS
+
+## Command Line Options
 
 ```
-art2img [OPTIONS] ART_FILE|ART_DIRECTORY
-
-POSITIONALS:
-  ART_FILE|ART_DIRECTORY TEXT REQUIRED
-                              Input ART file or directory containing ART files 
-
-OPTIONS:
-  -h,     --help              Print this help message and exit 
-  -v,     --version           Display program version information and exit 
-  -o,     --output TEXT [.]   Output directory for converted images 
-  -p,     --palette FILE      Custom palette file (defaults to built-in Duke Nukem 3D palette) 
-  -f,     --format TEXT:{tga,png,bmp} [png]  
-                              Output format: tga, png, or bmp 
-  -F,     --fix-transparency, --no-fix-transparency{false} 
-                              Enable magenta transparency fix (default: enabled) 
-  -q,     --quiet             Suppress all non-essential output 
-  -n,     --no-anim           Skip animation data generation 
-  -m,     --merge-anim        Merge all animation data into a single file (directory mode) 
-          --parallel, --no-parallel{false} 
-                              Enable parallel tile export (default: enabled) 
-  -j,     --jobs UINT:NONNEGATIVE [0]  
-                              Maximum number of worker threads to use (0 = auto) 
-
-Examples: 
-art2img tiles.art # Convert single ART file 
-art2img tiles.art -f tga -o out/ # Convert to TGA with output dir 
-art2img art/ -o images/ # Convert all ART files 
-art2img tiles.art -p custom.pal # Use custom palette 
-art2img tiles.art --no-fix-transparency # Disable transparency 
-art2img art/ -m -o game/ # Merge animation data 
-
-For modders: Use -F for transparency and -m for animation data.
+-h, --help                    Print this help message and exit
+-o, --output DIR              Output directory (default: current directory)
+-p, --palette FILE            Palette file path (default: auto-detect)
+-f, --format FORMAT           Output format: png, tga, bmp (default: png)
+    --no-transparency-fix     Disable transparency fix
+    --shade INT               Apply shade table index (-1 to disable)
+    --no-lookup               Disable lookup table application
+    --premultiply-alpha       Premultiply alpha channel
+    --matte-hygiene           Apply matte hygiene to remove halo effects
+    --no-parallel             Disable parallel processing
+-j, --jobs N                  Number of parallel jobs (0 for auto-detect)
+    --export-animation        Export animation data instead of individual tiles
+    --anim-ini-filename FILE  INI filename for animation data (default: animdata.ini)
+    --include-non-animated-tiles Include non-animated tiles in animation export
+-q, --quiet                   Suppress non-error output
+-v, --verbose                 Verbose output
+    --version                 Display program version information
 ```
 
-## Building the Project
+## Troubleshooting
 
-**Requirements:**
-- C++20 compiler (GCC 10+, Clang 10+, MSVC 2019+)
-- CMake 3.14+
+**Transparency issues:** Transparency fix is enabled by default. Use `--no-transparency-fix` to disable if needed
 
-**Build Commands:**
-```bash
-make all                    # Build release version for your platform
-make build                  # Build for Linux x64
-make debug                  # Build debug version for Linux x64
-make mingw-windows          # Cross-compile for Windows x64 using MinGW
-make mingw-windows-x86      # Cross-compile for Windows x86 using MinGW
-make test                   # Run tests on Linux
-make clean                  # Clean build directory
-```
+**Animation export:** Use `--export-animation` to export animation data with INI files
 
-**Cross-compilation for Windows (from Linux):**
-```bash
-# Install MinGW cross-compilers
-sudo apt-get install g++-mingw-w64-x86-64 g++-mingw-w64-i686
+**Custom game palette:** Use `--palette custom.pal` with your palette file
 
-# Build for Windows
-make mingw-windows          # x64 version
-make mingw-windows-x86      # x86 version
-```
+**Performance:** Use `--jobs N` to control parallel processing (0 for auto-detect)
 
 ## License
 
@@ -100,4 +88,4 @@ make mingw-windows-x86      # x86 version
 ## Credits
 
 Based on original work by Mathieu Olivier and Kenneth Silverman.
-Modern C++20 implementation by [Raúl Correia](https://github.com/raulcorreia7).
+Modern implementation by [Raúl Correia](https://github.com/raulcorreia7).

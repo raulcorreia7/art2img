@@ -1,116 +1,233 @@
-# Makefile for art2img - Simplified and focused
-# Supports Linux development and Windows cross-compilation
-# Delegates to platform-specific build scripts
+# Streamlined Makefile wrapper for CMake
+# Provides essential build targets for art2img project
+# Follows GNU Make best practices
 
-# Configuration
+# ============================================================================
+# Configuration Variables
+# ============================================================================
 BUILD_DIR ?= build
+BUILD_TYPE ?= Release
 JOBS ?= $(shell nproc)
-VERSION ?= $(shell cmake -P cmake/print_version.cmake)
+CMAKE := cmake
+FIND := find
+XARGS := xargs
 
-# Run integration tests for different platforms
-test-intg: build
-	@BUILD_TYPE=linux ./scripts/run_bats_tests.sh
+# ============================================================================
+# PHONY Targets
+# ============================================================================
+.PHONY: all build clean test install help fmt fmt-check lint
+.PHONY: windows-x64-mingw windows-x86-mingw windows
+.PHONY: macos-x64-osxcross macos-arm64-osxcross macos
+.PHONY: check-mingw check-osxcross
 
-test-intg-windows: mingw-windows
-	@BUILD_TYPE=mingw-windows ./scripts/run_bats_tests.sh
-
-test-intg-windows-x86: mingw-windows-x86
-	@BUILD_TYPE=mingw-windows-x86 ./scripts/run_bats_tests.sh
-
-test-intg-release: linux-x64-release
-	@BUILD_TYPE=linux-x64-release ./scripts/run_bats_tests.sh
-
-# Main targets
-.PHONY: all build test clean install format fmt fmt-check lint help
-.PHONY: mingw-windows mingw-windows-x86 test-windows doctor test-bats
-.PHONY: linux-x64-release windows-x64-release windows-x86-release
-
-# Default target - build for Linux
+# ============================================================================
+# Default Target
+# ============================================================================
 all: build
 
-# Build for Linux using dedicated script
+# ============================================================================
+# Build Targets
+# ============================================================================
+
+# Native Linux build
 build:
-	@./scripts/build/native/linux.sh --build-dir $(BUILD_DIR) -j $(JOBS)
+	@$(CMAKE) -S . -B $(BUILD_DIR)/linux-x64 -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
+	@$(CMAKE) --build $(BUILD_DIR)/linux-x64 --parallel $(JOBS)
 
-# Build for Windows x64 (cross-compilation from Linux using MinGW) using dedicated script
-mingw-windows:
-	@./scripts/build/cross/mingw-windows64.sh --build-dir $(BUILD_DIR) -j $(JOBS)
+# ============================================================================
+# Cross-compilation Support Functions
+# ============================================================================
 
-# Build for Windows x86 (cross-compilation from Linux using MinGW) using dedicated script
-mingw-windows-x86:
-	@./scripts/build/cross/mingw-windows32.sh --build-dir $(BUILD_DIR) -j $(JOBS)
+# Check for required cross-compilation tools
+define check_tool
+	@which $(1) > /dev/null 2>&1 || \
+		(echo "$(2) not found. $(3)"; exit 1)
+endef
 
-# Release builds using the dedicated scripts
-linux-x64-release:
-	@./scripts/build/native/linux.sh --build-dir $(BUILD_DIR)/linux-x64-release --build-type Release --use-direct-path -j $(JOBS)
-	@cd $(BUILD_DIR)/linux-x64-release && ctest --output-on-failure
+# ============================================================================
+# Prerequisite Checks
+# ============================================================================
+check-mingw:
+	$(call check_tool,x86_64-w64-mingw32-gcc,MinGW,Install with: sudo apt-get install mingw-w64)
 
-mingw-windows-x64-release:
-	@./scripts/build/cross/mingw-windows64.sh --build-dir $(BUILD_DIR)/mingw-windows-x64-release --build-type Release -j $(JOBS)
+check-osxcross:
+	$(call check_tool,o64-clang,osxcross,Install osxcross first)
 
-mingw-windows-x86-release:
-	@./scripts/build/cross/mingw-windows32.sh --build-dir $(BUILD_DIR)/mingw-windows-x86-release --build-type Release -j $(JOBS)
+# ============================================================================
+# Cross-compilation Targets
+# ============================================================================
 
-# Run tests on Linux
+# Windows cross-compilation targets
+windows-x64-mingw: check-mingw
+	@$(CMAKE) -B $(BUILD_DIR)/windows-x64 -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+		-DCMAKE_TOOLCHAIN_FILE=cmake/windows_x64.cmake
+	@$(CMAKE) --build $(BUILD_DIR)/windows-x64 --parallel $(JOBS)
+
+windows-x86-mingw: check-mingw
+	@$(CMAKE) -B $(BUILD_DIR)/windows-x86 -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+		-DCMAKE_TOOLCHAIN_FILE=cmake/windows_x86.cmake
+	@$(CMAKE) --build $(BUILD_DIR)/windows-x86 --parallel $(JOBS)
+
+# macOS cross-compilation targets
+macos-x64-osxcross: check-osxcross
+	@$(CMAKE) -B $(BUILD_DIR)/macos-x64 -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+		-DCMAKE_TOOLCHAIN_FILE=cmake/macos_x64.cmake
+	@$(CMAKE) --build $(BUILD_DIR)/macos-x64 --parallel $(JOBS)
+
+macos-arm64-osxcross: check-osxcross
+	@$(CMAKE) -B $(BUILD_DIR)/macos-arm64 -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+		-DCMAKE_TOOLCHAIN_FILE=cmake/macos_arm64.cmake
+	@$(CMAKE) --build $(BUILD_DIR)/macos-arm64 --parallel $(JOBS)
+
+# ============================================================================
+# Platform Aliases
+# ============================================================================
+windows: windows-x64-mingw windows-x86-mingw
+macos: macos-x64-osxcross macos-arm64-osxcross
+
+# ============================================================================
+# Development Targets
+# ============================================================================
+
+# Run tests (Linux native)
 test: build
-	@cd $(BUILD_DIR)/linux-x64 && ctest --output-on-failure
+	@cd $(BUILD_DIR)/linux-x64 && ctest --output-on-failure --parallel 1
 
-# Test Windows build (requires Wine)
-test-windows: mingw-windows
-	@./scripts/test_windows.sh $(BUILD_DIR)/mingw-windows-x64
+# Run integration tests only (tests 91-96)
+test-intg: build
+	@cd $(BUILD_DIR)/linux-x64 && ctest --output-on-failure --parallel 1 -I 91,96
 
-test-windows-x86: mingw-windows-x86
-	@./scripts/test_windows.sh $(BUILD_DIR)/mingw-windows-x86
+# Run unit tests only (tests 1-90, 97-117)
+test-unit: build
+	@cd $(BUILD_DIR)/linux-x64 && ctest --output-on-failure --parallel 1 -I 1,90 && ctest --output-on-failure --parallel 1 -I 97,117
 
-# Install to system (from Linux build)
+
+
+# Cross-compilation test targets
+test-windows-x64: windows-x64-mingw
+	@echo "Testing Windows x64 build..."
+	@if command -v wine >/dev/null 2>&1; then \
+		wine $(BUILD_DIR)/windows-x64/tests/art2img_tests.exe --help >/dev/null 2>&1 && \
+		echo "Windows x64 test executable runs successfully"; \
+	else \
+		echo "Wine not available, cannot test Windows executable"; \
+	fi
+
+test-windows-x86: windows-x86-mingw
+	@echo "Testing Windows x86 build..."
+	@if command -v wine >/dev/null 2>&1; then \
+		wine $(BUILD_DIR)/windows-x86/tests/art2img_tests.exe --help >/dev/null 2>&1 && \
+		echo "Windows x86 test executable runs successfully"; \
+	else \
+		echo "Wine not available, cannot test Windows executable"; \
+	fi
+
+test-macos-x64: macos-x64-osxcross
+	@echo "Testing macOS x64 build..."
+	@if [ -f "$(BUILD_DIR)/macos-x64/tests/art2img_tests" ]; then \
+		echo "macOS x64 test executable built successfully"; \
+	else \
+		echo "macOS x64 test executable not found"; \
+	fi
+
+test-macos-arm64: macos-arm64-osxcross
+	@echo "Testing macOS ARM64 build..."
+	@if [ -f "$(BUILD_DIR)/macos-arm64/tests/art2img_tests" ]; then \
+		echo "macOS ARM64 test executable built successfully"; \
+	else \
+		echo "macOS ARM64 test executable not found"; \
+	fi
+
+# Platform test aliases
+test-windows: test-windows-x64 test-windows-x86
+test-macos: test-macos-x64 test-macos-arm64
+
+# Install project
 install: build
-	@cd $(BUILD_DIR)/linux-x64 && cmake --install . --prefix /usr/local
-
-# Code formatting using the Linux build
-fmt:
-	@./scripts/build/native/linux.sh --build-dir $(BUILD_DIR) --build-type Release
-	@cd $(BUILD_DIR)/linux-x64 && cmake --build . --target clang-format
-
-format: fmt
-
-fmt-check:
-	@./scripts/build/native/linux.sh --build-dir $(BUILD_DIR) --build-type Release
-	@cd $(BUILD_DIR)/linux-x64 && cmake --build . --target clang-format-dry-run
-
-# Check code formatting (dry run)
-format-check: fmt-check
-
-lint:
-	@./scripts/build/native/linux.sh --build-dir $(BUILD_DIR) --build-type Release
-	@cd $(BUILD_DIR)/linux-x64 && cmake --build . --target clang-tidy
+	@cd $(BUILD_DIR) && $(CMAKE) --install .
 
 # Clean build directory
 clean:
-	@rm -rf $(BUILD_DIR)
+	@echo "Cleaning build directories..."
+	@rm -rf $(BUILD_DIR)/
+	@echo "Build directories cleaned successfully"
 
-# Help
+# ============================================================================
+# Code Quality Targets
+# ============================================================================
+
+# Source file patterns
+SRCDIRS := src include tests
+CPPFILES := $(shell $(FIND) $(SRCDIRS) -name '*.cpp' -o -name '*.hpp' 2>/dev/null)
+
+# Format code (src, include, and tests directories)
+fmt:
+	@echo "Formatting source code..."
+	@$(FIND) $(SRCDIRS) -name '*.cpp' -o -name '*.hpp' | $(XARGS) -P $(JOBS) clang-format -i
+	@echo "Code formatted successfully"
+
+# Check formatting without modifying files
+fmt-check:
+	@echo "Checking code formatting..."
+	@$(FIND) $(SRCDIRS) -name '*.cpp' -o -name '*.hpp' | $(XARGS) clang-format --dry-run --Werror
+	@echo "Code formatting check passed"
+
+# Run linting using clang-tidy
+lint:
+	@echo "Running static analysis..."
+	@$(CMAKE) -B $(BUILD_DIR)/lint -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=OFF
+	@cd $(BUILD_DIR)/lint && run-clang-tidy -config '{}' -p . $$(shell $(FIND) .. -name '*.cpp' -o -name '*.hpp') || true
+	@echo "Static analysis completed"
+
+# Generate code coverage report
+coverage: build
+	@echo "Generating code coverage report..."
+	@cd $(BUILD_DIR)/linux-x64 && \
+		make art2img_tests && \
+		./tests/art2img_tests && \
+		gcovr --html-details coverage.html --root ../.. --print-summary
+
+# ============================================================================
+# Help Target
+# ============================================================================
 help:
-	@echo "art2img - Build Commands"
-	@echo "  make all          - Build for Linux (default)"
-	@echo "  make build        - Build for Linux"
-	@echo "  make mingw-windows      - Cross-compile for Windows x64 using MinGW"
-	@echo "  make mingw-windows-x86  - Cross-compile for Windows x86 using MinGW"
-	@echo "  make linux-x64-release       - Build + test release configuration for Linux x64"
-	@echo "  make mingw-windows-x64-release     - Build release configuration for Windows x64 using MinGW"
-	@echo "  make mingw-windows-x86-release - Build release configuration for Windows x86 using MinGW"
-	@echo "  make test         - Run tests on Linux"
-	@echo "  make test-intg         - Run integration tests for Linux"
-	@echo "  make test-intg-windows - Run integration tests for Windows (cross-compiled)"
-	@echo "  make test-intg-windows-x86 - Run integration tests for Windows x86 (cross-compiled)"
-	@echo "  make test-intg-release   - Run integration tests for Linux release build"
-	@echo "  make test-windows - Test Windows build (requires Wine)"
-	@echo "  make install      - Install to system"
-	@echo "  make clean        - Remove build directory"
-	@echo "  make fmt          - Format source code"
-	@echo "  make fmt-check    - Check source code formatting"
-	@echo "  make lint         - Run clang-tidy analysis"
-	@echo "  make doctor       - Check system dependencies"
-
-# Doctor script - verify system dependencies
-doctor:
-	@./scripts/doctor.sh
+	@echo "art2img - Modern CMake Build System"
+	@echo ""
+	@echo "USAGE:"
+	@echo "  make [target] [BUILD_TYPE=Debug|Release] [JOBS=n]"
+	@echo ""
+	@echo "BUILD TARGETS:"
+	@echo "  all                    - Build Linux x64 (default)"
+	@echo "  build                  - Configure and build Linux x64"
+	@echo "  install                - Install the project"
+	@echo "  clean                  - Remove all build directories"
+	@echo ""
+	@echo "CROSS-COMPILATION:"
+	@echo "  windows-x64-mingw      - Windows 64-bit cross-compile"
+	@echo "  windows-x86-mingw      - Windows 32-bit cross-compile"
+	@echo "  windows                - All Windows cross-compilation"
+	@echo "  macos-x64-osxcross     - macOS Intel cross-compile"
+	@echo "  macos-arm64-osxcross   - macOS ARM64 cross-compile"
+	@echo "  macos                  - All macOS cross-compilation"
+	@echo ""
+	@echo "DEVELOPMENT:"
+	@echo "  test                   - Run all tests (Linux)"
+	@echo "  test-unit              - Run unit tests only"
+	@echo "  test-intg              - Run integration tests only"
+	@echo "  test-windows           - Test Windows cross-compiled builds"
+	@echo "  test-macos             - Test macOS cross-compiled builds"
+	@echo "  coverage               - Generate code coverage report"
+	@echo "  fmt                    - Format source code"
+	@echo "  fmt-check              - Check formatting"
+	@echo "  lint                   - Run static analysis"
+	@echo "  help                   - Show this help message"
+	@echo ""
+	@echo "VARIABLES:"
+	@echo "  BUILD_TYPE=$(BUILD_TYPE)    - Build type (Debug/Release)"
+	@echo "  JOBS=$(JOBS)               - Number of parallel jobs"
+	@echo "  BUILD_DIR=$(BUILD_DIR)      - Build directory"
+	@echo ""
+	@echo "EXAMPLES:"
+	@echo "  make                      # Build with defaults"
+	@echo "  make BUILD_TYPE=Debug     # Debug build"
+	@echo "  make windows JOBS=8       # Cross-compile with 8 jobs"

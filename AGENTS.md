@@ -14,11 +14,11 @@ make all
 
 ## Modes
 
-### RESTATE MODE
+### RESTATE MODE (NON BLOCKING/STOPPING)
 
 Rephrase the request/task in one paragraph. List explicit objectives, constraints, and non-goals. Write assumptions and their risks.
 
-### REVIEW MODE
+### REVIEW MODE (NON BLOCKING/STOPPING)
 
 Concise repo survey:
 
@@ -31,7 +31,7 @@ Concise repo survey:
 
 Output: print summary to console and write `REVIEW_NOTES.md` at repo root.
 
-### PLAN MODE
+### PLAN MODE (NON BLOCKING/STOPPING)
 
 Deterministic plan and atomic tasks:
 * YOU CANNOT DO ANY FILE MODIFICATIONS OR CHANGES.
@@ -42,7 +42,7 @@ Deterministic plan and atomic tasks:
 * Draw minimal diagrams only when they disambiguate design; use the output style native to the chosen agentic tool
 * Represent the plan in the PR description as a checklist with acceptance criteria
 
-### BUILD MODE
+### BUILD MODE (NON BLOCKING/STOPPING)
 
 Minimal, reversible diffs:
 
@@ -51,7 +51,7 @@ Minimal, reversible diffs:
 * Multi-file edits: use agentic batch edits; if unavailable use non-interactive pipelines (search → filter → edit → verify) with `rg/find/xargs/sed/awk` or PowerShell equivalents
 * Keep edits scoped; avoid opportunistic refactors unless they remove risk or unlock the task
 
-### TEST MODE
+### TEST MODE (NON BLOCKING/STOPPING)
 
 Coverage that matters:
 
@@ -60,14 +60,14 @@ Coverage that matters:
 * Treat performance and memory ceilings as tests where feasible
 * Ensure happy paths and representative edge cases are covered
 
-### VERIFY MODE
+### VERIFY MODE (NON BLOCKING/STOPPING)
 
 Pre-merge gates:
 
 * Build/lint/format pass; smoke tests green; CI green across supported OS/toolchains
 * If containers are used: multi-stage builds, minimal runtime image, non-root where possible
 
-### SELF-REFLECT MODE
+### SELF-REFLECT MODE (NON BLOCKING/STOPPING)
 
 Confirm objectives/acceptance criteria met, diffs are scoped and reversible, no dead code or stale comments. Summarize changes briefly and record follow-ups in the PR.
 
@@ -145,6 +145,14 @@ Expose canonical dev/build/test commands in `README`. Use multi-stage Dockerfile
 * Try to find and use all MCP available tools.
 * If the context7 MCP is available, Always use context7 when I need code generation, setup or configuration steps, or library/API documentation. This means you should automatically use the Context7 MCP tools to resolve library id and get library docs without me having to explicitly ask.
 * If serena is available, reads its instructions, and try to activate the project and use its tools.
+
+**Mentality**
+* Simple, no complexity, no overengineering, don't try to be too smart.
+* Balance of simple, organic, easy, boring test patterns, composable code.
+* Avoid over engineering, complexity.
+* Favour maintanility, low cognitive complexity.
+• Intuitive Naming: Functions read like natural language
+• Discoverable API: Names suggest their purpose without documentation
 
 **Shell**
 

@@ -1,99 +1,122 @@
+/// @file test_helpers.hpp
+/// @brief Central test helper functions for consistent test directory
+/// management
+
 #pragma once
 
-#include <cstdint>
-#include <cstdlib>  // for getenv
+#include <atomic>
 #include <filesystem>
-#include <fstream>
-#include <stdexcept>
+#include <iostream>
+#include <mutex>
 #include <string>
-#include <vector>
 
-namespace art2img::tests {
+namespace test_helpers {
 
-inline std::filesystem::path assets_root() {
-#ifdef TEST_ASSET_BINARY_DIR
-  static const std::filesystem::path binary_root{TEST_ASSET_BINARY_DIR};
+// Global mutex for thread-safe directory operations
+inline std::mutex& get_test_dir_mutex() {
+  static std::mutex mutex;
+  return mutex;
+}
+
+// Atomic counter for unique test identifiers
+inline std::atomic<int>& get_test_counter() {
+  static std::atomic<int> counter{0};
+  return counter;
+}
+
+/// @brief Get the main test output directory (build-relative)
+/// @return Path to test output directory
+inline std::filesystem::path get_test_output_dir() {
+#ifdef TEST_OUTPUT_DIR
+  return std::filesystem::path(TEST_OUTPUT_DIR);
 #else
-  static const std::filesystem::path binary_root{};
+  // Fallback to current directory/tests_output if not defined
+  return std::filesystem::current_path() / "tests_output";
 #endif
+}
 
-#ifdef TEST_ASSET_SOURCE_DIR
-  static const std::filesystem::path source_root{TEST_ASSET_SOURCE_DIR};
-#else
-  static const std::filesystem::path source_root{"tests/assets"};
-#endif
+/// @brief Get integration test output directory
+/// @param test_name Name of the specific test
+/// @return Path to integration test directory
+inline std::filesystem::path get_integration_test_dir(
+    const std::string& test_name) {
+  return get_test_output_dir() / "integration" / test_name;
+}
 
-  if (!binary_root.empty() && std::filesystem::exists(binary_root)) {
-    return binary_root;
+/// @brief Get unit test output directory
+/// @param category Category of unit test (export, io, art, etc.)
+/// @param test_name Name of the specific test
+/// @return Path to unit test directory
+inline std::filesystem::path get_unit_test_dir(const std::string& category,
+                                               const std::string& test_name) {
+  return get_test_output_dir() / "unit" / category / test_name;
+}
+
+/// @brief Get CLI test output directory
+/// @param test_name Name of the CLI test
+/// @return Path to CLI test directory
+inline std::filesystem::path get_cli_test_dir(const std::string& test_name) {
+  return get_test_output_dir() / "cli" / test_name;
+}
+
+/// @brief Ensure test output directory exists (thread-safe)
+/// @param dir Directory path to create
+inline void ensure_test_output_dir(const std::filesystem::path& dir) {
+  std::lock_guard<std::mutex> lock(get_test_dir_mutex());
+  std::error_code ec;
+  std::filesystem::create_directories(dir, ec);
+  if (ec) {
+    throw std::runtime_error("Failed to create test output directory: " +
+                             dir.string() + " - " + ec.message());
   }
-
-  if (std::filesystem::exists(source_root)) {
-    return source_root;
-  }
-
-  throw std::runtime_error("Test assets directory not found");
 }
 
-inline std::filesystem::path asset_path(const std::string& filename) {
-  return assets_root() / filename;
-}
-
-inline bool has_asset(const std::string& filename) {
-  try {
-    return std::filesystem::exists(asset_path(filename));
-  } catch (...) {
-    return false;
-  }
-}
-
-inline std::vector<uint8_t> load_asset(const std::string& filename) {
-  const auto path = asset_path(filename);
-  std::ifstream file(path, std::ios::binary);
-  if (!file) {
-    throw std::runtime_error("Cannot open test asset: " + path.string());
-  }
-
-  file.seekg(0, std::ios::end);
-  const auto size = static_cast<size_t>(file.tellg());
-  file.seekg(0, std::ios::beg);
-
-  std::vector<uint8_t> data(size);
-  if (!file.read(reinterpret_cast<char*>(data.data()), static_cast<std::streamsize>(size))) {
-    throw std::runtime_error("Cannot read test asset: " + path.string());
-  }
-
-  return data;
-}
-
-// Test output directory management
-inline std::filesystem::path test_output_root() {
-  static const std::filesystem::path output_root{"build/tests/output"};
-  return output_root;
-}
-
-inline void create_test_output_dir(const std::filesystem::path& dir) {
-  std::filesystem::create_directories(dir);
-}
-
+/// @brief Clean up test output directory (thread-safe)
+/// @param dir Directory path to remove
 inline void cleanup_test_output_dir(const std::filesystem::path& dir) {
-  // Only cleanup in CI environment or when explicitly requested
-  if (std::getenv("CI") != nullptr || std::getenv("CLEANUP_TEST_OUTPUT") != nullptr) {
-    std::error_code ec;
-    std::filesystem::remove_all(dir, ec);
-    // Ignore errors during cleanup
+  std::lock_guard<std::mutex> lock(get_test_dir_mutex());
+  std::error_code ec;
+  std::filesystem::remove_all(dir, ec);
+  if (ec) {
+    std::cerr << "Warning: Failed to clean up test directory: " << dir.string()
+              << " - " << ec.message() << std::endl;
   }
 }
 
-}  // namespace art2img::tests
-
-inline std::vector<uint8_t> load_test_asset(const std::string& filename) {
-  return art2img::tests::load_asset(filename);
+/// @brief Generate unique test directory name (thread-safe)
+/// @param prefix Optional prefix for the directory name
+/// @return Unique directory name
+inline std::string generate_unique_test_name(
+    const std::string& prefix = "test") {
+  int unique_id = get_test_counter().fetch_add(1);
+  return prefix + "_" + std::to_string(unique_id);
 }
 
-inline std::filesystem::path test_asset_path(const std::string& filename) {
-  return art2img::tests::asset_path(filename);
+/// @brief Get unique test directory path (thread-safe)
+/// @param base_dir Base directory for the test
+/// @param prefix Optional prefix for the unique directory name
+/// @return Unique directory path
+inline std::filesystem::path get_unique_test_dir(
+    const std::filesystem::path& base_dir, const std::string& prefix = "test") {
+  return base_dir / generate_unique_test_name(prefix);
 }
 
-inline bool has_test_asset(const std::string& filename) {
-  return art2img::tests::has_asset(filename);
+/// @brief Create and ensure unique test directory (thread-safe)
+/// @param base_dir Base directory for the test
+/// @param prefix Optional prefix for the unique directory name
+/// @return Unique directory path that has been created
+inline std::filesystem::path create_unique_test_dir(
+    const std::filesystem::path& base_dir, const std::string& prefix = "test") {
+  auto unique_dir = get_unique_test_dir(base_dir, prefix);
+  ensure_test_output_dir(unique_dir);
+  return unique_dir;
 }
+
+/// @brief Print test output directory info (for debugging)
+/// @param context Context message
+inline void debug_test_output_dir(const std::string& context) {
+  std::cout << "Test output directory (" << context
+            << "): " << get_test_output_dir() << std::endl;
+}
+
+}  // namespace test_helpers
