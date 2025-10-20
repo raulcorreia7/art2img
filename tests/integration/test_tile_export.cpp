@@ -497,6 +497,58 @@ TEST_SUITE("Tile Export Integration") {
 
         std::cout << "Enhanced massively parallel dump completed successfully" << std::endl;
         std::cout << "Total tiles processed: " << total_processed.load() << std::endl;
+
+        // Export animation data for each ART file
+        std::cout << "Exporting animation data..." << std::endl;
+        art2img::AnimationExportConfig anim_config;
+        anim_config.output_dir = comprehensive_dump_dir;
+        anim_config.ini_filename = "animdata.ini";
+        anim_config.image_format = art2img::ImageFormat::png;  // Use PNG for animation tile references
+        anim_config.include_image_references = true;
+        anim_config.include_non_animated = true;
+
+        std::atomic<size_t> animation_files_processed{0};
+        std::vector<std::future<void>> anim_futures;
+
+        // Export animation data in parallel for each ART file
+        for (std::size_t art_idx = 0; art_idx < art_files.size(); ++art_idx) {
+            const auto& art_path = art_files[art_idx];
+            const auto& art_data = art_data_storage[art_idx];
+            
+            anim_futures.push_back(std::async(std::launch::async, [&, art_idx, art_path, art_data]() {
+                std::string art_filename = art_path.filename().string();
+                art_filename = art_filename.substr(0, art_filename.find_last_of('.'));
+                
+                // Configure animation export for this specific ART file
+                art2img::AnimationExportConfig file_anim_config = anim_config;
+                file_anim_config.ini_filename = art_filename + "_animdata.ini";
+                file_anim_config.base_name = art_filename + "_tile";
+                
+                auto anim_export_result = art2img::export_animation_data(art_data, file_anim_config);
+                if (anim_export_result.has_value()) {
+                    // Verify INI file was created
+                    const std::filesystem::path ini_path = comprehensive_dump_dir / file_anim_config.ini_filename;
+                    if (std::filesystem::exists(ini_path)) {
+                        animation_files_processed++;
+                        {
+                            std::lock_guard<std::mutex> lock(cout_mutex);
+                            std::cout << "Created animation file: " << file_anim_config.ini_filename << std::endl;
+                        }
+                    }
+                } else {
+                    std::lock_guard<std::mutex> lock(cout_mutex);
+                    std::cerr << "Failed to export animation data for " << art_filename << std::endl;
+                }
+            }));
+        }
+
+        // Wait for all animation export tasks to complete
+        std::cout << "Waiting for " << anim_futures.size() << " animation export tasks to complete..." << std::endl;
+        for (auto& future : anim_futures) {
+            future.wait();
+        }
+
+        std::cout << "Animation export completed. Created " << animation_files_processed.load() << " animation files." << std::endl;
     }
 
 } // TEST_SUITE
