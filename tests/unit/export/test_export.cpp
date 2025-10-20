@@ -10,7 +10,7 @@
 
 #include <art2img/export.hpp>
 
-#include "../test_helpers.hpp"
+#include "../../test_helpers.hpp"
 
 namespace {
 
