@@ -9,17 +9,7 @@
 
 namespace art2img {
 
-/// @brief Image format enumeration for encoding
-enum class ImageFormat : u8 {
-    /// @brief Portable Network Graphics format
-    png = 0,
-    
-    /// @brief Truevision TGA format
-    tga = 1,
-    
-    /// @brief Windows Bitmap format
-    bmp = 2
-};
+
 
 /// @brief PNG encoding options
 struct PngOptions {

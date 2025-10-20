@@ -5,9 +5,6 @@
 #include <vector>
 #include <string>
 
-#if __has_include(<span>)
-#include <span>
-#endif
 #include <span>
 
 namespace art2img {
@@ -275,6 +272,18 @@ constexpr Color TRANSPARENT_BLACK{0, 0, 0, 0};
 }
 
 } // namespace color
+
+/// @brief Image format enumeration for encoding and export
+enum class ImageFormat : types::u8 {
+    /// @brief Portable Network Graphics format
+    png = 0,
+    
+    /// @brief Truevision TGA format
+    tga = 1,
+    
+    /// @brief Windows Bitmap format
+    bmp = 2
+};
 
 /// @brief Forward declarations for core data structures
 struct Palette;
