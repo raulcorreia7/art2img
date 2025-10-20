@@ -17,7 +17,80 @@
 
 #include <art2img/io.hpp>
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <cerrno>
+#endif
+
 namespace art2img {
+
+// ============================================================================
+// ERROR HANDLING HELPERS
+// ============================================================================
+
+/// @brief Convert system errors to appropriate art2img errors
+std::error_code map_system_error(const std::error_code& ec) {
+#ifdef _WIN32
+  // Map specific Windows errors to art2img::io_failure
+  if (ec.category() == std::system_category()) {
+    switch (ec.value()) {
+      case ERROR_INVALID_PARAMETER:
+      case ERROR_BAD_PATHNAME:
+      case ERROR_FILENAME_EXCED_RANGE:
+      case ERROR_DIRECTORY:
+      case ERROR_INVALID_NAME:
+        return make_error_code(errc::io_failure);
+      default:
+        break;
+    }
+  }
+#endif
+
+  // Map common POSIX errors to art2img::io_failure
+  if (ec.category() == std::system_category() ||
+      ec.category() == std::generic_category()) {
+    switch (ec.value()) {
+      // File/directory access errors
+      case ENOENT:   // No such file or directory
+      case EACCES:   // Permission denied
+      case EPERM:    // Operation not permitted
+      case EROFS:    // Read-only file system
+      case ELOOP:    // Too many symbolic links
+      case ENOLINK:  // Link has been severed
+
+      // File system errors
+      case EIO:     // I/O error
+      case ENOSPC:  // No space left on device
+      case EDQUOT:  // Disk quota exceeded
+      case EFBIG:   // File too large
+      case ENFILE:  // System file table full
+      case EMFILE:  // Too many open files
+
+      // Path and naming errors
+      case ENAMETOOLONG:  // Filename too long
+      case ENOTDIR:       // Not a directory
+      case EISDIR:        // Is a directory
+      case EINVAL:        // Invalid argument
+
+      // Directory operation errors
+      case EEXIST:     // File exists
+      case ENOTEMPTY:  // Directory not empty
+      case EBUSY:      // Resource busy
+
+      // Network/mount related filesystem errors
+      case ESTALE:     // Stale file handle
+      case EREMOTE:    // Object is remote
+      case EREMOTEIO:  // Remote I/O error
+
+        return make_error_code(errc::io_failure);
+      default:
+        break;
+    }
+  }
+
+  return ec;
+}
 
 // ============================================================================
 // FILE I/O FUNCTIONS
@@ -28,29 +101,36 @@ std::expected<std::vector<types::byte>, Error> read_binary_file(
   // Open file in binary mode
   std::ifstream file(path, std::ios::binary);
   if (!file) {
+    const std::error_code ec = std::error_code(errno, std::system_category());
+    const std::error_code mapped_ec = map_system_error(ec);
     return make_error_expected<std::vector<types::byte>>(
-        errc::io_failure, "Failed to open file for reading: " + path.string());
+        mapped_ec, "Failed to open file for reading: " + path.string());
   }
 
   // Get file size
   file.seekg(0, std::ios::end);
   if (!file) {
+    const std::error_code ec = std::error_code(errno, std::system_category());
+    const std::error_code mapped_ec = map_system_error(ec);
     return make_error_expected<std::vector<types::byte>>(
-        errc::io_failure, "Failed to seek to end of file: " + path.string());
+        mapped_ec, "Failed to seek to end of file: " + path.string());
   }
 
   const auto file_size = file.tellg();
   if (file_size < 0) {
+    const std::error_code ec = std::error_code(errno, std::system_category());
+    const std::error_code mapped_ec = map_system_error(ec);
     return make_error_expected<std::vector<types::byte>>(
-        errc::io_failure, "Failed to determine file size: " + path.string());
+        mapped_ec, "Failed to determine file size: " + path.string());
   }
 
   // Seek back to beginning
   file.seekg(0, std::ios::beg);
   if (!file) {
+    const std::error_code ec = std::error_code(errno, std::system_category());
+    const std::error_code mapped_ec = map_system_error(ec);
     return make_error_expected<std::vector<types::byte>>(
-        errc::io_failure,
-        "Failed to seek to beginning of file: " + path.string());
+        mapped_ec, "Failed to seek to beginning of file: " + path.string());
   }
 
   // Check file size is reasonable (prevent memory exhaustion)
@@ -64,8 +144,10 @@ std::expected<std::vector<types::byte>, Error> read_binary_file(
   // Read file into buffer
   std::vector<types::byte> buffer(static_cast<std::size_t>(file_size));
   if (!file.read(reinterpret_cast<char*>(buffer.data()), file_size)) {
+    const std::error_code ec = std::error_code(errno, std::system_category());
+    const std::error_code mapped_ec = map_system_error(ec);
     return make_error_expected<std::vector<types::byte>>(
-        errc::io_failure, "Failed to read file: " + path.string());
+        mapped_ec, "Failed to read file: " + path.string());
   }
 
   return buffer;
@@ -78,30 +160,36 @@ std::expected<std::monostate, Error> write_binary_file(
   if (!parent_dir.empty() && !std::filesystem::exists(parent_dir)) {
     std::error_code ec;
     if (!std::filesystem::create_directories(parent_dir, ec)) {
+      const std::error_code mapped_ec = map_system_error(ec);
       return make_error_expected<std::monostate>(
-          errc::io_failure,
-          "Failed to create directory: " + parent_dir.string());
+          mapped_ec, "Failed to create directory: " + parent_dir.string());
     }
   }
 
   // Open file in binary mode
   std::ofstream file(path, std::ios::binary);
   if (!file) {
+    const std::error_code ec = std::error_code(errno, std::system_category());
+    const std::error_code mapped_ec = map_system_error(ec);
     return make_error_expected<std::monostate>(
-        errc::io_failure, "Failed to open file for writing: " + path.string());
+        mapped_ec, "Failed to open file for writing: " + path.string());
   }
 
   // Write data to file
   if (!file.write(reinterpret_cast<const char*>(data.data()),
                   static_cast<std::streamsize>(data.size()))) {
+    const std::error_code ec = std::error_code(errno, std::system_category());
+    const std::error_code mapped_ec = map_system_error(ec);
     return make_error_expected<std::monostate>(
-        errc::io_failure, "Failed to write to file: " + path.string());
+        mapped_ec, "Failed to write to file: " + path.string());
   }
 
   // Verify write was successful
   if (!file.flush()) {
+    const std::error_code ec = std::error_code(errno, std::system_category());
+    const std::error_code mapped_ec = map_system_error(ec);
     return make_error_expected<std::monostate>(
-        errc::io_failure, "Failed to flush file: " + path.string());
+        mapped_ec, "Failed to flush file: " + path.string());
   }
 
   return make_success();
@@ -116,8 +204,9 @@ std::expected<std::monostate, Error> check_file_readable(
   std::error_code ec;
   if (!std::filesystem::exists(path, ec)) {
     if (ec) {
+      const std::error_code mapped_ec = map_system_error(ec);
       return make_error_expected<std::monostate>(
-          ec, "File access error: " + path.string());
+          mapped_ec, "File access error: " + path.string());
     }
     return make_error_expected<std::monostate>(
         errc::io_failure, "File does not exist: " + path.string());
@@ -125,8 +214,9 @@ std::expected<std::monostate, Error> check_file_readable(
 
   if (!std::filesystem::is_regular_file(path, ec)) {
     if (ec) {
+      const std::error_code mapped_ec = map_system_error(ec);
       return make_error_expected<std::monostate>(
-          ec, "File type check error: " + path.string());
+          mapped_ec, "File type check error: " + path.string());
     }
     return make_error_expected<std::monostate>(
         errc::io_failure, "Path is not a regular file: " + path.string());
@@ -137,8 +227,9 @@ std::expected<std::monostate, Error> check_file_readable(
   if (!file) {
     const std::error_code file_ec =
         std::error_code(errno, std::system_category());
+    const std::error_code mapped_ec = map_system_error(file_ec);
     return make_error_expected<std::monostate>(
-        file_ec, "File is not readable: " + path.string());
+        mapped_ec, "File is not readable: " + path.string());
   }
 
   return make_success();
@@ -151,20 +242,23 @@ std::expected<std::monostate, Error> check_directory_writable(
   // Create directory if it doesn't exist
   if (!std::filesystem::exists(path, ec)) {
     if (ec) {
+      const std::error_code mapped_ec = map_system_error(ec);
       return make_error_expected<std::monostate>(
-          ec, "Directory access error: " + path.string());
+          mapped_ec, "Directory access error: " + path.string());
     }
 
     if (!std::filesystem::create_directories(path, ec)) {
+      const std::error_code mapped_ec = map_system_error(ec);
       return make_error_expected<std::monostate>(
-          ec, "Failed to create directory: " + path.string());
+          mapped_ec, "Failed to create directory: " + path.string());
     }
   }
 
   if (!std::filesystem::is_directory(path, ec)) {
     if (ec) {
+      const std::error_code mapped_ec = map_system_error(ec);
       return make_error_expected<std::monostate>(
-          ec, "Directory type check error: " + path.string());
+          mapped_ec, "Directory type check error: " + path.string());
     }
     return make_error_expected<std::monostate>(
         errc::io_failure, "Path is not a directory: " + path.string());
@@ -176,8 +270,9 @@ std::expected<std::monostate, Error> check_directory_writable(
   if (!file) {
     const std::error_code file_ec =
         std::error_code(errno, std::system_category());
+    const std::error_code mapped_ec = map_system_error(file_ec);
     return make_error_expected<std::monostate>(
-        file_ec, "Directory is not writable: " + path.string());
+        mapped_ec, "Directory is not writable: " + path.string());
   }
 
   file.close();
@@ -194,18 +289,21 @@ std::expected<std::monostate, Error> ensure_directory_exists(
   std::error_code ec;
   if (!std::filesystem::exists(path, ec)) {
     if (ec) {
+      const std::error_code mapped_ec = map_system_error(ec);
       return make_error_expected<std::monostate>(
-          ec, "Path access error: " + path.string());
+          mapped_ec, "Path access error: " + path.string());
     }
 
     if (!std::filesystem::create_directories(path, ec)) {
+      const std::error_code mapped_ec = map_system_error(ec);
       return make_error_expected<std::monostate>(
-          ec, "Failed to create directory: " + path.string());
+          mapped_ec, "Failed to create directory: " + path.string());
     }
   } else if (!std::filesystem::is_directory(path, ec)) {
     if (ec) {
+      const std::error_code mapped_ec = map_system_error(ec);
       return make_error_expected<std::monostate>(
-          ec, "Path type check error: " + path.string());
+          mapped_ec, "Path type check error: " + path.string());
     }
     return make_error_expected<std::monostate>(
         errc::io_failure,
@@ -220,8 +318,9 @@ std::expected<std::size_t, Error> get_file_size(
   std::error_code ec;
   const auto file_size = std::filesystem::file_size(path, ec);
   if (ec) {
+    const std::error_code mapped_ec = map_system_error(ec);
     return make_error_expected<std::size_t>(
-        errc::io_failure, "Failed to get file size: " + path.string());
+        mapped_ec, "Failed to get file size: " + path.string());
   }
 
   return static_cast<std::size_t>(file_size);
@@ -233,8 +332,9 @@ std::expected<std::string, Error> read_text_file(
   std::ifstream file(path);
   if (!file) {
     const std::error_code ec = std::error_code(errno, std::system_category());
+    const std::error_code mapped_ec = map_system_error(ec);
     return make_error_expected<std::string>(
-        ec, "Failed to open text file for reading: " + path.string());
+        mapped_ec, "Failed to open text file for reading: " + path.string());
   }
 
   try {
@@ -256,8 +356,9 @@ std::expected<std::monostate, Error> write_text_file(
   if (!parent_dir.empty() && !std::filesystem::exists(parent_dir)) {
     std::error_code ec;
     if (!std::filesystem::create_directories(parent_dir, ec)) {
+      const std::error_code mapped_ec = map_system_error(ec);
       return make_error_expected<std::monostate>(
-          ec, "Failed to create directory: " + parent_dir.string());
+          mapped_ec, "Failed to create directory: " + parent_dir.string());
     }
   }
 
@@ -265,29 +366,67 @@ std::expected<std::monostate, Error> write_text_file(
   std::ofstream file(path);
   if (!file) {
     const std::error_code ec = std::error_code(errno, std::system_category());
+    const std::error_code mapped_ec = map_system_error(ec);
     return make_error_expected<std::monostate>(
-        ec, "Failed to open text file for writing: " + path.string());
+        mapped_ec, "Failed to open text file for writing: " + path.string());
   }
   // Write content to file
   file << content;
   if (!file) {
     const std::error_code ec = std::error_code(errno, std::system_category());
+    const std::error_code mapped_ec = map_system_error(ec);
     return make_error_expected<std::monostate>(
-        ec, "Failed to write to text file: " + path.string());
+        mapped_ec, "Failed to write to text file: " + path.string());
   }
 
   // Verify write was successful
   if (!file.flush()) {
     const std::error_code ec = std::error_code(errno, std::system_category());
+    const std::error_code mapped_ec = map_system_error(ec);
     return make_error_expected<std::monostate>(
-        ec, "Failed to flush text file: " + path.string());
+        mapped_ec, "Failed to flush text file: " + path.string());
   }
 
   return make_success();
 }
 
 std::string get_filesystem_error_message(const std::error_code& ec) {
-  return ec.message() + " (" + std::to_string(ec.value()) + ")";
+  std::string base_message =
+      ec.message() + " (" + std::to_string(ec.value()) + ")";
+
+  // Add Linux-specific context for common filesystem errors
+  if (ec.category() == std::system_category() ||
+      ec.category() == std::generic_category()) {
+    switch (ec.value()) {
+      case ENOENT:
+        return base_message + " - File or directory does not exist";
+      case EACCES:
+        return base_message +
+               " - Permission denied (check file/directory permissions)";
+      case EPERM:
+        return base_message +
+               " - Operation not permitted (check user privileges)";
+      case EROFS:
+        return base_message + " - Read-only filesystem (cannot write)";
+      case ENOSPC:
+        return base_message + " - No space left on device";
+      case EIO:
+        return base_message + " - I/O error (possible hardware issue)";
+      case ENAMETOOLONG:
+        return base_message + " - Path or filename too long";
+      case ELOOP:
+        return base_message +
+               " - Too many symbolic links (possible circular reference)";
+      case EMFILE:
+        return base_message + " - Process file descriptor limit exceeded";
+      case ENFILE:
+        return base_message + " - System file table full";
+      default:
+        return base_message;
+    }
+  }
+
+  return base_message;
 }
 
 }  // namespace art2img
