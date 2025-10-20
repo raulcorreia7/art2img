@@ -1,215 +1,220 @@
-#include "art2img/palette.hpp"
+/// @file palette.cpp
+/// @brief Implementation of palette loading and conversion functions for Duke
+/// Nukem 3D PALETTE.DAT files
+///
+/// This module implements the palette loading functionality as specified in
+/// Architecture §4.2 and §9. It handles:
+/// - Loading PALETTE.DAT files from filesystem or memory spans
+/// - Parsing 6-bit RGB palette data (256 entries × 3 bytes)
+/// - Reading shade tables for color shading effects
+/// - Processing translucent blend tables for transparency effects
+/// - Converting palette entries to 8-bit RGB and 32-bit RGBA formats
+/// - Validation of file format and bounds checking
+///
+/// The PALETTE.DAT format:
+/// - Bytes 0-767: 256 RGB palette entries (6-bit per component)
+/// - Bytes 768-769: Little-endian 16-bit shade table count
+/// - Bytes 770+: Shade tables (count × 256 bytes each)
+/// - Final 65536 bytes: Translucent blend table (optional)
+///
+/// All functions use std::expected<T, Error> for error handling with proper
+/// validation according to Architecture §14 validation rules.
 
 #include <algorithm>
 #include <cstring>
 #include <fstream>
-#include <iostream>
+#include <tuple>
+
+#include <art2img/palette.hpp>
+#include <art2img/palette/detail/palette_color.hpp>
 
 namespace art2img {
+using art2img::types::byte;
+using art2img::types::u16;
+using art2img::types::u32;
+using art2img::types::u8;
 
 namespace {
 
-constexpr uint8_t to_6bit(uint8_t value) {
-  // Convert 8-bit value (0-255) to 6-bit value (0-63) using formula: (value * 63) / 255
-  // This ensures perfect scaling while being fast enough for palette loading
-  return static_cast<uint8_t>((value * 63) / 255);
+/// @brief Validate palette index bounds
+constexpr bool is_valid_palette_index(u8 index) noexcept {
+  return index < constants::PALETTE_SIZE;
 }
 
-}  // namespace
-
-Palette::Palette() : raw_data_(SIZE, 0) {
-  load_build_engine_default();
+/// @brief Validate shade table index bounds
+constexpr bool is_valid_shade_index(u16 shade_count, u8 shade) noexcept {
+  return shade < shade_count;
 }
 
-uint8_t Palette::scale_component(uint8_t value) {
-  // Convert 6-bit component (0-63) to 8-bit (0-255) using formula from tests:
-  // Left shift by 2 with clamping to ensure 63 -> 255
-  return static_cast<uint8_t>(std::min<uint16_t>(255, static_cast<uint16_t>(value) << 2));
-}
-
-bool Palette::load_from_file(const std::filesystem::path& filename) {
-  // Check if the path is a directory
-  if (std::filesystem::is_directory(filename)) {
-    throw ArtException("Cannot open palette file: " + filename.string() + " (is a directory)");
-  }
-
-  std::ifstream file(filename, std::ios::binary);
-  if (!file.is_open()) {
-    throw ArtException("Cannot open palette file: " + filename.string());
-  }
-
-  std::vector<uint8_t> buffer(SIZE);
-  if (!file.read(reinterpret_cast<char*>(buffer.data()), SIZE)) {
-    std::cerr << "Warning: Cannot read palette from '" << filename.string() << "'" << std::endl;
-    return false;
-  }
-
-  const bool is_scaled_input =
-      std::any_of(buffer.begin(), buffer.end(), [](uint8_t value) { return value > 63; });
-
-  raw_data_.resize(SIZE);
-  for (size_t i = 0; i < SIZE; ++i) {
-    raw_data_[i] = is_scaled_input ? to_6bit(buffer[i]) : buffer[i];
-  }
-
-  loaded_ = true;
-  return true;
-}
-
-bool Palette::load_from_memory(const uint8_t* data, size_t size) {
-  if (!data || size < SIZE) {
-    std::cerr << "Warning: Invalid data or insufficient size for palette" << std::endl;
-    return false;
-  }
-
-  const bool is_scaled_input =
-      std::any_of(data, data + SIZE, [](uint8_t value) { return value > 63; });
-
-  raw_data_.resize(SIZE);
-  for (size_t i = 0; i < SIZE; ++i) {
-    raw_data_[i] = is_scaled_input ? to_6bit(data[i]) : data[i];
-  }
-
-  loaded_ = true;
-  return true;
-}
-
-std::vector<uint8_t> Palette::get_bgr_data() const {
-  if (raw_data_.size() != SIZE) {
-    return std::vector<uint8_t>();  // Return empty vector if raw data is not valid
-  }
-
-  std::vector<uint8_t> bgr_data(SIZE);
-  for (size_t i = 0; i < SIZE; i += 3) {
-    const uint8_t r = raw_data_[i];
-    const uint8_t g = raw_data_[i + 1];
-    const uint8_t b = raw_data_[i + 2];
-
-    bgr_data[i] = scale_component(b);  // Blue channel first
-    bgr_data[i + 1] = scale_component(g);
-    bgr_data[i + 2] = scale_component(r);
-  }
-
-  return bgr_data;
-}
-
-void Palette::load_build_engine_default() {
-  static const uint8_t build_engine_palette[SIZE] = {
-      0,  0,  0,  1,  1,  1,  4,  3,  4,  6,  6,  6,  9,  8,  8,  11, 10, 11, 14, 13, 13, 16, 15,
-      15, 19, 18, 18, 22, 20, 20, 24, 22, 23, 27, 24, 25, 29, 27, 28, 32, 29, 30, 34, 31, 32, 37,
-      34, 35, 38, 35, 36, 40, 37, 38, 42, 39, 40, 43, 41, 42, 44, 43, 43, 46, 44, 45, 48, 46, 46,
-      50, 47, 48, 51, 49, 50, 53, 51, 52, 54, 53, 54, 56, 54, 55, 57, 56, 57, 59, 58, 59, 61, 60,
-      61, 63, 63, 63, 0,  0,  0,  1,  1,  0,  3,  1,  1,  6,  3,  1,  8,  4,  2,  10, 5,  3,  12,
-      7,  4,  15, 8,  5,  17, 9,  6,  19, 11, 6,  21, 12, 7,  24, 13, 8,  26, 15, 9,  28, 16, 10,
-      30, 17, 11, 33, 19, 12, 35, 21, 14, 36, 23, 15, 38, 25, 17, 40, 27, 18, 42, 29, 20, 43, 31,
-      22, 44, 33, 24, 46, 36, 26, 47, 38, 28, 49, 40, 30, 51, 43, 32, 53, 44, 35, 54, 46, 37, 55,
-      49, 39, 57, 51, 42, 59, 54, 44, 20, 24, 37, 21, 26, 38, 23, 28, 40, 24, 30, 42, 26, 32, 43,
-      28, 34, 45, 30, 36, 47, 31, 38, 49, 33, 41, 51, 35, 43, 52, 37, 44, 54, 39, 46, 55, 41, 49,
-      57, 43, 51, 59, 45, 53, 61, 47, 55, 63, 0,  0,  0,  1,  1,  1,  1,  2,  4,  3,  3,  6,  4,
-      5,  8,  5,  6,  11, 6,  8,  13, 8,  10, 16, 9,  11, 18, 10, 13, 20, 11, 14, 23, 13, 16, 25,
-      14, 17, 27, 15, 19, 30, 16, 20, 32, 18, 22, 35, 0,  0,  0,  1,  1,  1,  3,  3,  2,  6,  5,
-      3,  8,  8,  4,  10, 10, 6,  12, 12, 7,  15, 14, 9,  17, 16, 10, 19, 19, 11, 21, 21, 13, 24,
-      23, 14, 26, 25, 16, 28, 27, 17, 30, 29, 18, 33, 32, 20, 35, 34, 21, 37, 37, 21, 38, 39, 22,
-      39, 41, 23, 40, 43, 24, 41, 44, 24, 42, 46, 25, 43, 48, 26, 43, 50, 26, 43, 52, 27, 44, 54,
-      27, 44, 55, 28, 44, 57, 28, 44, 59, 29, 44, 61, 29, 44, 63, 30, 0,  0,  0,  3,  0,  0,  6,
-      1,  0,  10, 1,  0,  13, 2,  1,  17, 3,  1,  21, 4,  1,  24, 5,  1,  28, 6,  2,  32, 7,  2,
-      35, 8,  3,  39, 9,  3,  43, 10, 3,  46, 11, 4,  50, 12, 4,  54, 13, 5,  25, 17, 6,  26, 20,
-      1,  29, 22, 1,  32, 25, 1,  35, 27, 2,  37, 30, 2,  40, 32, 2,  43, 35, 2,  44, 37, 4,  47,
-      40, 4,  50, 43, 4,  53, 45, 5,  54, 48, 5,  57, 50, 5,  60, 54, 5,  63, 56, 6,  0,  0,  0,
-      1,  1,  0,  2,  2,  1,  4,  3,  2,  5,  4,  4,  7,  5,  5,  8,  7,  6,  10, 8,  7,  12, 9,
-      8,  13, 11, 10, 15, 12, 11, 16, 13, 12, 18, 15, 13, 19, 16, 14, 21, 17, 16, 23, 19, 17, 25,
-      21, 19, 27, 23, 20, 30, 25, 22, 32, 27, 24, 35, 29, 26, 37, 31, 28, 39, 33, 30, 42, 35, 31,
-      43, 37, 33, 45, 39, 35, 48, 41, 37, 50, 43, 39, 53, 44, 41, 54, 46, 43, 56, 49, 44, 59, 51,
-      46, 13, 7,  0,  17, 10, 0,  22, 12, 0,  27, 14, 0,  32, 16, 0,  36, 18, 0,  41, 20, 0,  45,
-      21, 1,  50, 23, 1,  51, 26, 6,  53, 29, 12, 54, 33, 17, 55, 36, 22, 57, 40, 28, 59, 43, 34,
-      61, 48, 40, 54, 16, 6,  54, 19, 7,  55, 23, 10, 56, 26, 12, 57, 30, 14, 58, 33, 16, 59, 36,
-      18, 60, 40, 20, 60, 43, 23, 60, 46, 25, 61, 49, 29, 61, 52, 31, 62, 54, 35, 62, 56, 37, 62,
-      58, 41, 63, 60, 43, 2,  4,  13, 2,  2,  16, 5,  2,  19, 7,  2,  22, 12, 2,  23, 16, 4,  25,
-      21, 5,  26, 26, 6,  28, 31, 6,  30, 34, 8,  29, 38, 8,  27, 41, 6,  24, 44, 10, 19, 47, 11,
-      14, 51, 12, 6,  54, 13, 5,  17, 17, 0,  41, 41, 0,  63, 63, 0,  17, 0,  17, 41, 0,  41, 63,
-      0,  63, 22, 0,  0,  43, 0,  0,  63, 0,  0,  0,  17, 0,  0,  41, 0,  0,  63, 0,  0,  0,  17,
-      0,  0,  41, 0,  0,  63, 63, 0,  63,
-  };
-  raw_data_.assign(std::begin(build_engine_palette), std::end(build_engine_palette));
-
-  loaded_ = true;
-}
-void Palette::load_blood_default() {
-  // Blood palette from original art2tga.c
-  static const uint8_t blood_palette[SIZE] = {
-      0,   0,   0,   8,   8,   8,   16,  16,  16,  24,  24,  24,  32,  32,  32,  40,  40,  40,  48,
-      48,  48,  56,  56,  56,  64,  64,  64,  72,  72,  72,  80,  80,  80,  88,  88,  88,  96,  96,
-      96,  104, 104, 104, 112, 112, 112, 120, 120, 120, 128, 128, 128, 136, 136, 136, 144, 144, 144,
-      152, 152, 152, 160, 160, 160, 168, 168, 168, 176, 176, 176, 188, 188, 188, 196, 196, 196, 204,
-      204, 204, 212, 212, 212, 220, 220, 220, 228, 228, 228, 236, 236, 236, 244, 244, 244, 252, 252,
-      252, 24,  20,  20,  36,  28,  28,  48,  40,  40,  60,  52,  52,  72,  60,  60,  84,  72,  72,
-      96,  84,  84,  112, 96,  96,  124, 104, 104, 136, 116, 116, 148, 128, 128, 160, 136, 136, 172,
-      148, 148, 184, 160, 160, 200, 172, 172, 252, 220, 220, 0,   12,  36,  0,   16,  48,  4,   24,
-      56,  4,   32,  68,  12,  40,  80,  20,  52,  92,  28,  60,  104, 36,  72,  116, 48,  84,  128,
-      60,  96,  140, 76,  108, 152, 88,  124, 164, 104, 136, 176, 120, 152, 188, 140, 168, 200, 180,
-      208, 240, 20,  20,  44,  24,  28,  56,  32,  36,  72,  40,  48,  84,  44,  60,  96,  52,  72,
-      112, 56,  84,  124, 64,  100, 140, 72,  116, 152, 76,  132, 168, 80,  144, 180, 88,  156, 192,
-      92,  172, 208, 100, 184, 220, 104, 200, 232, 112, 220, 252, 12,  20,  56,  16,  24,  64,  20,
-      32,  76,  28,  40,  84,  36,  44,  92,  44,  52,  104, 52,  64,  112, 60,  72,  124, 72,  80,
-      132, 80,  92,  144, 92,  104, 152, 104, 112, 164, 116, 128, 172, 132, 140, 184, 144, 152, 196,
-      184, 192, 240, 16,  8,   8,   24,  12,  12,  32,  16,  16,  40,  24,  20,  48,  28,  24,  56,
-      32,  32,  64,  36,  36,  76,  44,  40,  84,  48,  44,  92,  52,  48,  100, 60,  52,  108, 64,
-      56,  116, 68,  60,  124, 76,  64,  132, 80,  68,  140, 88,  72,  148, 96,  80,  156, 108, 88,
-      168, 116, 96,  176, 128, 104, 184, 136, 116, 192, 148, 124, 200, 160, 132, 212, 172, 144, 156,
-      0,   0,   180, 40,  12,  204, 88,  32,  212, 112, 40,  224, 132, 48,  232, 152, 56,  240, 172,
-      68,  252, 196, 80,  8,   20,  48,  8,   24,  60,  8,   28,  72,  12,  32,  84,  12,  32,  96,
-      12,  36,  108, 12,  36,  120, 12,  40,  132, 8,   40,  144, 8,   40,  156, 8,   40,  168, 4,
-      36,  180, 4,   36,  192, 0,   32,  208, 0,   32,  220, 0,   36,  252, 0,   0,   48,  0,   0,
-      72,  0,   0,   96,  0,   0,   124, 0,   0,   148, 0,   0,   172, 0,   0,   192, 0,   12,  204,
-      0,   0,   236, 0,   80,  252, 0,   112, 252, 0,   152, 252, 0,   180, 252, 0,   216, 252, 0,
-      252, 252, 104, 252, 252, 20,  24,  12,  28,  32,  16,  36,  44,  24,  44,  52,  32,  52,  64,
-      44,  60,  76,  52,  72,  84,  60,  80,  96,  72,  88,  104, 84,  100, 116, 96,  112, 128, 104,
-      120, 136, 120, 136, 148, 132, 148, 156, 144, 160, 168, 160, 208, 212, 208, 4,   24,  80,  4,
-      36,  108, 4,   56,  140, 4,   76,  168, 4,   96,  200, 4,   124, 216, 0,   140, 232, 0,   144,
-      252, 0,   28,  0,   0,   40,  0,   4,   56,  4,   16,  72,  16,  28,  88,  28,  40,  104, 40,
-      60,  120, 60,  80,  136, 80,  0,   20,  36,  0,   28,  44,  4,   36,  56,  4,   44,  68,  8,
-      52,  80,  16,  60,  88,  24,  68,  100, 32,  80,  112, 40,  88,  120, 52,  100, 132, 60,  108,
-      144, 72,  120, 156, 88,  132, 164, 100, 144, 176, 116, 156, 188, 132, 172, 200, 4,   76,  180,
-      16,  84,  192, 32,  92,  208, 48,  104, 224, 56,  116, 228, 64,  132, 232, 72,  144, 236, 80,
-      160, 240, 92,  176, 240, 100, 184, 240, 116, 200, 244, 124, 212, 244, 140, 216, 248, 148, 228,
-      248, 164, 232, 248, 172, 240, 252, 28,  28,  140, 40,  44,  148, 56,  60,  160, 72,  80,  172,
-      92,  100, 184, 108, 120, 196, 132, 144, 208, 156, 168, 220, 8,   8,   20,  12,  12,  32,  20,
-      20,  48,  24,  28,  60,  28,  36,  76,  36,  44,  88,  40,  56,  104, 44,  64,  116, 48,  76,
-      132, 52,  80,  136, 56,  88,  140, 60,  92,  148, 64,  100, 152, 72,  108, 156, 76,  112, 160,
-      80,  120, 168, 88,  128, 172, 92,  136, 176, 100, 140, 184, 104, 148, 188, 112, 156, 192, 120,
-      164, 200, 160, 200, 228, 160, 0,   188};
-  raw_data_.resize(SIZE);
-  for (size_t i = 0; i < SIZE; ++i) {
-    raw_data_[i] = to_6bit(blood_palette[i]);
-  }
-
-  loaded_ = true;
-}
-
-uint8_t Palette::get_red(size_t index) const {
-  if (index >= 256 || raw_data_.size() != SIZE) {
+/// @brief Read a 16-bit little-endian value from a byte span
+u16 read_u16_le(std::span<const byte> data, std::size_t offset) {
+  if (offset + 1 >= data.size()) {
     return 0;
   }
-  return raw_data_[index * 3 + 0];
+  return static_cast<u16>(static_cast<u8>(data[offset])) |
+         (static_cast<u16>(static_cast<u8>(data[offset + 1])) << 8);
 }
 
-uint8_t Palette::get_green(size_t index) const {
-  if (index >= 256 || raw_data_.size() != SIZE) {
-    return 0;
+}  // anonymous namespace
+
+std::expected<Palette, Error> load_palette(const std::filesystem::path& path) {
+  // Open file in binary mode
+  std::ifstream file(path, std::ios::binary | std::ios::ate);
+  if (!file) {
+    return make_error_expected<Palette>(
+        errc::io_failure, "Failed to open palette file: " + path.string());
   }
-  return raw_data_[index * 3 + 1];
-}
 
-uint8_t Palette::get_blue(size_t index) const {
-  if (index >= 256 || raw_data_.size() != SIZE) {
-    return 0;
+  // Get file size
+  const auto file_size = file.tellg();
+  if (file_size < 0) {
+    return make_error_expected<Palette>(
+        errc::io_failure,
+        "Failed to determine palette file size: " + path.string());
   }
-  return raw_data_[index * 3 + 2];
+
+  // Seek back to beginning
+  file.seekg(0, std::ios::beg);
+  if (!file) {
+    return make_error_expected<Palette>(
+        errc::io_failure, "Failed to seek in palette file: " + path.string());
+  }
+
+  // Read entire file into buffer
+  std::vector<std::byte> buffer(static_cast<std::size_t>(file_size));
+  if (!file.read(reinterpret_cast<char*>(buffer.data()), file_size)) {
+    return make_error_expected<Palette>(
+        errc::io_failure, "Failed to read palette file: " + path.string());
+  }
+
+  // Parse the loaded data
+  return load_palette(buffer);
 }
 
-// Compatibility function for existing code
-void Palette::load_duke3d_default() {
-  load_build_engine_default();
+std::expected<Palette, Error> load_palette(std::span<const byte> data) {
+  Palette palette;
+
+  // Minimum required size: palette data (768 bytes) + shade count (2 bytes)
+  constexpr std::size_t MIN_SIZE = constants::PALETTE_DATA_SIZE + 2;
+  if (data.size() < MIN_SIZE) {
+    return make_error_expected<Palette>(
+        errc::invalid_palette,
+        "Palette data too small: " + std::to_string(data.size()) +
+            " bytes, expected at least " + std::to_string(MIN_SIZE) + " bytes");
+  }
+
+  // Copy palette data (768 bytes: 256 entries × 3 RGB components)
+  std::memcpy(palette.data.data(), data.data(), constants::PALETTE_DATA_SIZE);
+
+  // Read shade table count (little-endian 16-bit)
+  std::size_t offset = constants::PALETTE_DATA_SIZE;
+  palette.shade_table_count = read_u16_le(data, offset);
+  offset += 2;
+
+  // Validate shade table count
+  if (palette.shade_table_count > 256) {  // Reasonable upper limit
+    return make_error_expected<Palette>(
+        errc::invalid_palette, "Invalid shade table count: " +
+                                   std::to_string(palette.shade_table_count));
+  }
+
+  // Calculate expected sizes
+  const std::size_t shade_tables_size =
+      static_cast<std::size_t>(palette.shade_table_count) *
+      constants::SHADE_TABLE_SIZE;
+  // const std::size_t expected_size = MIN_SIZE + shade_tables_size +
+  // constants::TRANSLUCENT_TABLE_SIZE; // Unused but kept for reference
+
+  // Check if we have enough data for shade tables
+  if (data.size() < MIN_SIZE + shade_tables_size) {
+    return make_error_expected<Palette>(
+        errc::invalid_palette,
+        "Palette data too small for shade tables: " +
+            std::to_string(data.size()) + " bytes, need at least " +
+            std::to_string(MIN_SIZE + shade_tables_size) + " bytes");
+  }
+
+  // Copy shade table data if present
+  if (palette.shade_table_count > 0) {
+    palette.shade_tables.resize(shade_tables_size);
+    std::memcpy(palette.shade_tables.data(), data.data() + offset,
+                shade_tables_size);
+    offset += shade_tables_size;
+  }
+
+  // Copy translucent table data if present (zero out if missing)
+  if (data.size() >= offset + constants::TRANSLUCENT_TABLE_SIZE) {
+    std::memcpy(palette.translucent_map.data(), data.data() + offset,
+                constants::TRANSLUCENT_TABLE_SIZE);
+  } else {
+    // Zero out translucent map if not present in file
+    palette.translucent_map.fill(0);
+  }
+
+  return palette;
+}
+
+u32 palette_entry_to_rgba(const Palette& palette, u8 index) {
+  return palette::detail::make_palette_color(palette, index)
+      .to_packed(color::Format::RGBA);
+}
+
+u32 palette_shaded_entry_to_rgba(const Palette& palette, u8 shade, u8 index) {
+  return palette_shaded_entry_to_color(palette, shade, index)
+      .to_packed(color::Format::RGBA);
+}
+
+std::tuple<u8, u8, u8> palette_entry_to_rgb(const Palette& palette, u8 index) {
+  const auto color = palette::detail::make_palette_color(palette, index);
+  return {color.r, color.g, color.b};
+}
+
+std::tuple<u8, u8, u8> palette_shaded_entry_to_rgb(const Palette& palette,
+                                                   u8 shade, u8 index) {
+  // Validate inputs
+  if (!is_valid_palette_index(index)) {
+    return {0, 0, 0};  // Black for invalid indices
+  }
+
+  if (!is_valid_shade_index(palette.shade_table_count, shade) ||
+      !palette.has_shade_tables()) {
+    // If shade is invalid or no shade tables, return unshaded color
+    return palette_entry_to_rgb(palette, index);
+  }
+
+  // Look up the shaded palette index
+  const std::size_t shade_offset =
+      static_cast<std::size_t>(shade) * constants::SHADE_TABLE_SIZE + index;
+  const u8 shaded_index = palette.shade_tables[shade_offset];
+
+  // Convert the shaded palette entry to RGB
+  return palette_entry_to_rgb(palette, shaded_index);
+}
+
+color::Color palette_entry_to_color(const Palette& palette, u8 index) {
+  return palette::detail::make_palette_color(palette, index);
+}
+
+color::Color palette_shaded_entry_to_color(const Palette& palette, u8 shade,
+                                           u8 index) {
+  // Validate inputs
+  if (!is_valid_palette_index(index)) {
+    return color::constants::BLACK;  // Black for invalid indices
+  }
+
+  if (!is_valid_shade_index(palette.shade_table_count, shade) ||
+      !palette.has_shade_tables()) {
+    // If shade is invalid or no shade tables, return unshaded color
+    return palette_entry_to_color(palette, index);
+  }
+
+  // Look up the shaded palette index
+  const std::size_t shade_offset =
+      static_cast<std::size_t>(shade) * constants::SHADE_TABLE_SIZE + index;
+  const u8 shaded_index = palette.shade_tables[shade_offset];
+
+  // Convert the shaded palette entry to Color
+  return palette::detail::make_palette_color(palette, shaded_index);
 }
 
 }  // namespace art2img

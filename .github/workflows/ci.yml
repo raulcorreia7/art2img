@@ -2,171 +2,124 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [ main, development ]
   pull_request:
-    branches: [main, master]
-  workflow_dispatch:
+    branches: [ main, development ]
 
 jobs:
-  # Linux build and test
-  linux-build:
-    name: Linux Build and Test
-    runs-on: ubuntu-latest
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: macos-latest
+          - os: windows-latest
+            arch: x64
+          - os: windows-latest
+            arch: Win32
+    
+    runs-on: ${{ matrix.os }}
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Setup CPM dependencies cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/CPM
-            ~/AppData/Local/Temp/CPM
-          key: cpm-${{ runner.os }}-linux-${{ hashFiles('**/CMakeLists.txt') }}
-          restore-keys: |
-            cpm-${{ runner.os }}-linux-
-
-      - name: Setup build cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            build/**/CMakeCache.txt
-            build/**/CMakeFiles/**
-            build/**/cmake_install.cmake
-          key: build-${{ runner.os }}-linux-${{ hashFiles('**/CMakeLists.txt', '**/src/**', '**/include/**', '**/cli/**') }}
-          restore-keys: |
-            build-${{ runner.os }}-linux-
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            clang \
-            lld \
-            pkg-config \
-            cmake \
-            ninja-build
-
-      - name: Configure CMake
-        run: |
-          cmake -B build/linux-x64 \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_TESTS=ON \
-                -DBUILD_DIAGNOSTIC=ON \
-                -DBUILD_SHARED_LIBS=OFF \
-                -G Ninja
-
-      - name: Build Linux binaries
-        run: |
-          cmake --build build/linux-x64 --parallel $(nproc)
-
-      - name: Run tests
-        run: |
-          cd build/linux-x64 && ctest --output-on-failure
-
-  # Windows native build and test
-  windows-build:
-    name: Windows Build and Test
-    runs-on: windows-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup CPM dependencies cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/CPM
-            ~/AppData/Local/Temp/CPM
-          key: cpm-${{ runner.os }}-windows-${{ hashFiles('**/CMakeLists.txt') }}
-          restore-keys: |
-            cpm-${{ runner.os }}-windows-
-
-      - name: Setup build cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            build/**/CMakeCache.txt
-            build/**/CMakeFiles/**
-            build/**/cmake_install.cmake
-          key: build-${{ runner.os }}-windows-${{ hashFiles('**/CMakeLists.txt', '**/src/**', '**/include/**', '**/cli/**') }}
-          restore-keys: |
-            build-${{ runner.os }}-windows-
-
-      - name: Configure CMake for Windows
-        shell: pwsh
-        run: |
-          cmake -B build/windows-x64 `
-                -DCMAKE_BUILD_TYPE=Release `
-                -DBUILD_TESTS=ON `
-                -DBUILD_DIAGNOSTIC=ON `
-                -DBUILD_SHARED_LIBS=OFF `
-                -A x64
-
-      - name: Build Windows binaries
-        shell: pwsh
-        run: |
-          cmake --build build/windows-x64 --config Release --parallel
-
-      - name: Run tests
-        shell: pwsh
-        run: |
-          cd build/windows-x64
-          ctest --output-on-failure -C Release
-
-  # macOS build and test
-  macos-build:
-    name: macOS Build and Test
-    runs-on: macos-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup CPM dependencies cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/CPM
-            ~/AppData/Local/Temp/CPM
-          key: cpm-${{ runner.os }}-macos-${{ hashFiles('**/CMakeLists.txt') }}
-          restore-keys: |
-            cpm-${{ runner.os }}-macos-
-
-      - name: Setup build cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            build/**/CMakeCache.txt
-            build/**/CMakeFiles/**
-            build/**/cmake_install.cmake
-          key: build-${{ runner.os }}-macos-${{ hashFiles('**/CMakeLists.txt', '**/src/**', '**/include/**', '**/cli/**') }}
-          restore-keys: |
-            build-${{ runner.os }}-macos-
-
-      - name: Install dependencies
-        run: |
-          brew install cmake ninja
-
-      - name: Configure CMake
-        run: |
-          cmake -B build/macos-x64 \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_TESTS=ON \
-                -DBUILD_DIAGNOSTIC=ON \
-                -DBUILD_SHARED_LIBS=OFF \
-                -G Ninja
-
-      - name: Build macOS binaries
-        run: |
-          cmake --build build/macos-x64 --parallel $(sysctl -n hw.ncpu)
-
-      - name: Run tests
-        run: |
-          cd build/macos-x64 && ctest --output-on-failure
+    - name: Install dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y lcov
+        
+    - name: Cache CPM dependencies
+      uses: actions/cache@v4
+      with:
+        path: .cache
+        key: ${{ runner.os }}-${{ matrix.arch || 'default' }}-cpm-${{ hashFiles('cmake/CPM.cmake', '**/CMakeLists.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.arch || 'default' }}-cpm-
+          
+    - name: Configure CMake (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON ${{ matrix.arch && format('-A {0}', matrix.arch) || '' }}
+        
+    - name: Configure CMake (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        if [ "${{ runner.os }}" = "macOS" ]; then
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
+        else
+          which ninja && cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -G Ninja || cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
+        fi
+        
+    - name: Build (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        cmake --build build --config Debug --parallel
+        
+    - name: Build (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        if [ "${{ runner.os }}" = "macOS" ]; then
+          cmake --build build --config Debug
+        else
+          which ninja && cmake --build build --config Debug --parallel || cmake --build build --config Debug
+        fi
+        
+    - name: Build Verification
+      if: always()
+      shell: bash
+      run: |
+        cd build
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          if [ ! -f "tests/art2img_tests.exe" ] && [ ! -f "tests/Debug/art2img_tests.exe" ]; then exit 1; fi
+        else
+          if [ ! -f "tests/art2img_tests" ]; then exit 1; fi
+        fi
+        
+    - name: Test
+      if: always()
+      shell: bash
+      run: |
+        cd build
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          ctest --output-on-failure --parallel 1 --timeout 300
+        elif [ "${{ runner.os }}" = "macOS" ]; then
+          ctest --output-on-failure --parallel 1 --timeout 300
+        else
+          ctest --output-on-failure --parallel 1 --timeout 300
+        fi
+        
+    - name: Test Status Check
+      if: always()
+      shell: bash
+      run: |
+        if [ "${{ job.status }}" = "failure" ]; then
+          echo "Job failed on ${{ matrix.os }}"
+          echo "Check the test logs above for specific failure details"
+          exit 1
+        elif [ "${{ job.status }}" = "success" ]; then
+          echo "All tests passed on ${{ matrix.os }}"
+        else
+          echo "Job status: ${{ job.status }} on ${{ matrix.os }}"
+          exit 1
+        fi
+        
+    - name: Generate coverage (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cd build
+        if [ -f coverage.info ]; then
+          lcov --remove coverage.info '/usr/*' --output-file coverage.info
+          lcov --list coverage.info
+        fi
+        
+    - name: Upload coverage (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./build/coverage.info
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false

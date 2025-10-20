@@ -1,1 +1,0 @@
-#include "art2img/exceptions.hpp"

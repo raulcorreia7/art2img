@@ -1,51 +1,64 @@
-cmake_minimum_required(VERSION 3.14)
-project(art2img_cli)
-
-# Create the main executable
-add_executable(art2img
-    cli_app_builder.cpp
-    config.cpp
-    main.cpp
-    processor.cpp
+# ============================================================================
+# DEPENDENCIES
+# ============================================================================
+CPMAddPackage(
+    NAME CLI11
+    VERSION 2.5.0
+    GITHUB_REPOSITORY "CLIUtils/CLI11"
+    GIT_TAG "v2.5.0"
 )
 
-target_sources(art2img
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/../include/BS_thread_pool.hpp
+CPMAddPackage(
+    NAME fmt
+    VERSION 11.0.2
+    GITHUB_REPOSITORY "fmtlib/fmt"
+    GIT_TAG "11.0.2"
 )
 
+# ============================================================================
+# CLI EXECUTABLE
+# ============================================================================
+add_executable(art2img_cli main.cpp)
 
-
-# Set target properties
-set_target_properties(art2img
-    PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-)
-
-# Set C++ standard via compile features
-target_compile_features(art2img
-    PRIVATE
-        cxx_std_20
-)
-
-# Add include directories
-target_include_directories(art2img
-    PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src
-    ${CMAKE_BINARY_DIR}/include
-)
-
-# Link the library
-target_link_libraries(art2img
-    PRIVATE
-    art2img_extractor
+target_link_libraries(art2img_cli 
+    PRIVATE 
+    art2img_core
     CLI11::CLI11
+    fmt::fmt
 )
 
-# Install the CLI executable if requested
-if(BUILD_CLI)
-    install(TARGETS art2img
-        DESTINATION bin
+target_include_directories(art2img_cli 
+    PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+
+# ============================================================================
+# INSTALLATION
+# ============================================================================
+install(TARGETS art2img_cli
+    RUNTIME DESTINATION bin
+    COMPONENT cli
+)
+
+if(UNIX AND NOT APPLE)
+    install(CODE "
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} -E create_symlink
+            art2img_cli
+            \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/bin/art2img
+        )
+    " COMPONENT cli)
+elseif(WIN32)
+    install(TARGETS art2img_cli
+        RUNTIME DESTINATION bin
+        RENAME art2img.exe
+        COMPONENT cli
+    )
+else()
+    install(TARGETS art2img_cli
+        RUNTIME DESTINATION bin
+        RENAME art2img
+        COMPONENT cli
     )
 endif()
