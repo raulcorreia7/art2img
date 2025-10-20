@@ -9,16 +9,42 @@
 #include <vector>
 #include <cstdint>
 
-// Include the new vNext modules that we'll forward to
-#include <art2img/types.hpp>
-#include <art2img/art.hpp>
-#include <art2img/palette.hpp>
-#include <art2img/convert.hpp>
-#include <art2img/encode.hpp>
-#include <art2img/io.hpp>
-#include <art2img/error.hpp>
+// Try to include expected, fallback if not available
+#if __has_include(<expected>)
+#include <expected>
+#endif
+
+// Forward declare new API types to avoid circular dependencies
+namespace art2img {
+    struct Palette;
+    struct ArtData;
+    struct TileView;
+    struct TileAnimation;
+    struct Image;
+    struct ImageView;
+    enum class ImageFormat : uint8_t;
+    struct ConversionOptions;
+    struct PngOptions;
+    struct TgaOptions;
+    struct BmpOptions;
+    struct Error;
+}
 
 namespace art2img {
+
+// Forward declarations for new API types
+struct ArtData;
+struct TileView;
+struct TileAnimation;
+struct Image;
+struct ImageView;
+enum class ImageFormat : uint8_t;
+struct ConversionOptions;
+struct PngOptions;
+struct TgaOptions;
+struct BmpOptions;
+struct Error;
+
 namespace legacy {
 
 // ============================================================================
@@ -36,7 +62,7 @@ public:
 // ============================================================================
 
 /// @brief Legacy image format enumeration (matches original API)
-enum class ImageFormat { PNG, TGA, BMP };
+enum class LegacyImageFormat { PNG, TGA, BMP };
 
 // ============================================================================
 // LEGACY STRUCTS
@@ -198,7 +224,7 @@ public:
     uint8_t get_blue(size_t index) const;
 
 private:
-    std::unique_ptr<::art2img::Palette> palette_;
+    std::unique_ptr<art2img::Palette> palette_;
     std::vector<uint8_t> raw_data_;
     bool loaded_ = false;
 
@@ -223,13 +249,13 @@ public:
     };
 
     // Write image to file
-    static bool write_image(const std::filesystem::path& filename, ImageFormat format,
+    static bool write_image(const std::filesystem::path& filename, LegacyImageFormat format,
                             const Palette& palette, const ArtFile::Tile& tile,
                             const uint8_t* pixel_data, size_t pixel_data_size,
                             const Options& options = Options());
 
     // Write image to memory
-    static bool write_image_to_memory(std::vector<uint8_t>& output, ImageFormat format,
+    static bool write_image_to_memory(std::vector<uint8_t>& output, LegacyImageFormat format,
                                       const Palette& palette, const ArtFile::Tile& tile,
                                       const uint8_t* pixel_data, size_t pixel_data_size,
                                       const Options& options = Options());
@@ -306,7 +332,7 @@ struct ImageView {
     uint32_t other_flags() const;
 
     // Image saving (conversion + write happens here)
-    bool save_to_image(const std::filesystem::path& path, ImageFormat format,
+    bool save_to_image(const std::filesystem::path& path, LegacyImageFormat format,
                        ImageWriter::Options options = ImageWriter::Options()) const;
     bool save_to_png(const std::filesystem::path& path,
                      ImageWriter::Options options = ImageWriter::Options()) const;
@@ -315,7 +341,7 @@ struct ImageView {
 
     // Image extraction to memory
     std::vector<uint8_t> extract_to_image(
-        ImageFormat format, ImageWriter::Options options = ImageWriter::Options()) const;
+        LegacyImageFormat format, ImageWriter::Options options = ImageWriter::Options()) const;
     std::vector<uint8_t> extract_to_png(ImageWriter::Options options = ImageWriter::Options()) const;
     std::vector<uint8_t> extract_to_tga() const;
     std::vector<uint8_t> extract_to_bmp() const;
@@ -346,8 +372,8 @@ public:
     void set_blood_default_palette();
 
     // Extraction methods
-    ExtractionResult extract_tile(uint32_t tile_index, ImageFormat format,
-                                  ImageWriter::Options options = ImageWriter::Options());
+    ExtractionResult extract_tile(uint32_t tile_index, LegacyImageFormat format,
+                                   ImageWriter::Options options = ImageWriter::Options());
     ExtractionResult extract_tile_png(uint32_t tile_index,
                                       ImageWriter::Options options = ImageWriter::Options());
     ExtractionResult extract_tile_tga(uint32_t tile_index,
@@ -357,7 +383,7 @@ public:
 
     // Batch extraction
     std::vector<ExtractionResult> extract_all_tiles(
-        ImageFormat format, ImageWriter::Options options = ImageWriter::Options());
+        LegacyImageFormat format, ImageWriter::Options options = ImageWriter::Options());
     std::vector<ExtractionResult> extract_all_tiles_png(
         ImageWriter::Options options = ImageWriter::Options());
     std::vector<ExtractionResult> extract_all_tiles_tga(
@@ -384,12 +410,11 @@ private:
     // Helper for animation data
     std::string get_animation_type_string(uint32_t anim_type) const;
     
-    // Helper methods for conversion
-    ExtractionResult create_extraction_result(
-        const std::expected<std::vector<byte>, Error>& result,
-        uint32_t tile_index,
-        const std::string& format,
-        const TileView& tile_view) const;
+    
 };
 
+// For backward compatibility, also provide the old enum name
+// using ImageFormat = LegacyImageFormat; // Commented out to avoid conflicts
+
+} // namespace legacy
 } // namespace art2img

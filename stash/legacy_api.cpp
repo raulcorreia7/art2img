@@ -2,17 +2,20 @@
 // It forwards all legacy API calls to the new vNext modules
 
 #include <art2img/legacy_api.hpp>
+#include <art2img/api.hpp>
 #include <algorithm>
 #include <fstream>
 #include <sstream>
 
+using namespace art2img;
+using namespace art2img::legacy;
 using namespace art2img::types;
-
-namespace art2img {
 
 // ============================================================================
 // LEGACY ART FILE IMPLEMENTATION
 // ============================================================================
+
+namespace art2img::legacy {
 
 ArtFile::ArtFile() : art_data_(std::make_unique<ArtData>()), is_open_(false) {
 }
@@ -275,16 +278,16 @@ void Palette::update_raw_data() {
 // LEGACY IMAGE WRITER IMPLEMENTATION
 // ============================================================================
 
-bool ImageWriter::write_image(const std::filesystem::path& filename, ImageFormat format,
+bool ImageWriter::write_image(const std::filesystem::path& filename, LegacyImageFormat format,
                               const Palette& palette, const ArtFile::Tile& tile,
                               const uint8_t* pixel_data, size_t pixel_data_size,
                               const Options& options) {
     // Convert legacy format to new format
     ::art2img::ImageFormat new_format;
     switch (format) {
-        case ImageFormat::PNG: new_format = ::art2img::ImageFormat::png; break;
-        case ImageFormat::TGA: new_format = ::art2img::ImageFormat::tga; break;
-        case ImageFormat::BMP: new_format = ::art2img::ImageFormat::bmp; break;
+        case LegacyImageFormat::PNG: new_format = ::art2img::ImageFormat::png; break;
+        case LegacyImageFormat::TGA: new_format = ::art2img::ImageFormat::tga; break;
+        case LegacyImageFormat::BMP: new_format = ::art2img::ImageFormat::bmp; break;
         default: return false;
     }
     
@@ -314,16 +317,16 @@ bool ImageWriter::write_image(const std::filesystem::path& filename, ImageFormat
     return write_result.has_value();
 }
 
-bool ImageWriter::write_image_to_memory(std::vector<uint8_t>& output, ImageFormat format,
+bool ImageWriter::write_image_to_memory(std::vector<uint8_t>& output, LegacyImageFormat format,
                                         const Palette& palette, const ArtFile::Tile& tile,
                                         const uint8_t* pixel_data, size_t pixel_data_size,
                                         const Options& options) {
     // Convert legacy format to new format
     ::art2img::ImageFormat new_format;
     switch (format) {
-        case ImageFormat::PNG: new_format = ::art2img::ImageFormat::png; break;
-        case ImageFormat::TGA: new_format = ::art2img::ImageFormat::tga; break;
-        case ImageFormat::BMP: new_format = ::art2img::ImageFormat::bmp; break;
+        case LegacyImageFormat::PNG: new_format = ::art2img::ImageFormat::png; break;
+        case LegacyImageFormat::TGA: new_format = ::art2img::ImageFormat::tga; break;
+        case LegacyImageFormat::BMP: new_format = ::art2img::ImageFormat::bmp; break;
         default: return false;
     }
     
@@ -444,7 +447,7 @@ uint32_t ImageView::other_flags() const {
     return require_tile().other_flags();
 }
 
-bool ImageView::save_to_image(const std::filesystem::path& path, ImageFormat format,
+bool ImageView::save_to_image(const std::filesystem::path& path, LegacyImageFormat format,
                               ImageWriter::Options options) const {
     if (!parent || !parent->palette) {
         return false;
@@ -458,19 +461,19 @@ bool ImageView::save_to_image(const std::filesystem::path& path, ImageFormat for
 
 bool ImageView::save_to_png(const std::filesystem::path& path,
                             ImageWriter::Options options) const {
-    return save_to_image(path, ImageFormat::PNG, options);
+    return save_to_image(path, LegacyImageFormat::PNG, options);
 }
 
 bool ImageView::save_to_tga(const std::filesystem::path& path) const {
-    return save_to_image(path, ImageFormat::TGA, ImageWriter::Options());
+    return save_to_image(path, LegacyImageFormat::TGA, ImageWriter::Options());
 }
 
 bool ImageView::save_to_bmp(const std::filesystem::path& path) const {
-    return save_to_image(path, ImageFormat::BMP, ImageWriter::Options());
+    return save_to_image(path, LegacyImageFormat::BMP, ImageWriter::Options());
 }
 
 std::vector<uint8_t> ImageView::extract_to_image(
-    ImageFormat format, ImageWriter::Options options) const {
+    LegacyImageFormat format, ImageWriter::Options options) const {
     if (!parent || !parent->palette) {
         return {};
     }
@@ -486,15 +489,15 @@ std::vector<uint8_t> ImageView::extract_to_image(
 }
 
 std::vector<uint8_t> ImageView::extract_to_png(ImageWriter::Options options) const {
-    return extract_to_image(ImageFormat::PNG, options);
+    return extract_to_image(LegacyImageFormat::PNG, options);
 }
 
 std::vector<uint8_t> ImageView::extract_to_tga() const {
-    return extract_to_image(ImageFormat::TGA, ImageWriter::Options());
+    return extract_to_image(LegacyImageFormat::TGA, ImageWriter::Options());
 }
 
 std::vector<uint8_t> ImageView::extract_to_bmp() const {
-    return extract_to_image(ImageFormat::BMP, ImageWriter::Options());
+    return extract_to_image(LegacyImageFormat::BMP, ImageWriter::Options());
 }
 
 const ArtFile::Tile& ImageView::require_tile() const {
@@ -537,7 +540,7 @@ void ExtractorAPI::set_blood_default_palette() {
     palette_->load_blood_default();
 }
 
-ExtractionResult ExtractorAPI::extract_tile(uint32_t tile_index, ImageFormat format,
+ExtractionResult ExtractorAPI::extract_tile(uint32_t tile_index, LegacyImageFormat format,
                                             ImageWriter::Options options) {
     if (!art_file_->is_open() || !palette_->is_loaded()) {
         ExtractionResult result;
@@ -581,15 +584,15 @@ ExtractionResult ExtractorAPI::extract_tile(uint32_t tile_index, ImageFormat for
     ::art2img::ImageFormat new_format;
     std::string format_str;
     switch (format) {
-        case ImageFormat::PNG: 
+        case LegacyImageFormat::PNG: 
             new_format = ::art2img::ImageFormat::png; 
             format_str = "png";
             break;
-        case ImageFormat::TGA: 
+        case LegacyImageFormat::TGA: 
             new_format = ::art2img::ImageFormat::tga; 
             format_str = "tga";
             break;
-        case ImageFormat::BMP: 
+        case LegacyImageFormat::BMP: 
             new_format = ::art2img::ImageFormat::bmp; 
             format_str = "bmp";
             break;
@@ -615,21 +618,21 @@ ExtractionResult ExtractorAPI::extract_tile(uint32_t tile_index, ImageFormat for
 
 ExtractionResult ExtractorAPI::extract_tile_png(uint32_t tile_index,
                                                 ImageWriter::Options options) {
-    return extract_tile(tile_index, ImageFormat::PNG, options);
+    return extract_tile(tile_index, LegacyImageFormat::PNG, options);
 }
 
 ExtractionResult ExtractorAPI::extract_tile_tga(uint32_t tile_index,
                                                 ImageWriter::Options options) {
-    return extract_tile(tile_index, ImageFormat::TGA, options);
+    return extract_tile(tile_index, LegacyImageFormat::TGA, options);
 }
 
 ExtractionResult ExtractorAPI::extract_tile_bmp(uint32_t tile_index,
                                                 ImageWriter::Options options) {
-    return extract_tile(tile_index, ImageFormat::BMP, options);
+    return extract_tile(tile_index, LegacyImageFormat::BMP, options);
 }
 
 std::vector<ExtractionResult> ExtractorAPI::extract_all_tiles(
-    ImageFormat format, ImageWriter::Options options) {
+    LegacyImageFormat format, ImageWriter::Options options) {
     std::vector<ExtractionResult> results;
     
     if (!art_file_->is_open() || !palette_->is_loaded()) {
@@ -652,17 +655,17 @@ std::vector<ExtractionResult> ExtractorAPI::extract_all_tiles(
 
 std::vector<ExtractionResult> ExtractorAPI::extract_all_tiles_png(
     ImageWriter::Options options) {
-    return extract_all_tiles(ImageFormat::PNG, options);
+    return extract_all_tiles(LegacyImageFormat::PNG, options);
 }
 
 std::vector<ExtractionResult> ExtractorAPI::extract_all_tiles_tga(
     ImageWriter::Options options) {
-    return extract_all_tiles(ImageFormat::TGA, options);
+    return extract_all_tiles(LegacyImageFormat::TGA, options);
 }
 
 std::vector<ExtractionResult> ExtractorAPI::extract_all_tiles_bmp(
     ImageWriter::Options options) {
-    return extract_all_tiles(ImageFormat::BMP, options);
+    return extract_all_tiles(LegacyImageFormat::BMP, options);
 }
 
 bool ExtractorAPI::is_art_loaded() const {
@@ -765,7 +768,9 @@ ExtractionResult ExtractorAPI::create_extraction_result(
     
     // Copy encoded data
     const auto& encoded_data = result.value();
-    extraction_result.image_data.assign(encoded_data.begin(), encoded_data.end());
+    extraction_result.image_data.resize(encoded_data.size());
+    std::transform(encoded_data.begin(), encoded_data.end(), extraction_result.image_data.begin(),
+                   [](byte b) { return static_cast<uint8_t>(b); });
     
     // Copy animation data
     extraction_result.anim_frames = tile_view.animation.frame_count;
@@ -778,4 +783,4 @@ ExtractionResult ExtractorAPI::create_extraction_result(
     return extraction_result;
 }
 
-} // namespace art2img
+} // namespace art2img::legacy
