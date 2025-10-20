@@ -21,11 +21,12 @@
 /// validation according to Architecture §14 validation rules.
 
 #include <algorithm>
-#include <art2img/palette.hpp>
-#include <art2img/palette/detail/palette_color.hpp>
 #include <cstring>
 #include <fstream>
 #include <tuple>
+
+#include <art2img/palette.hpp>
+#include <art2img/palette/detail/palette_color.hpp>
 
 namespace art2img {
 using art2img::types::byte;
@@ -54,9 +55,9 @@ u16 read_u16_le(std::span<const byte> data, std::size_t offset) {
          (static_cast<u16>(static_cast<u8>(data[offset + 1])) << 8);
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
-std::expected<Palette, Error> load_palette(const std::filesystem::path &path) {
+std::expected<Palette, Error> load_palette(const std::filesystem::path& path) {
   // Open file in binary mode
   std::ifstream file(path, std::ios::binary | std::ios::ate);
   if (!file) {
@@ -81,7 +82,7 @@ std::expected<Palette, Error> load_palette(const std::filesystem::path &path) {
 
   // Read entire file into buffer
   std::vector<std::byte> buffer(static_cast<std::size_t>(file_size));
-  if (!file.read(reinterpret_cast<char *>(buffer.data()), file_size)) {
+  if (!file.read(reinterpret_cast<char*>(buffer.data()), file_size)) {
     return make_error_expected<Palette>(
         errc::io_failure, "Failed to read palette file: " + path.string());
   }
@@ -111,7 +112,7 @@ std::expected<Palette, Error> load_palette(std::span<const byte> data) {
   offset += 2;
 
   // Validate shade table count
-  if (palette.shade_table_count > 256) { // Reasonable upper limit
+  if (palette.shade_table_count > 256) {  // Reasonable upper limit
     return make_error_expected<Palette>(
         errc::invalid_palette, "Invalid shade table count: " +
                                    std::to_string(palette.shade_table_count));
@@ -153,26 +154,26 @@ std::expected<Palette, Error> load_palette(std::span<const byte> data) {
   return palette;
 }
 
-u32 palette_entry_to_rgba(const Palette &palette, u8 index) {
+u32 palette_entry_to_rgba(const Palette& palette, u8 index) {
   return palette::detail::make_palette_color(palette, index)
       .to_packed(color::Format::RGBA);
 }
 
-u32 palette_shaded_entry_to_rgba(const Palette &palette, u8 shade, u8 index) {
+u32 palette_shaded_entry_to_rgba(const Palette& palette, u8 shade, u8 index) {
   return palette_shaded_entry_to_color(palette, shade, index)
       .to_packed(color::Format::RGBA);
 }
 
-std::tuple<u8, u8, u8> palette_entry_to_rgb(const Palette &palette, u8 index) {
+std::tuple<u8, u8, u8> palette_entry_to_rgb(const Palette& palette, u8 index) {
   const auto color = palette::detail::make_palette_color(palette, index);
   return {color.r, color.g, color.b};
 }
 
-std::tuple<u8, u8, u8> palette_shaded_entry_to_rgb(const Palette &palette,
+std::tuple<u8, u8, u8> palette_shaded_entry_to_rgb(const Palette& palette,
                                                    u8 shade, u8 index) {
   // Validate inputs
   if (!is_valid_palette_index(index)) {
-    return {0, 0, 0}; // Black for invalid indices
+    return {0, 0, 0};  // Black for invalid indices
   }
 
   if (!is_valid_shade_index(palette.shade_table_count, shade) ||
@@ -190,15 +191,15 @@ std::tuple<u8, u8, u8> palette_shaded_entry_to_rgb(const Palette &palette,
   return palette_entry_to_rgb(palette, shaded_index);
 }
 
-color::Color palette_entry_to_color(const Palette &palette, u8 index) {
+color::Color palette_entry_to_color(const Palette& palette, u8 index) {
   return palette::detail::make_palette_color(palette, index);
 }
 
-color::Color palette_shaded_entry_to_color(const Palette &palette, u8 shade,
+color::Color palette_shaded_entry_to_color(const Palette& palette, u8 shade,
                                            u8 index) {
   // Validate inputs
   if (!is_valid_palette_index(index)) {
-    return color::constants::BLACK; // Black for invalid indices
+    return color::constants::BLACK;  // Black for invalid indices
   }
 
   if (!is_valid_shade_index(palette.shade_table_count, shade) ||
@@ -216,4 +217,4 @@ color::Color palette_shaded_entry_to_color(const Palette &palette, u8 shade,
   return palette::detail::make_palette_color(palette, shaded_index);
 }
 
-} // namespace art2img
+}  // namespace art2img

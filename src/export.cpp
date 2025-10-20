@@ -1,11 +1,12 @@
-#include <art2img/convert.hpp>
-#include <art2img/encode.hpp>
-#include <art2img/export.hpp>
-#include <art2img/io.hpp>
 #include <filesystem>
 #include <string>
 #include <system_error>
 #include <thread>
+
+#include <art2img/convert.hpp>
+#include <art2img/encode.hpp>
+#include <art2img/export.hpp>
+#include <art2img/io.hpp>
 
 namespace art2img {
 
@@ -14,22 +15,21 @@ namespace {
 /// @brief Get file extension for the given image format
 std::string get_extension(ImageFormat format) {
   switch (format) {
-  case ImageFormat::png:
-    return "png";
-  case ImageFormat::tga:
-    return "tga";
-  case ImageFormat::bmp:
-    return "bmp";
-  default:
-    return "bin";
+    case ImageFormat::png:
+      return "png";
+    case ImageFormat::tga:
+      return "tga";
+    case ImageFormat::bmp:
+      return "bmp";
+    default:
+      return "bin";
   }
 }
 
 /// @brief Generate output path for a tile
-std::filesystem::path generate_output_path(const std::string &base_name,
+std::filesystem::path generate_output_path(const std::string& base_name,
                                            std::size_t tile_index,
-                                           const ExportOptions &options) {
-
+                                           const ExportOptions& options) {
   std::filesystem::path output_path = options.output_dir;
 
   if (options.organize_by_format) {
@@ -56,15 +56,14 @@ std::filesystem::path generate_output_path(const std::string &base_name,
 
 /// @brief Export a single tile with the given options
 std::expected<std::filesystem::path, Error> export_single_tile_internal(
-    const TileView &tile, const Palette &palette, const std::string &base_name,
-    std::size_t tile_index, const ExportOptions &options) {
-
+    const TileView& tile, const Palette& palette, const std::string& base_name,
+    std::size_t tile_index, const ExportOptions& options) {
   // Convert tile to RGBA image
   auto image_result = to_rgba(tile, palette, options.conversion_options);
   if (!image_result) {
     return std::unexpected(image_result.error());
   }
-  const auto &image = image_result.value();
+  const auto& image = image_result.value();
 
   // Create image view
   auto image_view = art2img::image_view(image);
@@ -87,12 +86,11 @@ std::expected<std::filesystem::path, Error> export_single_tile_internal(
   return output_path;
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
-std::expected<ExportResult, Error> export_tile(const TileView &tile,
-                                               const Palette &palette,
-                                               const ExportOptions &options) {
-
+std::expected<ExportResult, Error> export_tile(const TileView& tile,
+                                               const Palette& palette,
+                                               const ExportOptions& options) {
   if (!tile.is_valid()) {
     return std::unexpected(Error{errc::invalid_art, "Invalid tile provided"});
   }
@@ -106,22 +104,21 @@ std::expected<ExportResult, Error> export_tile(const TileView &tile,
       .total_tiles = 1, .exported_tiles = 1, .output_files = {result.value()}};
 }
 
-std::expected<ExportResult, Error>
-export_art_bundle(const ArtData &art_data, const Palette &palette,
-                  const ExportOptions &options) {
-
+std::expected<ExportResult, Error> export_art_bundle(
+    const ArtData& art_data, const Palette& palette,
+    const ExportOptions& options) {
   ExportResult result;
   result.total_tiles = art_data.tile_count();
 
   for (std::size_t i = 0; i < art_data.tile_count(); ++i) {
     auto tile_result = art_data.get_tile(i);
     if (!tile_result) {
-      continue; // Skip invalid tiles
+      continue;  // Skip invalid tiles
     }
 
-    const auto &tile = tile_result.value();
+    const auto& tile = tile_result.value();
     if (!tile.is_valid()) {
-      continue; // Skip invalid tiles
+      continue;  // Skip invalid tiles
     }
 
     auto export_result =
@@ -135,19 +132,18 @@ export_art_bundle(const ArtData &art_data, const Palette &palette,
   return result;
 }
 
-std::expected<ExportResult, Error>
-export_art_files(const std::vector<std::filesystem::path> &art_files,
-                 const Palette &palette, const ExportOptions &options) {
-
+std::expected<ExportResult, Error> export_art_files(
+    const std::vector<std::filesystem::path>& art_files, const Palette& palette,
+    const ExportOptions& options) {
   ExportResult result;
 
-  for (const auto &art_path : art_files) {
+  for (const auto& art_path : art_files) {
     auto art_result = load_art_bundle(art_path);
     if (!art_result) {
-      continue; // Skip files that can't be loaded
+      continue;  // Skip files that can't be loaded
     }
 
-    const auto &art_data = art_result.value();
+    const auto& art_data = art_result.value();
     result.total_tiles += art_data.tile_count();
 
     std::string base_name = art_path.filename().string();
@@ -163,7 +159,7 @@ export_art_files(const std::vector<std::filesystem::path> &art_files,
         continue;
       }
 
-      const auto &tile = tile_result.value();
+      const auto& tile = tile_result.value();
       if (!tile.is_valid()) {
         continue;
       }
@@ -180,4 +176,4 @@ export_art_files(const std::vector<std::filesystem::path> &art_files,
   return result;
 }
 
-} // namespace art2img
+}  // namespace art2img

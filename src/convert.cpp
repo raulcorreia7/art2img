@@ -18,12 +18,13 @@
 /// validation according to Architecture §14 validation rules.
 
 #include <algorithm>
+#include <cstring>
+#include <limits>
+
 #include <art2img/color_helpers.hpp>
 #include <art2img/convert.hpp>
 #include <art2img/convert/detail/pixel_converter.hpp>
 #include <art2img/types.hpp>
-#include <cstring>
-#include <limits>
 
 namespace art2img {
 
@@ -32,13 +33,14 @@ using types::u16;
 using types::u8;
 
 /// @brief Validate coordinates are within tile bounds
-constexpr bool is_valid_coordinates(const TileView &tile, u16 x,
+constexpr bool is_valid_coordinates(const TileView& tile, u16 x,
                                     u16 y) noexcept {
   return x < tile.width && y < tile.height;
 }
+
 /// @brief Write RGBA value to destination buffer (RGBA format)
 void write_rgba(mutable_u8_span dest, std::size_t offset,
-                const color::Color &color) noexcept {
+                const color::Color& color) noexcept {
   if (offset + constants::RGBA_BYTES_PER_PIXEL <= dest.size()) {
     color::write_rgba(dest.data() + offset, color);
   }
@@ -46,17 +48,17 @@ void write_rgba(mutable_u8_span dest, std::size_t offset,
 
 /// @brief For pixels that are fully transparent, set them to neutral color to
 /// prevent halo effects
-void clean_transparent_pixels(std::vector<u8> &rgba_data, u16 width,
+void clean_transparent_pixels(std::vector<u8>& rgba_data, u16 width,
                               u16 height) {
   for (u16 y = 0; y < height; ++y) {
     for (u16 x = 0; x < width; ++x) {
       const std::size_t idx = (static_cast<std::size_t>(y) * width + x) * 4;
       if (idx + 3 < rgba_data.size() &&
-          rgba_data[idx + 3] == 0) { // Fully transparent pixel
+          rgba_data[idx + 3] == 0) {  // Fully transparent pixel
         // Set RGB to black to prevent magenta bleeding/halo effects
-        rgba_data[idx + 0] = 0; // R
-        rgba_data[idx + 1] = 0; // G
-        rgba_data[idx + 2] = 0; // B
+        rgba_data[idx + 0] = 0;  // R
+        rgba_data[idx + 1] = 0;  // G
+        rgba_data[idx + 2] = 0;  // B
       }
     }
   }
@@ -64,7 +66,7 @@ void clean_transparent_pixels(std::vector<u8> &rgba_data, u16 width,
 
 /// @brief Apply matte hygiene (erosion + blur) to remove halo effects from
 /// alpha channel
-void apply_matte_hygiene(std::vector<u8> &rgba_data, u16 width, u16 height) {
+void apply_matte_hygiene(std::vector<u8>& rgba_data, u16 width, u16 height) {
   // Extract alpha channel
   std::vector<u8> alpha(static_cast<std::size_t>(width) * height);
   for (u16 y = 0; y < height; ++y) {
@@ -87,10 +89,10 @@ void apply_matte_hygiene(std::vector<u8> &rgba_data, u16 width, u16 height) {
         const std::size_t idx = static_cast<std::size_t>(y) * width + x;
         if (alpha[idx] > 0) {
           u8 min_neighbor = 255;
-          min_neighbor = std::min(min_neighbor, alpha[idx - width]); // top
-          min_neighbor = std::min(min_neighbor, alpha[idx + width]); // bottom
-          min_neighbor = std::min(min_neighbor, alpha[idx - 1]);     // left
-          min_neighbor = std::min(min_neighbor, alpha[idx + 1]);     // right
+          min_neighbor = std::min(min_neighbor, alpha[idx - width]);  // top
+          min_neighbor = std::min(min_neighbor, alpha[idx + width]);  // bottom
+          min_neighbor = std::min(min_neighbor, alpha[idx - 1]);      // left
+          min_neighbor = std::min(min_neighbor, alpha[idx + 1]);      // right
           eroded[idx] = min_neighbor;
         }
       }
@@ -126,16 +128,18 @@ void apply_matte_hygiene(std::vector<u8> &rgba_data, u16 width, u16 height) {
   }
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 // ============================================================================
 // ColumnMajorRowRange Implementation
 // ============================================================================
 
-ColumnMajorRowRange::iterator::iterator(const TileView &tile,
+ColumnMajorRowRange::iterator::iterator(const TileView& tile,
                                         std::span<u8> scratch)
-    : tile_(&tile), scratch_(scratch), current_row_(0), max_rows_(tile.height) {
-}
+    : tile_(&tile),
+      scratch_(scratch),
+      current_row_(0),
+      max_rows_(tile.height) {}
 
 ColumnMajorRowRange::iterator::iterator(u16 current_row, u16 max_rows)
     : current_row_(current_row), max_rows_(max_rows) {}
@@ -154,14 +158,14 @@ auto ColumnMajorRowRange::iterator::operator*() const -> value_type {
     if (pixel_result) {
       row_span[x] = pixel_result.value();
     } else {
-      row_span[x] = 0; // Default to black on error
+      row_span[x] = 0;  // Default to black on error
     }
   }
 
   return value_type(row_span.data(), row_span.size());
 }
 
-auto ColumnMajorRowRange::iterator::operator++() -> iterator & {
+auto ColumnMajorRowRange::iterator::operator++() -> iterator& {
   ++current_row_;
   return *this;
 }
@@ -173,7 +177,7 @@ auto ColumnMajorRowRange::iterator::operator++(int) -> iterator {
 }
 
 bool ColumnMajorRowRange::iterator::operator==(
-    const iterator &other) const noexcept {
+    const iterator& other) const noexcept {
   const bool lhs_at_end = current_row_ >= max_rows_;
   const bool rhs_at_end = other.current_row_ >= other.max_rows_;
   if (lhs_at_end && rhs_at_end) {
@@ -183,11 +187,11 @@ bool ColumnMajorRowRange::iterator::operator==(
 }
 
 bool ColumnMajorRowRange::iterator::operator!=(
-    const iterator &other) const noexcept {
+    const iterator& other) const noexcept {
   return !(*this == other);
 }
 
-ColumnMajorRowRange::ColumnMajorRowRange(const TileView &tile,
+ColumnMajorRowRange::ColumnMajorRowRange(const TileView& tile,
                                          std::span<u8> scratch)
     : tile_(&tile), scratch_(scratch) {}
 
@@ -213,10 +217,9 @@ auto ColumnMajorRowRange::end() const -> iterator {
 // CONVERSION FUNCTIONS IMPLEMENTATION
 // ============================================================================
 
-std::expected<Image, Error> to_rgba(const TileView &tile,
-                                    const Palette &palette,
-                                    const ConversionOptions &options) {
-
+std::expected<Image, Error> to_rgba(const TileView& tile,
+                                    const Palette& palette,
+                                    const ConversionOptions& options) {
   // Validate inputs
   if (!tile.is_valid()) {
     return make_error_expected<Image>(
@@ -288,11 +291,12 @@ std::expected<Image, Error> to_rgba(const TileView &tile,
   return result;
 }
 
-ImageView image_view(const Image &image) { return ImageView(image); }
+ImageView image_view(const Image& image) {
+  return ImageView(image);
+}
 
-std::expected<std::monostate, Error>
-convert_column_to_row_major(const TileView &tile, std::span<u8> destination) {
-
+std::expected<std::monostate, Error> convert_column_to_row_major(
+    const TileView& tile, std::span<u8> destination) {
   // Validate inputs
   if (!tile.is_valid()) {
     return make_error_expected(
@@ -327,9 +331,8 @@ convert_column_to_row_major(const TileView &tile, std::span<u8> destination) {
   return make_success();
 }
 
-std::expected<u8, Error> get_pixel_column_major(const TileView &tile, u16 x,
+std::expected<u8, Error> get_pixel_column_major(const TileView& tile, u16 x,
                                                 u16 y) {
-
   // Validate coordinates
   if (!is_valid_coordinates(tile, x, y)) {
     return make_error_expected<u8>(
@@ -360,9 +363,9 @@ std::expected<u8, Error> get_pixel_column_major(const TileView &tile, u16 x,
   return tile.pixels[linear_index];
 }
 
-ColumnMajorRowRange make_column_major_row_iterator(const TileView &tile,
+ColumnMajorRowRange make_column_major_row_iterator(const TileView& tile,
                                                    std::span<u8> scratch) {
   return ColumnMajorRowRange(tile, scratch);
 }
 
-} // namespace art2img
+}  // namespace art2img

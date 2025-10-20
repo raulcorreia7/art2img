@@ -11,10 +11,11 @@
 /// All functions use std::expected<T, Error> for error handling with proper
 /// validation according to Architecture §14 validation rules.
 
-#include <art2img/io.hpp>
 #include <fstream>
 #include <sstream>
 #include <system_error>
+
+#include <art2img/io.hpp>
 
 namespace art2img {
 
@@ -22,8 +23,8 @@ namespace art2img {
 // FILE I/O FUNCTIONS
 // ============================================================================
 
-std::expected<std::vector<types::byte>, Error>
-read_binary_file(const std::filesystem::path &path) {
+std::expected<std::vector<types::byte>, Error> read_binary_file(
+    const std::filesystem::path& path) {
   // Open file in binary mode
   std::ifstream file(path, std::ios::binary);
   if (!file) {
@@ -53,7 +54,7 @@ read_binary_file(const std::filesystem::path &path) {
   }
 
   // Check file size is reasonable (prevent memory exhaustion)
-  constexpr std::streamsize MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB limit
+  constexpr std::streamsize MAX_FILE_SIZE = 100 * 1024 * 1024;  // 100MB limit
   if (file_size > MAX_FILE_SIZE) {
     return make_error_expected<std::vector<types::byte>>(
         errc::io_failure, "File too large: " + path.string() + " (" +
@@ -62,7 +63,7 @@ read_binary_file(const std::filesystem::path &path) {
 
   // Read file into buffer
   std::vector<types::byte> buffer(static_cast<std::size_t>(file_size));
-  if (!file.read(reinterpret_cast<char *>(buffer.data()), file_size)) {
+  if (!file.read(reinterpret_cast<char*>(buffer.data()), file_size)) {
     return make_error_expected<std::vector<types::byte>>(
         errc::io_failure, "Failed to read file: " + path.string());
   }
@@ -70,9 +71,8 @@ read_binary_file(const std::filesystem::path &path) {
   return buffer;
 }
 
-std::expected<std::monostate, Error>
-write_binary_file(const std::filesystem::path &path,
-                  std::span<const types::byte> data) {
+std::expected<std::monostate, Error> write_binary_file(
+    const std::filesystem::path& path, std::span<const types::byte> data) {
   // Create parent directory if it doesn't exist
   const std::filesystem::path parent_dir = path.parent_path();
   if (!parent_dir.empty() && !std::filesystem::exists(parent_dir)) {
@@ -92,7 +92,7 @@ write_binary_file(const std::filesystem::path &path,
   }
 
   // Write data to file
-  if (!file.write(reinterpret_cast<const char *>(data.data()),
+  if (!file.write(reinterpret_cast<const char*>(data.data()),
                   static_cast<std::streamsize>(data.size()))) {
     return make_error_expected<std::monostate>(
         errc::io_failure, "Failed to write to file: " + path.string());
@@ -111,13 +111,13 @@ write_binary_file(const std::filesystem::path &path,
 // UTILITY FUNCTIONS
 // ============================================================================
 
-std::expected<std::monostate, Error>
-check_file_readable(const std::filesystem::path &path) {
+std::expected<std::monostate, Error> check_file_readable(
+    const std::filesystem::path& path) {
   std::error_code ec;
   if (!std::filesystem::exists(path, ec)) {
     if (ec) {
-      return make_error_expected<std::monostate>(ec, "File access error: " +
-                                                         path.string());
+      return make_error_expected<std::monostate>(
+          ec, "File access error: " + path.string());
     }
     return make_error_expected<std::monostate>(
         errc::io_failure, "File does not exist: " + path.string());
@@ -125,8 +125,8 @@ check_file_readable(const std::filesystem::path &path) {
 
   if (!std::filesystem::is_regular_file(path, ec)) {
     if (ec) {
-      return make_error_expected<std::monostate>(ec, "File type check error: " +
-                                                         path.string());
+      return make_error_expected<std::monostate>(
+          ec, "File type check error: " + path.string());
     }
     return make_error_expected<std::monostate>(
         errc::io_failure, "Path is not a regular file: " + path.string());
@@ -144,8 +144,8 @@ check_file_readable(const std::filesystem::path &path) {
   return make_success();
 }
 
-std::expected<std::monostate, Error>
-check_directory_writable(const std::filesystem::path &path) {
+std::expected<std::monostate, Error> check_directory_writable(
+    const std::filesystem::path& path) {
   std::error_code ec;
 
   // Create directory if it doesn't exist
@@ -189,13 +189,13 @@ check_directory_writable(const std::filesystem::path &path) {
   return make_success();
 }
 
-std::expected<std::monostate, Error>
-ensure_directory_exists(const std::filesystem::path &path) {
+std::expected<std::monostate, Error> ensure_directory_exists(
+    const std::filesystem::path& path) {
   std::error_code ec;
   if (!std::filesystem::exists(path, ec)) {
     if (ec) {
-      return make_error_expected<std::monostate>(ec, "Path access error: " +
-                                                         path.string());
+      return make_error_expected<std::monostate>(
+          ec, "Path access error: " + path.string());
     }
 
     if (!std::filesystem::create_directories(path, ec)) {
@@ -204,8 +204,8 @@ ensure_directory_exists(const std::filesystem::path &path) {
     }
   } else if (!std::filesystem::is_directory(path, ec)) {
     if (ec) {
-      return make_error_expected<std::monostate>(ec, "Path type check error: " +
-                                                         path.string());
+      return make_error_expected<std::monostate>(
+          ec, "Path type check error: " + path.string());
     }
     return make_error_expected<std::monostate>(
         errc::io_failure,
@@ -215,8 +215,8 @@ ensure_directory_exists(const std::filesystem::path &path) {
   return make_success();
 }
 
-std::expected<std::size_t, Error>
-get_file_size(const std::filesystem::path &path) {
+std::expected<std::size_t, Error> get_file_size(
+    const std::filesystem::path& path) {
   std::error_code ec;
   const auto file_size = std::filesystem::file_size(path, ec);
   if (ec) {
@@ -227,8 +227,8 @@ get_file_size(const std::filesystem::path &path) {
   return static_cast<std::size_t>(file_size);
 }
 
-std::expected<std::string, Error>
-read_text_file(const std::filesystem::path &path) {
+std::expected<std::string, Error> read_text_file(
+    const std::filesystem::path& path) {
   // Open file in text mode
   std::ifstream file(path);
   if (!file) {
@@ -242,15 +242,15 @@ read_text_file(const std::filesystem::path &path) {
     std::ostringstream buffer;
     buffer << file.rdbuf();
     return buffer.str();
-  } catch (const std::exception &e) {
+  } catch (const std::exception& e) {
     return make_error_expected<std::string>(
         errc::io_failure,
         "Failed to read text file: " + path.string() + " (" + e.what() + ")");
   }
 }
 
-std::expected<std::monostate, Error>
-write_text_file(const std::filesystem::path &path, const std::string &content) {
+std::expected<std::monostate, Error> write_text_file(
+    const std::filesystem::path& path, const std::string& content) {
   // Create parent directory if it doesn't exist
   const std::filesystem::path parent_dir = path.parent_path();
   if (!parent_dir.empty() && !std::filesystem::exists(parent_dir)) {
@@ -286,8 +286,8 @@ write_text_file(const std::filesystem::path &path, const std::string &content) {
   return make_success();
 }
 
-std::string get_filesystem_error_message(const std::error_code &ec) {
+std::string get_filesystem_error_message(const std::error_code& ec) {
   return ec.message() + " (" + std::to_string(ec.value()) + ")";
 }
 
-} // namespace art2img
+}  // namespace art2img

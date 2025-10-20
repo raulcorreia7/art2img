@@ -10,9 +10,9 @@ constexpr bool is_valid_palette_index(types::u8 index) noexcept {
 constexpr types::u8 scale_6bit_to_8bit(types::u8 value) noexcept {
   return static_cast<types::u8>((value * 255 + 31) / 63);
 }
-} // namespace
+}  // namespace
 
-color::Color make_palette_color(const Palette &palette,
+color::Color make_palette_color(const Palette& palette,
                                 types::u8 index) noexcept {
   if (!is_valid_palette_index(index)) {
     return color::constants::BLACK;
@@ -26,4 +26,4 @@ color::Color make_palette_color(const Palette &palette,
                           scale_6bit_to_8bit(palette.data[base + 2]));
 }
 
-} // namespace art2img::palette::detail
+}  // namespace art2img::palette::detail

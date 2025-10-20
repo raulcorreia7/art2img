@@ -22,13 +22,14 @@
 /// validation according to Architecture §14 validation rules.
 
 #include <algorithm>
-#include <art2img/art.hpp>
-#include <art2img/types.hpp>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+
+#include <art2img/art.hpp>
+#include <art2img/types.hpp>
 
 namespace art2img {
 using types::byte;
@@ -62,7 +63,7 @@ u32 read_u32_le(std::span<const byte> data, std::size_t offset) {
 
 /// @brief Validate tile dimensions are within reasonable bounds
 constexpr bool is_valid_tile_dimensions(u16 width, u16 height) noexcept {
-  return (width == 0 && height == 0) || // Allow empty tiles
+  return (width == 0 && height == 0) ||  // Allow empty tiles
          (width > 0 && height > 0 && width <= constants::MAX_TILE_WIDTH &&
           height <= constants::MAX_TILE_HEIGHT);
 }
@@ -102,7 +103,7 @@ bool validate_header_consistency(u32 version, u32 numtiles, u32 localtilestart,
   return true;
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 // ============================================================================
 // TileAnimation Implementation
@@ -129,7 +130,7 @@ u32 TileAnimation::to_picanm() const noexcept {
 // ART Bundle Loading Implementation
 // ============================================================================
 
-std::expected<ArtData, Error> load_art_bundle(const std::filesystem::path &path,
+std::expected<ArtData, Error> load_art_bundle(const std::filesystem::path& path,
                                               PaletteHint hint) {
   // Open file in binary mode
   std::ifstream file(path, std::ios::binary | std::ios::ate);
@@ -141,9 +142,9 @@ std::expected<ArtData, Error> load_art_bundle(const std::filesystem::path &path,
   // Get file size
   const auto file_size = file.tellg();
   if (file_size < 0) {
-    return make_error_expected<ArtData>(errc::io_failure,
-                                        "Failed to determine ART file size: " +
-                                            path.string());
+    return make_error_expected<ArtData>(
+        errc::io_failure,
+        "Failed to determine ART file size: " + path.string());
   }
 
   // Seek back to beginning
@@ -155,7 +156,7 @@ std::expected<ArtData, Error> load_art_bundle(const std::filesystem::path &path,
 
   // Read entire file into buffer
   std::vector<byte> buffer(static_cast<std::size_t>(file_size));
-  if (!file.read(reinterpret_cast<char *>(buffer.data()), file_size)) {
+  if (!file.read(reinterpret_cast<char*>(buffer.data()), file_size)) {
     return make_error_expected<ArtData>(
         errc::io_failure, "Failed to read ART file: " + path.string());
   }
@@ -169,7 +170,7 @@ std::expected<ArtData, Error> load_art_bundle(std::span<const byte> data,
   ArtData art_data;
 
   // Minimum ART file size: header (16 bytes) + at least one tile
-  constexpr std::size_t MIN_SIZE = 16 + 6 + 6 + 4; // header + 1 tile arrays
+  constexpr std::size_t MIN_SIZE = 16 + 6 + 6 + 4;  // header + 1 tile arrays
   if (data.size() < MIN_SIZE) {
     return make_error_expected<ArtData>(
         errc::invalid_art,
@@ -206,7 +207,7 @@ std::expected<ArtData, Error> load_art_bundle(std::span<const byte> data,
 
   // Check if we have enough data for tile arrays
   const std::size_t arrays_size =
-      tile_count * 2 + tile_count * 2 + tile_count * 4; // sizx + sizy + picanm
+      tile_count * 2 + tile_count * 2 + tile_count * 4;  // sizx + sizy + picanm
   const std::size_t header_with_arrays_size = 16 + arrays_size;
   if (data.size() < header_with_arrays_size) {
     return make_error_expected<ArtData>(
@@ -292,8 +293,8 @@ std::expected<ArtData, Error> load_art_bundle(std::span<const byte> data,
 
     // Handle empty tiles
     if (view.width == 0 || view.height == 0) {
-      view.pixels = types::u8_span{}; // Empty span
-      view.remap = types::u8_span{};  // Empty remap span
+      view.pixels = types::u8_span{};  // Empty span
+      view.remap = types::u8_span{};   // Empty remap span
     } else {
       // Set pixel data span
       if (pixel_offset + tile_pixel_count <= art_data.pixels.size()) {
@@ -335,18 +336,18 @@ std::expected<ArtData, Error> load_art_bundle(std::span<const byte> data,
 // Helper Functions Implementation
 // ============================================================================
 
-std::optional<TileView> make_tile_view(const ArtData &art_data,
+std::optional<TileView> make_tile_view(const ArtData& art_data,
                                        std::size_t index) {
   return art_data.get_tile(index);
 }
 
-std::optional<TileView> make_tile_view_by_id(const ArtData &art_data,
+std::optional<TileView> make_tile_view_by_id(const ArtData& art_data,
                                              u32 tile_id) {
   return art_data.get_tile_by_id(tile_id);
 }
 
-std::filesystem::path
-discover_sidecar_palette(const std::filesystem::path &art_path) {
+std::filesystem::path discover_sidecar_palette(
+    const std::filesystem::path& art_path) {
   // Try to find PALETTE.DAT in same directory
   const std::filesystem::path palette_path =
       art_path.parent_path() / "PALETTE.DAT";
@@ -361,11 +362,11 @@ discover_sidecar_palette(const std::filesystem::path &art_path) {
     return same_basename;
   }
 
-  return {}; // Not found
+  return {};  // Not found
 }
 
-std::filesystem::path
-discover_lookup_file(const std::filesystem::path &art_path) {
+std::filesystem::path discover_lookup_file(
+    const std::filesystem::path& art_path) {
   // Try to find LOOKUP.DAT in same directory
   const std::filesystem::path lookup_path =
       art_path.parent_path() / "LOOKUP.DAT";
@@ -373,11 +374,11 @@ discover_lookup_file(const std::filesystem::path &art_path) {
     return lookup_path;
   }
 
-  return {}; // Not found
+  return {};  // Not found
 }
 
-std::expected<std::vector<types::u8>, Error>
-load_lookup_data(std::span<const types::byte> data) {
+std::expected<std::vector<types::u8>, Error> load_lookup_data(
+    std::span<const types::byte> data) {
   // LOOKUP.DAT should contain shade tables - minimum reasonable size is 256
   // bytes
   if (data.size() < 256) {
@@ -413,4 +414,4 @@ std::optional<TileView> ArtData::get_tile_by_id(u32 tile_id) const noexcept {
   return std::nullopt;
 }
 
-} // namespace art2img
+}  // namespace art2img

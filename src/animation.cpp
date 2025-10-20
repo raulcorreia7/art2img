@@ -12,13 +12,14 @@
 /// - Compatible with legacy art2tga output format
 /// - Adapted the ini format to be format aware (png, tga, bmp)
 
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
+
 #include <art2img/art.hpp>
 #include <art2img/encode.hpp>
 #include <art2img/error.hpp>
 #include <art2img/types.hpp>
-#include <filesystem>
-#include <fstream>
-#include <iomanip>
 
 namespace art2img {
 
@@ -27,36 +28,35 @@ using types::u32;
 
 std::string get_animation_type_string(TileAnimation::Type type) {
   switch (type) {
-  case TileAnimation::Type::none:
-    return "none";
-  case TileAnimation::Type::oscillating:
-    return "oscillation";
-  case TileAnimation::Type::forward:
-    return "forward";
-  case TileAnimation::Type::backward:
-    return "backward";
-  default:
-    return "unknown";
+    case TileAnimation::Type::none:
+      return "none";
+    case TileAnimation::Type::oscillating:
+      return "oscillation";
+    case TileAnimation::Type::forward:
+      return "forward";
+    case TileAnimation::Type::backward:
+      return "backward";
+    default:
+      return "unknown";
   }
 }
 
 /// @brief Get file extension for the given image format
 std::string get_image_extension(ImageFormat format) {
   switch (format) {
-  case ImageFormat::png:
-    return "png";
-  case ImageFormat::tga:
-    return "tga";
-  case ImageFormat::bmp:
-    return "bmp";
-  default:
-    return "bin";
+    case ImageFormat::png:
+      return "png";
+    case ImageFormat::tga:
+      return "tga";
+    case ImageFormat::bmp:
+      return "bmp";
+    default:
+      return "bin";
   }
 }
 
-std::expected<std::monostate, Error>
-export_animation_data(const ArtData &art_data,
-                      const AnimationExportConfig &config) {
+std::expected<std::monostate, Error> export_animation_data(
+    const ArtData& art_data, const AnimationExportConfig& config) {
   // Create output directory if it doesn't exist
   std::error_code ec;
   std::filesystem::create_directories(config.output_dir, ec);
@@ -82,9 +82,9 @@ export_animation_data(const ArtData &art_data,
 
   // Process each tile
   for (std::size_t i = 0; i < art_data.tile_count(); ++i) {
-    const auto &tile = art_data.tiles[i];
-    const auto &tile_id = art_data.tile_ids[i];
-    const auto &anim = tile.animation;
+    const auto& tile = art_data.tiles[i];
+    const auto& tile_id = art_data.tile_ids[i];
+    const auto& anim = tile.animation;
 
     // Skip empty tiles
     if (!tile.is_valid()) {
@@ -94,9 +94,10 @@ export_animation_data(const ArtData &art_data,
     // Check if tile has animation data (following legacy logic exactly)
     // Legacy logic: check if any animation bits are set
     u32 picanm = anim.to_picanm();
-    bool has_animation_data = ((picanm & 0x3F) != 0) ||        // frame count
-                              (((picanm >> 6) & 0x03) != 0) || // animation type
-                              (((picanm >> 24) & 0x0F) != 0); // animation speed
+    bool has_animation_data =
+        ((picanm & 0x3F) != 0) ||         // frame count
+        (((picanm >> 6) & 0x03) != 0) ||  // animation type
+        (((picanm >> 24) & 0x0F) != 0);   // animation speed
 
     // Write animation data if tile has animation data
     if (has_animation_data) {
@@ -135,7 +136,7 @@ export_animation_data(const ArtData &art_data,
       ini_file << "   YCenterOffset=" << static_cast<i32>(anim.y_center_offset)
                << "\n";
       ini_file << "   OtherFlags=" << (picanm >> 28)
-               << "\n"; // Upper 4 bits as OtherFlags
+               << "\n";  // Upper 4 bits as OtherFlags
 
       // Include image file reference if format awareness is enabled
       if (config.include_image_references) {
@@ -152,4 +153,4 @@ export_animation_data(const ArtData &art_data,
   return std::monostate{};
 }
 
-} // namespace art2img
+}  // namespace art2img
