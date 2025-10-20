@@ -124,8 +124,8 @@ graph LR
 
 ### 4.5 Encoding
 - `ImageFormat` enum: `png`, `tga`, `bmp`
-- Option structs: `PngOptions`, `TgaOptions`, `BmpOptions`
-- `EncodeOptions` alias: `std::variant<std::monostate, PngOptions, TgaOptions, BmpOptions>`
+- `EncodeOptions` struct with format-specific configuration
+- Single `encode_image()` function with format parameter
 
 ---
 
@@ -141,6 +141,8 @@ graph LR
 - `std::expected<ArtData, Error> load_art_bundle(const std::filesystem::path&, PaletteHint hint = PaletteHint::none)`
 - `std::expected<ArtData, Error> load_art_bundle(std::span<const std::byte>, PaletteHint hint = PaletteHint::none)`
 - `TileView make_tile_view(const ArtData&, std::size_t index)` (bounds-checked)
+- `std::optional<TileView> make_tile_view_by_id(const ArtData&, u32 tile_id)` (bounds-checked)
+- Animation export functions for INI format output
 
 ### 5.3 `convert.hpp`
 - `std::expected<Image, Error> to_rgba(const TileView&, const Palette&, const ConversionOptions& = {})`
@@ -150,10 +152,8 @@ graph LR
 - `ColumnMajorRowRange column_major_rows(const TileView&, std::span<std::uint8_t> scratch)`
 
 ### 5.4 `encode.hpp`
-- `std::expected<std::vector<std::byte>, Error> encode_png(ImageView, const PngOptions& = {})`
-- `std::expected<std::vector<std::byte>, Error> encode_tga(ImageView, const TgaOptions& = {})`
-- `std::expected<std::vector<std::byte>, Error> encode_bmp(ImageView, const BmpOptions& = {})`
 - `std::expected<std::vector<std::byte>, Error> encode_image(ImageView, ImageFormat, EncodeOptions = {})`
+- Note: Format-specific functions are convenience wrappers around encode_image
 
 ### 5.5 `io.hpp`
 - `std::expected<std::vector<std::byte>, Error> read_binary_file(const std::filesystem::path&)`
@@ -214,8 +214,9 @@ Parallelism (thread pool) wraps steps 3–6 only.
 
 ## 11. Tooling & Build
 
-- CMake: C++23, interface libraries, CPM packages pinned to tags (CLI11 v2.5.0, doctest 2.4.12, fmt 11.0.2, stb release tag).
+- CMake: C++23, interface libraries, CPM packages pinned to tags (CLI11 v2.5.0, doctest 2.4.12, stb release tag).
 - Lint: clang-format (shared style file), clang-tidy (`modernize-use-std-span`, `bugprone-*`, `performance-*`).
+- Make: Streamlined wrapper for common build targets including cross-compilation support.
 
 ---
 

@@ -48,29 +48,28 @@ This document captures the evolution of the art2img public API design through mu
 
 ---
 
-## Implementation Decision: Unified Structure
+## Implementation Status: Current Structure
 
-### Problem: ArtData vs ArtFile Duplication
+### Current Implementation: ArtData Structure
 
-The original plan proposed both `ArtData` (current implementation) and `ArtFile` (planned API), creating unnecessary complexity and potential confusion.
+**Current Status**: The project uses `ArtData` as the primary ART file container. The planned unified `ArtFile` structure has not been implemented.
 
-### Solution: Single Unified Structure
+**Current Benefits:**
+- [COMPLETE] **Single structure** - `ArtData` serves as the source of truth
+- [COMPLETE] **Memory-safe** - RAII approach with owning containers
+- [COMPLETE] **Functional** - All core functionality works with current structure
+- [COMPLETE] **Thread-safe** - Immutable inputs with non-owning views
 
-**Decision**: Rename existing `ArtData` to `ArtFile` and enhance it with planned API methods.
+**Current Limitations:**
+- [INCOMPLETE] **Naming mismatch** - Documentation refers to `ArtFile` but code uses `ArtData`
+- [INCOMPLETE] **Missing unified header** - No `art2img.hpp` single include
+- [INCOMPLETE] **API inconsistency** - Some planned functions not implemented
 
-**Benefits:**
-- ✅ **No duplication** - single source of truth
-- ✅ **Zero breaking changes** - existing code works with rename
-- ✅ **Memory-safe** - maintains current RAII approach
-- ✅ **Simple implementation** - just rename and add methods
-- ✅ **Perfect parity** - matches planned API exactly
-
-**Changes Required:**
-1. **Rename**: `ArtData` → `ArtFile` (global search/replace)
-2. **Add**: Missing methods (`header()`, `tiles()`, iterators)
-3. **Enhance**: `TileView` with convenience accessors
-4. **Create**: Unified `art2img.hpp` header
-5. **Add**: Template support for filename generation
+**Current Implementation:**
+1. **Structure**: `ArtData` contains all ART file data and metadata
+2. **Access**: `get_tile()` and `get_tile_by_id()` methods available
+3. **Views**: `TileView` provides non-owning access to tile data
+4. **Animation**: Full animation data support with export capabilities
 
 ### Memory Safety Guarantees
 
@@ -89,16 +88,15 @@ The original plan proposed both `ArtData` (current implementation) and `ArtFile`
 
 ## Final API Design
 
-### Core Principles
+### Core Principles (Current Implementation)
 1. **Memory-First:** All operations work on memory spans
 2. **Thread-Safe:** Pure functions with immutable inputs
 3. **TileView-Based:** Non-owning views for efficiency
 4. **Function-Based:** Single function per operation type
-5. **Separated Output:** Folder and filename control are independent
-6. **Memory-Safe:** RAII with std::vector/std::span, no raw pointers
-7. **Unified Structure:** Single ArtFile type (no duplication with ArtData)
+5. **Memory-Safe:** RAII with std::vector/std::span, no raw pointers
+6. **Current Structure:** ArtData type (functional, documented as ArtFile in some places)
 
-### API Surface
+### Current API Surface
 
 ```cpp
 namespace art2img {
@@ -110,21 +108,9 @@ namespace art2img {
         // Core tile data
         u16 width = 0;
         u16 height = 0;
-        u32 id = 0;                  // Tile ID for identification
         u8_span pixels;               // Column-major palette indices
         u8_span remap;                // Optional remap data
         TileAnimation animation;         // Animation information
-        
-        // Convenience accessors
-        std::span<const u8> pixel_data() const noexcept { return pixels; }
-        std::span<const u8> remap_data() const noexcept { return remap; }
-        TileAnimation animation_data() const noexcept { return animation; }
-        
-        // Thread-safe read-only methods
-        std::expected<u8, Error> get_pixel(u16 x, u16 y) const noexcept;
-        bool is_empty() const noexcept { return width == 0 || height == 0; }
-        bool is_animated() const noexcept { return animation.frame_count > 0; }
-        std::string dimensions_string() const;
         
         // Validation
         constexpr bool is_valid() const noexcept;
@@ -140,19 +126,12 @@ namespace art2img {
         std::vector<u8> shade_tables{};
         std::array<u8, constants::TRANSLUCENT_TABLE_SIZE> translucent_map{};
         
-        // Accessors
+        // Accessors and conversion functions
         std::span<const u8> palette_data() const noexcept;
         std::span<const u8> shade_data() const noexcept;
         std::span<const u8> translucent_data() const noexcept;
-        
-        // Color conversion
-        std::array<u8, 3> get_rgb(u8 index) const;
-        u32 get_rgba(u8 index) const;
-        color::Color get_color(u8 index) const;
-        
-        // Validation
-        constexpr bool has_shade_tables() const noexcept;
-        constexpr bool has_translucent_map() const noexcept;
+        u32 palette_entry_to_rgba(const Palette&, u8 index);
+        // ... other conversion functions
     };
     
     struct Image {
@@ -171,231 +150,156 @@ namespace art2img {
         constexpr std::size_t pixel_count() const noexcept;
     };
     
-    struct ArtFile {
-        struct Header {
-            u32 version;
-            u32 total_tiles;
-            u32 first_tile_id;
-            u32 last_tile_id;
-        };
-        
+    struct ArtData {  // Note: Called ArtFile in some documentation
         // Core data fields (owning)
         u32 version = 0;
-        u32 tile_start = 0;           // first_tile_id
-        u32 tile_end = 0;             // last_tile_id
+        u32 tile_start = 0;
+        u32 tile_end = 0;
         std::vector<u8> pixels;        // Owning buffer (column-major)
         std::vector<u8> remaps;        // Owning buffer (optional)
         std::vector<TileView> tiles;   // Non-owning views
         std::vector<u32> tile_ids;
         
-        // Header access
-        Header header() const noexcept;
-        
         // Thread-safe access methods
-        std::optional<TileView> get_tile(u32 tile_id) const;           // Get tile by actual tile ID
-        std::optional<TileView> get_tile_by_index(size_t index) const; // Get tile by array index
-        std::span<const TileView> tiles() const noexcept;                // **Get ALL tiles as span**
-        size_t tile_count() const noexcept;
-        
-        // Iterator support
-        auto begin() const noexcept { return tiles().begin(); }
-        auto end() const noexcept { return tiles().end(); }
-        
-        // Raw data access
-        std::span<const std::byte> raw_data() const noexcept;
-        
-        // Validation
+        std::optional<TileView> get_tile(std::size_t index) const noexcept;
+        std::optional<TileView> get_tile_by_id(u32 tile_id) const noexcept;
+        constexpr std::size_t tile_count() const noexcept;
         constexpr bool is_valid() const noexcept;
     };
 }
 
 // Loading Functions (Thread-Safe, Memory-Safe)
 namespace art2img {
-    // Core loading functions (unified from ArtData)
-    std::expected<ArtFile, Error> load_art(
+    // Core loading functions (current implementation)
+    std::expected<ArtData, Error> load_art_bundle(
         const std::filesystem::path& path, 
         PaletteHint hint = PaletteHint::none);
-    std::expected<ArtFile, Error> load_art(
+    std::expected<ArtData, Error> load_art_bundle(
         std::span<const std::byte> data, 
         PaletteHint hint = PaletteHint::none);
     
-    // Convenience wrappers
-    std::expected<ArtFile, Error> load_art_file(const std::filesystem::path& path);
-    std::expected<Palette, Error> load_palette_file(const std::filesystem::path& path);
+    // Tile view creation
+    std::optional<TileView> make_tile_view(const ArtData& art_data, std::size_t index);
+    std::optional<TileView> make_tile_view_by_id(const ArtData& art_data, u32 tile_id);
     
-    // Existing palette loading (unchanged)
+    // Palette loading
+    std::expected<Palette, Error> load_palette(const std::filesystem::path& path);
     std::expected<Palette, Error> load_palette(std::span<const std::byte> data);
 }
 
 // Processing Functions (Thread-Safe, Function-Based, Memory-Safe)
 namespace art2img {
-    struct ConvertOptions {
+    struct ConversionOptions {
+        bool apply_lookup = false;
         bool fix_transparency = true;
-        std::optional<u8> shade_index = std::nullopt;
         bool premultiply_alpha = false;
-        float gamma = 1.0f;
-        
-        // Map to existing ConversionOptions internally
-        ConversionOptions to_legacy() const;
+        bool matte_hygiene = false;
+        u8 shade_index = 0;
     };
     
-    // NEW: Unified convert function over existing to_rgba()
-    std::expected<Image, Error> convert(
-        const TileView& tile,
-        const Palette& palette,
-        const ConvertOptions& options = {},
-        ImageFormat target_format = ImageFormat::png
-    );
-    
-    // NEW: Batch conversion
-    std::expected<std::vector<Image>, Error> convert_all(
-        const ArtFile& art_file,
-        const Palette& palette,
-        const ConvertOptions& options = {},
-        ImageFormat target_format = ImageFormat::png
-    );
-    
-    // EXISTING: Keep to_rgba() for backward compatibility
+    // Current convert function
     std::expected<Image, Error> to_rgba(
         const TileView& tile, 
         const Palette& palette, 
         const ConversionOptions& = {});
+    
+    // Image view creation
+    ImageView image_view(const Image& image);
+    
+    // Column-major conversion utilities
+    std::expected<std::monostate, Error> convert_column_to_row_major(
+        const TileView& tile, std::span<u8> destination);
+    std::expected<u8, Error> get_pixel_column_major(const TileView& tile, u16 x, u16 y);
 }
 
 // Encoding Functions (Thread-Safe, Function-Based)
 namespace art2img {
-    struct EncodeOptions {
-        bool include_alpha = true;
-        bool flip_vertically = false;
-        
-        std::variant<
-            std::monostate,
-            struct { u8 compression = 6; bool filters = true; },  // PNG
-            struct { bool rle = false; },                       // TGA
-            std::monostate                                     // BMP
-        > format_specific;
-        
-        static EncodeOptions png(u8 compression = 6, bool filters = true);
-        static EncodeOptions tga(bool rle = false);
-        static EncodeOptions bmp();
-    };
-    
-    std::expected<std::vector<std::byte>, Error> encode(
-        const ImageView& image,
-        const EncodeOptions& options = {},
+    // Current encoding function
+    std::expected<std::vector<std::byte>, Error> encode_image(
+        ImageView image, 
         ImageFormat format
     );
+    
+    // IO functions
+    std::expected<std::vector<std::byte>, Error> read_binary_file(const std::filesystem::path& path);
+    std::expected<std::monostate, Error> write_binary_file(const std::filesystem::path& path, std::span<const std::byte> data);
 }
 
-// Export Functions (Thread-Safe, Separated Output, Memory-Safe)
+// Animation Export Functions (Thread-Safe, Memory-Safe)
 namespace art2img {
-    struct ExportOptions {
-        ImageFormat format = ImageFormat::png;
-        bool fix_transparency = true;
-        bool overwrite_existing = true;
-        bool create_subdirectories = false;
-        bool export_metadata = false;
+    struct AnimationExportConfig {
+        std::filesystem::path output_dir = ".";
+        std::string base_name = "tile";
+        bool include_non_animated = true;
+        bool generate_ini = true;
+        std::string ini_filename = "animdata.ini";
+        ImageFormat image_format = ImageFormat::png;
+        bool include_image_references = true;
     };
     
-    // NEW: Separated folder/filename parameters (planned API)
-    std::expected<std::monostate, Error> export_tile(
-        const TileView& tile,
-        const Palette& palette,
-        const std::filesystem::path& folder,     // Folder only
-        const std::string& filename,            // Filename only
-        const ExportOptions& options = {},
-        ImageFormat format = ImageFormat::png
+    // Current animation export function
+    std::expected<std::monostate, Error> export_animation_data(
+        const ArtData& art_data, 
+        const AnimationExportConfig& config = {}
     );
     
-    // NEW: Template-based batch export
-    std::expected<std::monostate, Error> export_tiles(
-        std::span<const TileView> tiles,
-        const Palette& palette,
-        const std::filesystem::path& folder,     // Folder only
-        const std::string& filename_template,     // Template like "tile_{id:04d}"
-        const ExportOptions& options = {},
-        ImageFormat format = ImageFormat::png
-    );
-    
-    // NEW: Export entire ART file
-    std::expected<std::monostate, Error> export_art_file(
-        const ArtFile& art_file,
-        const Palette& palette,
-        const std::filesystem::path& folder,     // Folder only
-        const std::string& filename_template,     // Template
-        const ExportOptions& options = {},
-        ImageFormat format = ImageFormat::png
-    );
-    
-    // EXISTING: Keep current export functions for compatibility
-    std::expected<ExportResult, Error> export_tile(
-        const TileView& tile,
-        const Palette& palette,
-        const ExportOptions& options);
+    std::string get_animation_type_string(TileAnimation::Type type);
 }
 ```
 
-### Unified Header
+### Current Header Structure
 
-**New: `include/art2img.hpp`**
+**Current: `include/art2img/api.hpp`**
 
-Single entry point for all art2img functionality:
+Current entry point for art2img functionality:
 
 ```cpp
-/// @file art2img.hpp
-/// @brief Unified header for art2img public API
+/// @file api.hpp
+/// @brief Barrel include for the art2img public API
 
 // Core types and error handling
-#include "art2img/types.hpp"
-#include "art2img/error.hpp"
+#include "error.hpp"
+#include "types.hpp"
 
-// Core modules  
-#include "art2img/palette.hpp"
-#include "art2img/art.hpp"           // Contains unified ArtFile
-#include "art2img/convert.hpp"
-#include "art2img/encode.hpp"
-#include "art2img/export.hpp"
-#include "art2img/io.hpp"
-
-// Version information
-#include "art2img/api.hpp"
+// Core modules
+#include "art.hpp"
+#include "convert.hpp"
+#include "encode.hpp"
+#include "io.hpp"
+#include "palette.hpp"
 ```
+
+**Note:** A unified `art2img.hpp` header is planned but not yet implemented.
 
 ### Usage Examples
 
-**Basic Usage (80% of cases):**
+**Basic Usage (Current Implementation):**
 ```cpp
-#include <art2img/art2img.hpp>
+#include <art2img/api.hpp>
 
-// Load from memory
-auto art = art2img::load_art_file("TILES.ART");
-auto palette = art2img::load_palette_file("PALETTE.DAT");
+// Load from files
+auto art = art2img::load_art_bundle("TILES.ART");
+auto palette = art2img::load_palette("PALETTE.DAT");
 
 if (art && palette) {
-    // Get tile by ID
-    auto tile = art->get_tile(100);
+    // Get tile by index
+    auto tile = art2img::make_tile_view(*art, 0);
     if (tile) {
-        // Convert directly to format
-        auto image = art2img::convert(*tile, *palette, {}, ImageFormat::png);
+        // Convert to RGBA
+        auto image = art2img::to_rgba(*tile, *palette);
         
-        // Export with separated folder/filename
-        auto result = art2img::export_tile(
-            *tile, *palette,
-            "output/",                    // Folder only
-            "my_tile.png",                // Filename only
-            {},                            // Default options
-            ImageFormat::png
-        );
+        // Create image view
+        auto view = art2img::image_view(*image);
+        
+        // Encode to PNG
+        auto encoded = art2img::encode_image(view, art2img::ImageFormat::png);
+        
+        // Write to file
+        art2img::write_binary_file("tile.png", *encoded);
     }
     
-    // Export all with template
-    auto batch_result = art2img::export_art_file(
-        *art, *palette,
-        "exported_tiles/",              // Folder only
-        "texture_{id:04d}",          // Template
-        {},                            // Default options
-        ImageFormat::png
-    );
+    // Export animation data
+    auto anim_result = art2img::export_animation_data(*art);
 }
 ```
 
@@ -425,34 +329,43 @@ for (auto& thread : threads) thread.join();
 
 ## Acceptance Criteria
 
-### Requirements Met
-1. ✅ **Memory-First:** All operations work on memory spans
-2. ✅ **Thread-Safe:** All functions are pure with immutable inputs
-3. ✅ **TileView-Based:** Non-owning views for zero-copy access
-4. ✅ **Function-Based:** Single function per operation type
-5. ✅ **Separated Output:** Folder and filename are independent parameters
-6. ✅ **Complete ART Coverage:** All format fields accessible
-7. ✅ **Simple Learning Curve:** Most use cases require 2-3 function calls
-8. ✅ **Power User Support:** Advanced features still accessible
-9. ✅ **Memory-Safe:** RAII with std::vector/std::span, no raw pointers
-10. ✅ **Unified Structure:** Single ArtFile type (no duplication with ArtData)
-11. ✅ **Backward Compatible:** Existing code continues to work during transition
+### Requirements Met (Current Implementation)
+1. [COMPLETE] **Memory-First:** All operations work on memory spans
+2. [COMPLETE] **Thread-Safe:** All functions are pure with immutable inputs
+3. [COMPLETE] **TileView-Based:** Non-owning views for zero-copy access
+4. [COMPLETE] **Function-Based:** Single function per operation type
+5. [COMPLETE] **Complete ART Coverage:** All format fields accessible
+6. [COMPLETE] **Simple Learning Curve:** Most use cases require 3-4 function calls
+7. [COMPLETE] **Power User Support:** Advanced features like animation export available
+8. [COMPLETE] **Memory-Safe:** RAII with std::vector/std::span, no raw pointers
+9. [COMPLETE] **Functional Structure:** ArtData type works correctly (documentation naming inconsistency)
 
-### API Surface Summary
-- **Single Header:** `#include <art2img/art2img.hpp>`
-- **Core Functions:** ~15 total functions vs 50+ in original design
+### Requirements Not Yet Met
+1. [INCOMPLETE] **Separated Output:** Folder and filename parameters not separated
+2. [INCOMPLETE] **Unified Structure:** Documentation refers to ArtFile but code uses ArtData
+3. [INCOMPLETE] **Unified Header:** No single art2img.hpp include file
+
+### Current API Surface Summary
+- **Multiple Headers:** `#include <art2img/api.hpp>` or individual modules
+- **Core Functions:** ~20 total functions covering all operations
 - **Complete Coverage:** All ART format fields exposed
 - **Thread Safety:** Guaranteed by design
 - **Memory Efficiency:** Zero-copy TileView access
-- **Output Control:** Complete folder and filename separation
 - **Memory Safety:** RAII with std library, automatic cleanup
-- **Unified API:** Single ArtFile structure instead of ArtData duplication
+- **Functional Structure:** ArtData works correctly despite documentation naming inconsistency
 
-### Implementation Strategy
-1. **Phase 1 - Core Unification:** Rename ArtData → ArtFile, add missing methods
-2. **Phase 2 - Function Mapping:** Add convert() wrapper, rename loading functions  
-3. **Phase 3 - Export Enhancement:** Add separated folder/filename overloads
-4. **Phase 4 - Header & Documentation:** Create unified art2img.hpp
-5. **Phase 5 - Migration Path:** Temporary aliases for backward compatibility
+### Current Implementation Status
+The current implementation is **functional and complete** for core use cases:
+- [COMPLETE] All ART file loading and processing works
+- [COMPLETE] Animation export functionality implemented
+- [COMPLETE] CLI tool with full feature set
+- [COMPLETE] Cross-platform build system
+- [COMPLETE] Thread-safe operations
 
-This revised design achieves the goal of a simple, powerful, organic API that serves 80% of modders with minimal complexity while providing complete access for power users, with unified structures and guaranteed memory safety through RAII.
+### Future Improvements Needed
+1. **Documentation Consistency:** Align documentation with actual ArtData structure
+2. **Unified Header:** Consider creating art2img.hpp for simpler includes
+3. **API Streamlining:** Potential for higher-level convenience functions
+4. **Export Enhancements:** Consider separated folder/filename parameters
+
+The current implementation provides a solid foundation that meets most user needs while maintaining memory safety and thread safety guarantees.
