@@ -58,7 +58,11 @@ jobs:
       if: runner.os != 'Windows'
       run: |
         cd build
-        ctest --output-on-failure --parallel ${{ runner.os == 'macOS' && 'sysctl -n hw.ncpu' || 'nproc' }}
+        if [ "${{ runner.os }}" = "macOS" ]; then
+          ctest --output-on-failure --parallel $(sysctl -n hw.ncpu)
+        else
+          ctest --output-on-failure --parallel $(nproc)
+        fi
         
     - name: Upload coverage (Ubuntu)
       if: matrix.os == 'ubuntu-latest'

@@ -108,5 +108,5 @@ template <typename T> std::expected<T, Error> make_success(T &&value) {
 
 /// @brief Enable std::error_code construction from art2img::errc
 namespace std {
-template <> struct is_error_code_enum<art2img::errc> : true_type {};
+template <> struct is_error_code_enum<art2img::errc> : std::true_type {};
 } // namespace std

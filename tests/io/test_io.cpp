@@ -134,11 +134,17 @@ TEST_SUITE("io") {
   }
 
   TEST_CASE("write_binary_file - permission error simulation") {
-    // Note: This test might not work on all systems due to different permission
-    // models We'll test the error path by trying to write to a location that
-    // likely doesn't exist
-    const auto impossible_path =
-        std::filesystem::path("/impossible/path/test.dat");
+    // Test error path by trying to write to an invalid location
+    // Use platform-specific impossible paths
+    std::filesystem::path impossible_path;
+    
+#ifdef _WIN32
+    // Windows: Use reserved device name that cannot be created
+    impossible_path = "CON:/test.dat";
+#else
+    // Unix-like: Use path that cannot exist
+    impossible_path = "/impossible/path/test.dat";
+#endif
 
     const auto test_data = create_test_binary_data();
 
