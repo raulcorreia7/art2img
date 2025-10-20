@@ -91,15 +91,15 @@ macos: macos-x64-osxcross macos-arm64-osxcross
 
 # Run tests (Linux native)
 test: build
-	@cd $(BUILD_DIR)/linux-x64 && ctest --output-on-failure --parallel 1
+	@cd $(BUILD_DIR)/linux-x64 && ctest --output-on-failure --parallel $(JOBS)
 
 # Run integration tests only (tests 91-96)
 test-intg: build
-	@cd $(BUILD_DIR)/linux-x64 && ctest --output-on-failure --parallel 1 -I 91,96
+	@cd $(BUILD_DIR)/linux-x64 && ctest --output-on-failure --parallel $(JOBS) -I 91,96
 
 # Run unit tests only (tests 1-90, 97-117)
 test-unit: build
-	@cd $(BUILD_DIR)/linux-x64 && ctest --output-on-failure --parallel 1 -I 1,90 && ctest --output-on-failure --parallel 1 -I 97,117
+	@cd $(BUILD_DIR)/linux-x64 && ctest --output-on-failure --parallel $(JOBS) -I 1,90 && ctest --output-on-failure --parallel $(JOBS) -I 97,117
 
 
 
@@ -211,9 +211,9 @@ help:
 	@echo "  macos                  - All macOS cross-compilation"
 	@echo ""
 	@echo "DEVELOPMENT:"
-	@echo "  test                   - Run all tests (Linux)"
-	@echo "  test-unit              - Run unit tests only"
-	@echo "  test-intg              - Run integration tests only"
+	@echo "  test                   - Run all tests (Linux) in parallel"
+	@echo "  test-unit              - Run unit tests only in parallel"
+	@echo "  test-intg              - Run integration tests only in parallel"
 	@echo "  test-windows           - Test Windows cross-compiled builds"
 	@echo "  test-macos             - Test macOS cross-compiled builds"
 	@echo "  coverage               - Generate code coverage report"

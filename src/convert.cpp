@@ -24,6 +24,8 @@
 #include <art2img/color_helpers.hpp>
 #include <art2img/convert.hpp>
 #include <art2img/convert/detail/pixel_converter.hpp>
+#include <art2img/convert/detail/row_range.hpp>
+#include <art2img/detail/validation.hpp>
 #include <art2img/types.hpp>
 
 namespace art2img {
@@ -31,12 +33,6 @@ namespace art2img {
 namespace {
 using types::u16;
 using types::u8;
-
-/// @brief Validate coordinates are within tile bounds
-constexpr bool is_valid_coordinates(const TileView& tile, u16 x,
-                                    u16 y) noexcept {
-  return x < tile.width && y < tile.height;
-}
 
 /// @brief Write RGBA value to destination buffer (RGBA format)
 void write_rgba(mutable_u8_span dest, std::size_t offset,
@@ -334,7 +330,7 @@ std::expected<std::monostate, Error> convert_column_to_row_major(
 std::expected<u8, Error> get_pixel_column_major(const TileView& tile, u16 x,
                                                 u16 y) {
   // Validate coordinates
-  if (!is_valid_coordinates(tile, x, y)) {
+  if (!detail::is_valid_coordinates(tile, x, y)) {
     return make_error_expected<u8>(
         errc::conversion_failure,
         "Pixel coordinates out of bounds: (" + std::to_string(x) + "," +

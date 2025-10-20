@@ -29,6 +29,8 @@
 #include <sstream>
 
 #include <art2img/art.hpp>
+#include <art2img/detail/binary_reader.hpp>
+#include <art2img/detail/validation.hpp>
 #include <art2img/types.hpp>
 
 namespace art2img {
@@ -40,33 +42,6 @@ using types::u32;
 using types::u8;
 
 namespace {
-
-/// @brief Read a 16-bit little-endian value from a byte span
-u16 read_u16_le(std::span<const byte> data, std::size_t offset) {
-  if (offset + 1 >= data.size()) {
-    return 0;
-  }
-  return static_cast<u16>(static_cast<u8>(data[offset])) |
-         (static_cast<u16>(static_cast<u8>(data[offset + 1])) << 8);
-}
-
-/// @brief Read a 32-bit little-endian value from a byte span
-u32 read_u32_le(std::span<const byte> data, std::size_t offset) {
-  if (offset + 3 >= data.size()) {
-    return 0;
-  }
-  return static_cast<u32>(static_cast<u8>(data[offset])) |
-         (static_cast<u32>(static_cast<u8>(data[offset + 1])) << 8) |
-         (static_cast<u32>(static_cast<u8>(data[offset + 2])) << 16) |
-         (static_cast<u32>(static_cast<u8>(data[offset + 3])) << 24);
-}
-
-/// @brief Validate tile dimensions are within reasonable bounds
-constexpr bool is_valid_tile_dimensions(u16 width, u16 height) noexcept {
-  return (width == 0 && height == 0) ||  // Allow empty tiles
-         (width > 0 && height > 0 && width <= constants::MAX_TILE_WIDTH &&
-          height <= constants::MAX_TILE_HEIGHT);
-}
 
 /// @brief Calculate expected pixel data size for all tiles
 std::size_t calculate_total_pixel_size(std::span<const u16> widths,
@@ -136,7 +111,7 @@ std::expected<ArtData, Error> load_art_bundle(const std::filesystem::path& path,
   std::ifstream file(path, std::ios::binary | std::ios::ate);
   if (!file) {
     return make_error_expected<ArtData>(
-        errc::io_failure, "Failed to open ART file: " + path.string());
+        errc::io_failure, format_file_error("Failed to open ART file", path));
   }
 
   // Get file size
@@ -144,21 +119,22 @@ std::expected<ArtData, Error> load_art_bundle(const std::filesystem::path& path,
   if (file_size < 0) {
     return make_error_expected<ArtData>(
         errc::io_failure,
-        "Failed to determine ART file size: " + path.string());
+        format_file_error("Failed to determine ART file size", path));
   }
 
   // Seek back to beginning
   file.seekg(0, std::ios::beg);
   if (!file) {
     return make_error_expected<ArtData>(
-        errc::io_failure, "Failed to seek in ART file: " + path.string());
+        errc::io_failure,
+        format_file_error("Failed to seek in ART file", path));
   }
 
   // Read entire file into buffer
   std::vector<byte> buffer(static_cast<std::size_t>(file_size));
   if (!file.read(reinterpret_cast<char*>(buffer.data()), file_size)) {
     return make_error_expected<ArtData>(
-        errc::io_failure, "Failed to read ART file: " + path.string());
+        errc::io_failure, format_file_error("Failed to read ART file", path));
   }
 
   // Parse loaded data
@@ -180,16 +156,16 @@ std::expected<ArtData, Error> load_art_bundle(std::span<const byte> data,
 
   // Parse header
   std::size_t offset = 0;
-  art_data.version = read_u32_le(data, offset);
+  art_data.version = detail::read_u32_le(data, offset);
   offset += 4;
 
-  const u32 numtiles = read_u32_le(data, offset);
+  const u32 numtiles = detail::read_u32_le(data, offset);
   offset += 4;
 
-  art_data.tile_start = read_u32_le(data, offset);
+  art_data.tile_start = detail::read_u32_le(data, offset);
   offset += 4;
 
-  art_data.tile_end = read_u32_le(data, offset);
+  art_data.tile_end = detail::read_u32_le(data, offset);
   offset += 4;
 
   // Validate header consistency
@@ -224,30 +200,32 @@ std::expected<ArtData, Error> load_art_bundle(std::span<const byte> data,
 
   // Read widths
   for (u32 i = 0; i < tile_count; ++i) {
-    tile_widths[i] = read_u16_le(data, offset);
+    tile_widths[i] = detail::read_u16_le(data, offset);
     offset += 2;
   }
 
   // Read heights
   for (u32 i = 0; i < tile_count; ++i) {
-    tile_heights[i] = read_u16_le(data, offset);
+    tile_heights[i] = detail::read_u16_le(data, offset);
     offset += 2;
   }
 
   // Read picanm values
   for (u32 i = 0; i < tile_count; ++i) {
-    tile_picanms[i] = read_u32_le(data, offset);
+    tile_picanms[i] = detail::read_u32_le(data, offset);
     offset += 4;
   }
 
   // Validate tile dimensions
   for (u32 i = 0; i < tile_count; ++i) {
-    if (!is_valid_tile_dimensions(tile_widths[i], tile_heights[i])) {
+    if (!detail::is_valid_tile_dimensions(tile_widths[i], tile_heights[i])) {
       return make_error_expected<ArtData>(
-          errc::invalid_art, "Invalid tile dimensions for tile " +
-                                 std::to_string(i) + ": " +
-                                 std::to_string(tile_widths[i]) + "x" +
-                                 std::to_string(tile_heights[i]));
+          errc::invalid_art,
+          format_tile_error("Invalid tile dimensions for tile " +
+                                std::to_string(i) + ": " +
+                                std::to_string(tile_widths[i]) + "x" +
+                                std::to_string(tile_heights[i]),
+                            i));
     }
   }
 

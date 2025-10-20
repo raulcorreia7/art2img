@@ -4,6 +4,7 @@
 #include <thread>
 
 #include <art2img/convert.hpp>
+#include <art2img/detail/format_utils.hpp>
 #include <art2img/encode.hpp>
 #include <art2img/export.hpp>
 #include <art2img/io.hpp>
@@ -12,20 +13,6 @@ namespace art2img {
 
 namespace {
 
-/// @brief Get file extension for the given image format
-std::string get_extension(ImageFormat format) {
-  switch (format) {
-    case ImageFormat::png:
-      return "png";
-    case ImageFormat::tga:
-      return "tga";
-    case ImageFormat::bmp:
-      return "bmp";
-    default:
-      return "bin";
-  }
-}
-
 /// @brief Generate output path for a tile
 std::filesystem::path generate_output_path(const std::string& base_name,
                                            std::size_t tile_index,
@@ -33,7 +20,7 @@ std::filesystem::path generate_output_path(const std::string& base_name,
   std::filesystem::path output_path = options.output_dir;
 
   if (options.organize_by_format) {
-    output_path /= get_extension(options.format);
+    output_path /= detail::get_file_extension(options.format);
   }
 
   if (options.organize_by_art_file) {
@@ -49,7 +36,7 @@ std::filesystem::path generate_output_path(const std::string& base_name,
 
   const std::string filename = options.filename_prefix + "_" +
                                std::to_string(tile_index) + "." +
-                               get_extension(options.format);
+                               detail::get_file_extension(options.format);
 
   return output_path / filename;
 }
