@@ -168,6 +168,11 @@ jobs:
       with:
         fetch-depth: 0
         
+    - name: Install zip
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y zip
+        
     - name: Create Source Archives
       run: |
         # Create source directory
