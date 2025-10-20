@@ -175,41 +175,31 @@ jobs:
         
     - name: Create Source Archives
       run: |
-        # Debug: Show current directory contents
-        echo "Current directory contents:"
-        ls -la
+        # Create a clean source directory without hidden files
+        mkdir -p source_dist/art2img
         
-        # Create source directory
-        mkdir -p source_temp/art2img
-        cp -r . source_temp/art2img
-        rm -rf source_temp/art2img/.git
-        
-        # Debug: Show source_temp contents
-        echo "Source temp contents:"
-        ls -la source_temp/
-        ls -la source_temp/art2img/
+        # Copy only the essential files needed for distribution
+        cp -r cli/ source_dist/art2img/
+        cp -r cmake/ source_dist/art2img/
+        cp -r docs/ source_dist/art2img/
+        cp -r include/ source_dist/art2img/
+        cp -r src/ source_dist/art2img/
+        cp -r tests/ source_dist/art2img/
+        cp CMakeLists.txt source_dist/art2img/
+        cp LICENSE source_dist/art2img/
+        cp README.md source_dist/art2img/
+        cp USAGE.md source_dist/art2img/
+        cp Makefile source_dist/art2img/
         
         # Create source archives
-        cd source_temp
-        echo "Creating tar.gz archive..."
+        cd source_dist
         tar -czf "../art2img-${{ github.ref_name }}.tar.gz" art2img
-        echo "Creating zip archive..."
         zip -r "../art2img-${{ github.ref_name }}.zip" art2img
         cd ..
         
-        # Debug: Show created archives
-        echo "Created archives:"
-        ls -la art2img-${{ github.ref_name }}.*
-        
         # Generate checksums for source archives
-        echo "Generating checksums..."
         sha256sum "art2img-${{ github.ref_name }}.tar.gz" | cut -d' ' -f1 > "art2img-${{ github.ref_name }}.tar.gz.sha256"
         sha256sum "art2img-${{ github.ref_name }}.zip" | cut -d' ' -f1 > "art2img-${{ github.ref_name }}.zip.sha256"
-        
-        # Debug: Show checksum files
-        echo "Checksum files:"
-        cat "art2img-${{ github.ref_name }}.tar.gz.sha256" || echo "tar.gz checksum file not found"
-        cat "art2img-${{ github.ref_name }}.zip.sha256" || echo "zip checksum file not found"
         
     - name: Upload Source Assets
       uses: softprops/action-gh-release@v1
