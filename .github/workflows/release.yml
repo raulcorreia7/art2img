@@ -52,11 +52,7 @@ jobs:
     - name: Configure CMake (Windows)
       if: runner.os == 'Windows'
       run: |
-        if [ "${{ matrix.arch }}" = "Win32" ]; then
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -A Win32
-        else
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -A x64
-        fi
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON ${{ matrix.arch && format('-A {0}', matrix.arch) || '-A x64' }}
         
     - name: Configure CMake (Unix)
       if: runner.os != 'Windows'
