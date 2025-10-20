@@ -42,3 +42,4 @@ _fetch/
 *.idx
 *.kilocode
 build*/
+tests_output/

@@ -151,6 +151,8 @@ Expose canonical dev/build/test commands in `README`. Use multi-stage Dockerfile
 * Balance of simple, organic, easy, boring test patterns, composable code.
 * Avoid over engineering, complexity.
 * Favour maintanility, low cognitive complexity.
+• Intuitive Naming: Functions read like natural language
+• Discoverable API: Names suggest their purpose without documentation
 
 **Shell**
 
