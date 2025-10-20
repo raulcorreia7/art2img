@@ -50,7 +50,7 @@ jobs:
     - name: Test
       run: |
         cd build
-        ctest --output-on-failure --parallel $(nproc 2>/dev/null || sysctl -n hw.ncpu)
+        ctest --output-on-failure --parallel ${{ runner.os == 'Windows' && '1' || (runner.os == 'macOS' && 'sysctl -n hw.ncpu' || 'nproc') }}
         
     - name: Upload coverage (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
