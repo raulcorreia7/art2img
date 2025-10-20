@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <filesystem>
 #include <format>
 #include <iostream>
@@ -28,6 +29,7 @@ struct CliConfig {
   int shade_index = -1;  // -1 means no shading
   bool apply_lookup = true;
   bool premultiply_alpha = false;
+  bool matte_hygiene = false;
   bool export_animation = false;
   std::string anim_ini_filename = "animdata.ini";
   bool include_non_animated_tiles = true;
@@ -133,6 +135,78 @@ std::expected<std::monostate, Error> process_tile(
 }
 
 /**
+ * @brief Process animation export for a single ART file
+ */
+int process_animation_export(const CliConfig& config) {
+  // Load palette
+  auto palette_result = load_palette(config.palette_file);
+  if (!palette_result) {
+    std::cerr << "Error loading palette: " << palette_result.error().message
+              << std::endl;
+    return 1;
+  }
+
+  // Load ART bundle
+  auto art_result = load_art_bundle(config.input_path);
+  if (!art_result) {
+    std::cerr << "Error loading ART file: " << art_result.error().message
+              << std::endl;
+    return 1;
+  }
+
+  // Parse output format
+  auto format_result = parse_format(config.format);
+  if (!format_result) {
+    std::cerr << format_result.error() << std::endl;
+    return 1;
+  }
+
+  // Create output directory if it doesn't exist
+  std::filesystem::create_directories(config.output_dir);
+
+  // Get base filename without extension
+  std::filesystem::path input_path(config.input_path);
+  std::string base_name = input_path.stem().string();
+
+  // Setup animation export configuration
+  AnimationExportConfig anim_config;
+  anim_config.output_dir = config.output_dir;
+  anim_config.base_name = base_name;
+  anim_config.include_non_animated = config.include_non_animated_tiles;
+  anim_config.generate_ini = true;
+  anim_config.ini_filename = config.anim_ini_filename;
+  anim_config.image_format = *format_result;
+  anim_config.include_image_references = true;
+
+  if (config.verbose) {
+    std::cout << std::format("Exporting animation data from {}...",
+                             input_path.filename().string())
+              << std::endl;
+    std::cout << std::format("Output directory: {}", config.output_dir)
+              << std::endl;
+    std::cout << std::format("INI filename: {}", config.anim_ini_filename)
+              << std::endl;
+    std::cout << std::format("Include non-animated tiles: {}",
+                             config.include_non_animated_tiles ? "Yes" : "No")
+              << std::endl;
+  }
+
+  // Export animation data
+  auto export_result = export_animation_data(*art_result, anim_config);
+  if (!export_result) {
+    std::cerr << "Error exporting animation data: "
+              << export_result.error().message << std::endl;
+    return 1;
+  }
+
+  if (config.verbose) {
+    std::cout << "Animation export completed successfully" << std::endl;
+  }
+
+  return 0;
+}
+
+/**
  * @brief Process a single ART file
  */
 int process_art_file(const CliConfig& config, ProgressTracker& progress) {
@@ -165,6 +239,7 @@ int process_art_file(const CliConfig& config, ProgressTracker& progress) {
   conv_opts.apply_lookup = config.apply_lookup;
   conv_opts.fix_transparency = config.fix_transparency;
   conv_opts.premultiply_alpha = config.premultiply_alpha;
+  conv_opts.matte_hygiene = config.matte_hygiene;
   if (config.shade_index >= 0) {
     conv_opts.shade_index = static_cast<uint8_t>(config.shade_index);
   }
@@ -371,12 +446,30 @@ int main(int argc, char* argv[]) {
                "Premultiply alpha channel")
       ->capture_default_str();
 
+  app.add_flag("--matte-hygiene", config.matte_hygiene,
+               "Apply matte hygiene (erosion + blur) to remove halo effects")
+      ->capture_default_str();
+
   // Threading options
   app.add_flag("--no-parallel", config.parallel, "Disable parallel processing")
       ->capture_default_str();
 
   app.add_option("-j,--jobs", config.jobs,
                  "Number of parallel jobs (0 for auto-detect)")
+      ->capture_default_str();
+
+  // Animation export options
+  app.add_flag("--export-animation", config.export_animation,
+               "Export animation data instead of individual tiles")
+      ->capture_default_str();
+
+  app.add_option("--anim-ini-filename", config.anim_ini_filename,
+                 "INI filename for animation data (default: animdata.ini)")
+      ->capture_default_str();
+
+  app.add_flag("--include-non-animated-tiles",
+               config.include_non_animated_tiles,
+               "Include non-animated tiles in animation export (default: true)")
       ->capture_default_str();
 
   // Verbosity
@@ -442,17 +535,30 @@ int main(int argc, char* argv[]) {
   // Process input
   int result;
   if (std::filesystem::is_directory(config.input_path)) {
+    if (config.export_animation) {
+      std::cerr << "Error: Animation export is not supported for directories"
+                << std::endl;
+      return 1;
+    }
     result = process_art_directory(config);
   } else {
-    ProgressTracker progress;
-    result = process_art_file(config, progress);
+    if (config.export_animation) {
+      result = process_animation_export(config);
 
-    if (!config.quiet) {
-      std::cout
-          << std::format(
-                 "Conversion complete: {} tiles processed, {} tiles failed",
-                 progress.completed, progress.failed)
-          << std::endl;
+      if (!config.quiet) {
+        std::cout << "Animation export completed successfully" << std::endl;
+      }
+    } else {
+      ProgressTracker progress;
+      result = process_art_file(config, progress);
+
+      if (!config.quiet) {
+        std::cout
+            << std::format(
+                   "Conversion complete: {} tiles processed, {} tiles failed",
+                   progress.completed, progress.failed)
+            << std::endl;
+      }
     }
   }
 

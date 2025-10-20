@@ -62,7 +62,9 @@ std::error_code map_system_error(const std::error_code& ec) {
       // File system errors
       case EIO:     // I/O error
       case ENOSPC:  // No space left on device
+#ifndef _WIN32
       case EDQUOT:  // Disk quota exceeded
+#endif
       case EFBIG:   // File too large
       case ENFILE:  // System file table full
       case EMFILE:  // Too many open files
@@ -78,10 +80,14 @@ std::error_code map_system_error(const std::error_code& ec) {
       case ENOTEMPTY:  // Directory not empty
       case EBUSY:      // Resource busy
 
-      // Network/mount related filesystem errors
-      case ESTALE:     // Stale file handle
-      case EREMOTE:    // Object is remote
+        // Network/mount related filesystem errors
+#ifndef _WIN32
+      case ESTALE:   // Stale file handle
+      case EREMOTE:  // Object is remote
+#ifdef EREMOTEIO
       case EREMOTEIO:  // Remote I/O error
+#endif
+#endif
 
         return make_error_code(errc::io_failure);
       default:
@@ -370,6 +376,7 @@ std::expected<std::monostate, Error> write_text_file(
     return make_error_expected<std::monostate>(
         mapped_ec, "Failed to open text file for writing: " + path.string());
   }
+
   // Write content to file
   file << content;
   if (!file) {
@@ -386,6 +393,12 @@ std::expected<std::monostate, Error> write_text_file(
     return make_error_expected<std::monostate>(
         mapped_ec, "Failed to flush text file: " + path.string());
   }
+
+  // Close file explicitly to ensure data is written
+  file.close();
+  // Note: We don't check the file stream state after close() as it's not reliable
+  // and can cause false failures on some platforms. The close() operation itself
+  // will flush the buffer, and that's sufficient for our needs.
 
   return make_success();
 }
