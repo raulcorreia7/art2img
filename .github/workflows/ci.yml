@@ -56,15 +56,15 @@ jobs:
     - name: Build (Windows)
       if: runner.os == 'Windows'
       run: |
-        cmake --build build --config Debug --parallel
+        cmake --build build --config Debug --parallel 4
         
     - name: Build (Unix)
       if: runner.os != 'Windows'
       run: |
         if [ "${{ runner.os }}" = "macOS" ]; then
-          cmake --build build --config Debug
+          cmake --build build --config Debug --parallel 4
         else
-          which ninja && cmake --build build --config Debug --parallel || cmake --build build --config Debug
+          which ninja && cmake --build build --config Debug --parallel 4 || cmake --build build --config Debug --parallel 4
         fi
         
     - name: Build Verification
@@ -84,11 +84,11 @@ jobs:
       run: |
         cd build
         if [ "${{ runner.os }}" = "Windows" ]; then
-          ctest --output-on-failure --parallel 1 --timeout 300
+          ctest --output-on-failure --parallel 4 --timeout 300
         elif [ "${{ runner.os }}" = "macOS" ]; then
-          ctest --output-on-failure --parallel 1 --timeout 300
+          ctest --output-on-failure --parallel 4 --timeout 300
         else
-          ctest --output-on-failure --parallel 1 --timeout 300
+          ctest --output-on-failure --parallel 4 --timeout 300
         fi
         
     - name: Test Status Check

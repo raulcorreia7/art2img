@@ -2,7 +2,7 @@
 
 **Convert Build Engine ART files to modern image formats**
 
-A command-line utility for converting Duke Nukem 3D and other Build Engine ART files to PNG, TGA, or BMP formats. Designed for game modders who need to extract and modify game assets.
+A command-line utility and C++ library for converting Duke Nukem 3D and other Build Engine ART files to PNG, TGA, or BMP formats. Designed for game modders who need to extract and modify game assets.
 
 ## Quick Start
 
@@ -48,6 +48,8 @@ art2img_cli art_folder/ --export-animation --anim-ini-filename my_anim.ini --out
 - **Batch Processing**: Convert entire directories of ART files
 - **Custom Palettes**: Use custom palette files if needed
 - **Cross-Platform**: Works on Windows, Linux, and macOS
+- **Library API**: Use as a C++ library with convenience functions and builder patterns
+- **Enhanced Error Handling**: Improved error messages with contextual information
 
 ## Command Line Options
 
@@ -69,6 +71,36 @@ art2img_cli art_folder/ --export-animation --anim-ini-filename my_anim.ini --out
 -q, --quiet                   Suppress non-error output
 -v, --verbose                 Verbose output
     --version                 Display program version information
+```
+
+## Library Usage
+
+The art2img library provides a clean, modern C++ API for integrating ART file conversion into your own applications:
+
+```cpp
+#include <art2img/api.hpp>
+
+// Simple one-call conversion
+auto result = art2img::convert_and_export(
+    "TILES.ART", 
+    "output/", 
+    art2img::ImageFormat::png);
+
+// Builder pattern for complex configurations
+auto conversion_options = art2img::ConversionOptionsBuilder()
+    .fix_transparency(true)
+    .apply_lookup(true)
+    .shade_index(0)
+    .build();
+
+auto export_options = art2img::ExportOptionsBuilder()
+    .output_dir("output/")
+    .format(art2img::ImageFormat::tga)
+    .conversion_options(conversion_options)
+    .build();
+
+// Convert single tile to image in memory
+auto image_result = art2img::convert_tile("TILES.ART", "PALETTE.DAT", 0);
 ```
 
 ## Troubleshooting

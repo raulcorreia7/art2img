@@ -110,7 +110,7 @@ std::expected<std::vector<types::byte>, Error> read_binary_file(
     const std::error_code ec = std::error_code(errno, std::system_category());
     const std::error_code mapped_ec = map_system_error(ec);
     return make_error_expected<std::vector<types::byte>>(
-        mapped_ec, "Failed to open file for reading: " + path.string());
+        mapped_ec, format_file_error("Failed to open file for reading", path));
   }
 
   // Get file size
@@ -153,7 +153,7 @@ std::expected<std::vector<types::byte>, Error> read_binary_file(
     const std::error_code ec = std::error_code(errno, std::system_category());
     const std::error_code mapped_ec = map_system_error(ec);
     return make_error_expected<std::vector<types::byte>>(
-        mapped_ec, "Failed to read file: " + path.string());
+        mapped_ec, format_file_error("Failed to read file", path));
   }
 
   return buffer;
@@ -178,7 +178,7 @@ std::expected<std::monostate, Error> write_binary_file(
     const std::error_code ec = std::error_code(errno, std::system_category());
     const std::error_code mapped_ec = map_system_error(ec);
     return make_error_expected<std::monostate>(
-        mapped_ec, "Failed to open file for writing: " + path.string());
+        mapped_ec, format_file_error("Failed to open file for writing", path));
   }
 
   // Write data to file
@@ -187,7 +187,7 @@ std::expected<std::monostate, Error> write_binary_file(
     const std::error_code ec = std::error_code(errno, std::system_category());
     const std::error_code mapped_ec = map_system_error(ec);
     return make_error_expected<std::monostate>(
-        mapped_ec, "Failed to write to file: " + path.string());
+        mapped_ec, format_file_error("Failed to write to file", path));
   }
 
   // Verify write was successful

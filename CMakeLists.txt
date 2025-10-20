@@ -25,6 +25,11 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
+# Enable parallel testing by default for CMake 3.29+
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.29")
+    set(CMAKE_CTEST_ARGUMENTS --parallel)
+endif()
+
 if(MSVC)
     add_compile_options(/W4)
 else()
