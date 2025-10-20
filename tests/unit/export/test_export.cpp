@@ -92,48 +92,83 @@ TEST_SUITE("Export Unit Tests") {
 
   TEST_CASE_FIXTURE(TestFixture, "export_art_files - with organize_by_format") {
     options.organize_by_format = true;
-    std::vector<std::filesystem::path> invalid_files = {"nonexistent.art"};
-    art2img::Palette palette;
+    // Use real test assets instead of invalid files
+    std::vector<std::filesystem::path> test_files = {
+        std::filesystem::path(TEST_ASSET_SOURCE_DIR) / "TILES001.ART"};
+    auto palette_result = art2img::load_palette(
+        std::filesystem::path(TEST_ASSET_SOURCE_DIR) / "PALETTE.DAT");
+    REQUIRE(palette_result.has_value());
+    auto palette = palette_result.value();
 
-    auto result = art2img::export_art_files(invalid_files, palette, options);
+    auto result = art2img::export_art_files(test_files, palette, options);
     REQUIRE(result.has_value());
+
+    // Just verify the function succeeded - detailed file checking can be done in integration tests
   }
 
   TEST_CASE_FIXTURE(TestFixture,
                     "export_art_files - with organize_by_art_file") {
     options.organize_by_art_file = true;
-    std::vector<std::filesystem::path> invalid_files = {"nonexistent.art"};
-    art2img::Palette palette;
+    // Use real test assets instead of invalid files
+    std::vector<std::filesystem::path> test_files = {
+        std::filesystem::path(TEST_ASSET_SOURCE_DIR) / "TILES001.ART"};
+    auto palette_result = art2img::load_palette(
+        std::filesystem::path(TEST_ASSET_SOURCE_DIR) / "PALETTE.DAT");
+    REQUIRE(palette_result.has_value());
+    auto palette = palette_result.value();
 
-    auto result = art2img::export_art_files(invalid_files, palette, options);
+    auto result = art2img::export_art_files(test_files, palette, options);
     REQUIRE(result.has_value());
+
+    // Just verify the function succeeded - detailed file checking can be done in integration tests
   }
 
   TEST_CASE_FIXTURE(TestFixture, "export_art_files - custom filename prefix") {
     options.filename_prefix = "custom_tile";
-    std::vector<std::filesystem::path> invalid_files = {"nonexistent.art"};
-    art2img::Palette palette;
+    // Use real test assets instead of invalid files
+    std::vector<std::filesystem::path> test_files = {
+        std::filesystem::path(TEST_ASSET_SOURCE_DIR) / "TILES001.ART"};
+    auto palette_result = art2img::load_palette(
+        std::filesystem::path(TEST_ASSET_SOURCE_DIR) / "PALETTE.DAT");
+    REQUIRE(palette_result.has_value());
+    auto palette = palette_result.value();
 
-    auto result = art2img::export_art_files(invalid_files, palette, options);
+    auto result = art2img::export_art_files(test_files, palette, options);
     REQUIRE(result.has_value());
+
+    // Just verify the function succeeded - detailed file checking can be done in integration tests
   }
 
   TEST_CASE_FIXTURE(TestFixture, "export_art_files - TGA format") {
     options.format = art2img::ImageFormat::tga;
-    std::vector<std::filesystem::path> invalid_files = {"nonexistent.art"};
-    art2img::Palette palette;
+    // Use real test assets instead of invalid files
+    std::vector<std::filesystem::path> test_files = {
+        std::filesystem::path(TEST_ASSET_SOURCE_DIR) / "TILES001.ART"};
+    auto palette_result = art2img::load_palette(
+        std::filesystem::path(TEST_ASSET_SOURCE_DIR) / "PALETTE.DAT");
+    REQUIRE(palette_result.has_value());
+    auto palette = palette_result.value();
 
-    auto result = art2img::export_art_files(invalid_files, palette, options);
+    auto result = art2img::export_art_files(test_files, palette, options);
     REQUIRE(result.has_value());
+
+    // Just verify the function succeeded - detailed file checking can be done in integration tests
   }
 
   TEST_CASE_FIXTURE(TestFixture, "export_art_files - BMP format") {
     options.format = art2img::ImageFormat::bmp;
-    std::vector<std::filesystem::path> invalid_files = {"nonexistent.art"};
-    art2img::Palette palette;
+    // Use real test assets instead of invalid files
+    std::vector<std::filesystem::path> test_files = {
+        std::filesystem::path(TEST_ASSET_SOURCE_DIR) / "TILES001.ART"};
+    auto palette_result = art2img::load_palette(
+        std::filesystem::path(TEST_ASSET_SOURCE_DIR) / "PALETTE.DAT");
+    REQUIRE(palette_result.has_value());
+    auto palette = palette_result.value();
 
-    auto result = art2img::export_art_files(invalid_files, palette, options);
+    auto result = art2img::export_art_files(test_files, palette, options);
     REQUIRE(result.has_value());
+
+    // Just verify the function succeeded - detailed file checking can be done in integration tests
   }
 
 }  // TEST_SUITE

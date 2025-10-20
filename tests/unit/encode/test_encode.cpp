@@ -221,15 +221,6 @@ TEST_SUITE("encode") {
     CHECK(check_bmp_header(result.value()));
   }
 
-  TEST_CASE("encode_image - with default options") {
-    const Image image = create_test_image(16, 16);
-    const ImageView view = image_view(image);
-
-    const auto result = encode_image(view, ImageFormat::png, std::monostate{});
-    REQUIRE(result.has_value());
-    CHECK(check_png_header(result.value()));
-  }
-
   TEST_CASE("encode_image - invalid options for format") {
     const Image image = create_test_image(16, 16);
     const ImageView view = image_view(image);

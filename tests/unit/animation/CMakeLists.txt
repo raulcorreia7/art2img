@@ -10,7 +10,7 @@ add_executable(test_animation_export
 target_link_libraries(test_animation_export
     PRIVATE
     doctest::doctest
-    art2img_lib
+    art2img_core
 )
 
 # Add test to CTest

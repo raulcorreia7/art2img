@@ -518,28 +518,3 @@ TEST_CASE("conversion pipeline order") {
 // ============================================================================
 // PERFORMANCE BENCHMARK (Optional)
 // ============================================================================
-
-TEST_CASE("performance sanity check" * doctest::skip()) {
-  const auto palette = create_test_palette();
-  const auto tile = create_test_tile(64, 64);
-  const ConversionOptions options;
-
-  // Time the conversion
-  const auto start = std::chrono::high_resolution_clock::now();
-
-  for (int i = 0; i < 100; ++i) {
-    const auto result = to_rgba(tile, palette, options);
-    REQUIRE(result);
-  }
-
-  const auto end = std::chrono::high_resolution_clock::now();
-  const auto duration =
-      std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-  // Should complete reasonably fast (adjust threshold as needed)
-  CHECK(duration.count() < 1000);  // Less than 1 second for 100 conversions
-
-  // Print timing information
-  MESSAGE("Converted 100x 64x64 tiles in ", duration.count(), " ms");
-  MESSAGE("Average time per conversion: ", duration.count() / 100.0, " ms");
-}

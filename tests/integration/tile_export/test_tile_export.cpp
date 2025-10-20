@@ -25,7 +25,7 @@
 #include <art2img/export.hpp>
 #include <art2img/io.hpp>
 
-#include "../test_helpers.hpp"
+#include "../../unit/test_helpers.hpp"
 
 namespace {
 

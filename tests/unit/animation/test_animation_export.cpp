@@ -455,21 +455,26 @@ TEST_SUITE("Animation Export Error Handling") {
   }
 
   TEST_CASE_FIXTURE(AnimationTestFixture, "file system permission errors") {
-    // Create a unique read-only directory to test permission errors
+    // Create a subdirectory and make it read-only to test permission errors
     const std::filesystem::path readonly_dir =
-        test_helpers::create_unique_test_dir(temp_dir, "readonly");
+        test_helpers::create_unique_test_dir(temp_dir, "readonly_test");
 
-    // Make directory read-only (if possible on this system)
+    // Create a file in the directory first
+    std::ofstream dummy_file(readonly_dir / "dummy.txt");
+    dummy_file.close();
+
+    // Make directory read-only (attempt to remove write permissions)
     std::error_code ec;
     std::filesystem::permissions(readonly_dir,
-                                 std::filesystem::perms::owner_all |
-                                     std::filesystem::perms::group_all |
-                                     std::filesystem::perms::others_all,
+                                 std::filesystem::perms::owner_write |
+                                     std::filesystem::perms::group_write |
+                                     std::filesystem::perms::others_write,
                                  std::filesystem::perm_options::remove, ec);
 
     // Configure to write to read-only directory
     art2img::AnimationExportConfig config_readonly = config;
     config_readonly.output_dir = readonly_dir;
+    config_readonly.ini_filename = "test_animdata.ini";
 
     // Create test ART file
     const auto test_data = create_animated_art_file(500, 8, 8);
@@ -482,12 +487,14 @@ TEST_SUITE("Animation Export Error Handling") {
 
     // Restore permissions for cleanup
     std::filesystem::permissions(readonly_dir,
-                                 std::filesystem::perms::owner_all |
-                                     std::filesystem::perms::group_all |
-                                     std::filesystem::perms::others_all,
+                                 std::filesystem::perms::owner_write |
+                                     std::filesystem::perms::group_write |
+                                     std::filesystem::perms::others_write,
                                  std::filesystem::perm_options::add, ec);
 
     // Check that export failed appropriately
+    // Note: This test may not fail on all systems, so we'll accept either outcome
+    // but at least verify the function doesn't crash
     if (!export_result.has_value()) {
       CHECK(export_result.error().code == art2img::errc::io_failure);
     }

@@ -333,13 +333,6 @@ TEST_SUITE("ART Error Handling") {
     // Just check that we have some error message - the exact wording may vary
     CHECK(!msg.empty());
   }
-
-  TEST_CASE("Invalid tile dimensions") {
-    // Skip this test for now - the helper functions are not properly exported
-    // This test would require creating a custom ART file with invalid
-    // dimensions which is complex to do without the helper functions
-    CHECK(true);  // Placeholder to make the test pass
-  }
 }
 
 TEST_SUITE("Sidecar File Discovery") {

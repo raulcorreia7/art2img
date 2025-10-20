@@ -433,12 +433,14 @@ TEST_SUITE("io") {
   }
 
   TEST_CASE("get_filesystem_error_message") {
-    // Create a test error
-    std::error_code ec(errno, std::system_category());
+    // Create a test error with a specific error code
+    std::error_code ec(
+        2, std::system_category());  // ENOENT - No such file or directory
     const std::string message = get_filesystem_error_message(ec);
 
     CHECK(!message.empty());
-    CHECK(message.find(std::to_string(ec.value())) != std::string::npos);
+    // Check that the message contains the error code
+    CHECK(message.find("2") != std::string::npos);
   }
 
 }  // TEST_SUITE("io")
