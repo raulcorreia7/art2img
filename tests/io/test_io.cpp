@@ -2,12 +2,14 @@
 /// @brief Unit tests for file I/O functions
 
 #include <atomic>
+#include <chrono>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <random>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <doctest/doctest.h>
@@ -73,13 +75,18 @@ TEST_SUITE("io") {
     const auto temp_dir = create_temp_dir();
     const auto test_file = temp_dir / "test_binary.dat";
 
-    // Create test file
+    // Create test file with proper synchronization
     const auto test_data = create_test_binary_data();
     {
       std::ofstream file(test_file, std::ios::binary);
       file.write(reinterpret_cast<const char*>(test_data.data()),
                  test_data.size());
+      file.flush();  // Explicit flush to ensure data is written
+      file.close();  // Explicit close to ensure file handle is released
     }
+
+    // Add filesystem synchronization barrier to prevent race conditions
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
     // Test reading
     const auto result = read_binary_file(test_file);
@@ -146,14 +153,15 @@ TEST_SUITE("io") {
 
   TEST_CASE("write_binary_file - permission error simulation") {
     // Test error path by trying to write to an invalid location
-    // Use platform-specific impossible paths
+    // Use cross-platform approach with invalid characters
     std::filesystem::path impossible_path;
 
 #ifdef _WIN32
-    // Windows: Use reserved device name that cannot be created
-    impossible_path = "CON:/test.dat";
+    // Windows: Use path with invalid characters that are not allowed in filenames
+    // These characters are universally invalid on Windows: < > : " | ? *
+    impossible_path = "test_path_with_invalid_chars<>:\"|?*.dat";
 #else
-    // Unix-like: Use path that cannot exist
+    // Unix-like: Use path that cannot exist (root-level impossible path)
     impossible_path = "/impossible/path/test.dat";
 #endif
 
@@ -172,12 +180,17 @@ TEST_SUITE("io") {
     const auto temp_dir = create_temp_dir();
     const auto test_file = temp_dir / "test_text.txt";
 
-    // Create test file
+    // Create test file with proper synchronization
     const auto test_text = create_test_text_data();
     {
       std::ofstream file(test_file);
       file << test_text;
+      file.flush();  // Explicit flush to ensure data is written
+      file.close();  // Explicit close to ensure file handle is released
     }
+
+    // Add filesystem synchronization barrier to prevent race conditions
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
     // Test reading
     const auto result = read_text_file(test_file);
@@ -196,6 +209,9 @@ TEST_SUITE("io") {
     // Test writing
     const auto result = write_text_file(test_file, test_text);
     REQUIRE(result.has_value());
+
+    // Add filesystem synchronization barrier to prevent race conditions
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
     // Verify file was written correctly
     std::ifstream file(test_file);
