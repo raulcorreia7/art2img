@@ -111,7 +111,7 @@ std::expected<ArtData, Error> load_art_bundle(const std::filesystem::path& path,
   std::ifstream file(path, std::ios::binary | std::ios::ate);
   if (!file) {
     return make_error_expected<ArtData>(
-        errc::io_failure, "Failed to open ART file: " + path.string());
+        errc::io_failure, format_file_error("Failed to open ART file", path));
   }
 
   // Get file size
@@ -119,21 +119,22 @@ std::expected<ArtData, Error> load_art_bundle(const std::filesystem::path& path,
   if (file_size < 0) {
     return make_error_expected<ArtData>(
         errc::io_failure,
-        "Failed to determine ART file size: " + path.string());
+        format_file_error("Failed to determine ART file size", path));
   }
 
   // Seek back to beginning
   file.seekg(0, std::ios::beg);
   if (!file) {
     return make_error_expected<ArtData>(
-        errc::io_failure, "Failed to seek in ART file: " + path.string());
+        errc::io_failure,
+        format_file_error("Failed to seek in ART file", path));
   }
 
   // Read entire file into buffer
   std::vector<byte> buffer(static_cast<std::size_t>(file_size));
   if (!file.read(reinterpret_cast<char*>(buffer.data()), file_size)) {
     return make_error_expected<ArtData>(
-        errc::io_failure, "Failed to read ART file: " + path.string());
+        errc::io_failure, format_file_error("Failed to read ART file", path));
   }
 
   // Parse loaded data
@@ -219,10 +220,12 @@ std::expected<ArtData, Error> load_art_bundle(std::span<const byte> data,
   for (u32 i = 0; i < tile_count; ++i) {
     if (!detail::is_valid_tile_dimensions(tile_widths[i], tile_heights[i])) {
       return make_error_expected<ArtData>(
-          errc::invalid_art, "Invalid tile dimensions for tile " +
-                                 std::to_string(i) + ": " +
-                                 std::to_string(tile_widths[i]) + "x" +
-                                 std::to_string(tile_heights[i]));
+          errc::invalid_art,
+          format_tile_error("Invalid tile dimensions for tile " +
+                                std::to_string(i) + ": " +
+                                std::to_string(tile_widths[i]) + "x" +
+                                std::to_string(tile_heights[i]),
+                            i));
     }
   }
 

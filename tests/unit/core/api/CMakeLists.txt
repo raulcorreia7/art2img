@@ -1,5 +1,6 @@
 add_executable(test_convenience
   test_convenience.cpp
+  test_builders.cpp
 )
 
 target_link_libraries(test_convenience

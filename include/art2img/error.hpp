@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <expected>
+#include <filesystem>
 #include <string>
 #include <system_error>
 #include <variant>
@@ -114,5 +115,26 @@ template <typename T>
 std::expected<T, Error> make_success(T&& value) {
   return std::forward<T>(value);
 }
+
+/// @brief Create a detailed error message with context
+/// @param base_message The base error message
+/// @param context Additional context information
+/// @return Formatted error message with context
+std::string format_error_message(const std::string& base_message,
+                                 const std::string& context);
+
+/// @brief Create a detailed error message with file context
+/// @param base_message The base error message
+/// @param file_path The file path related to the error
+/// @return Formatted error message with file context
+std::string format_file_error(const std::string& base_message,
+                              const std::filesystem::path& file_path);
+
+/// @brief Create a detailed error message with tile context
+/// @param base_message The base error message
+/// @param tile_index The tile index related to the error
+/// @return Formatted error message with tile context
+std::string format_tile_error(const std::string& base_message,
+                              std::size_t tile_index);
 
 }  // namespace art2img
