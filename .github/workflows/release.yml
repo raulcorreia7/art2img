@@ -26,7 +26,7 @@ jobs:
           - os: windows-latest
             artifact_name: art2img.exe
             asset_name: art2img-windows-x86.exe
-            arch: x86
+            arch: Win32
     
     runs-on: ${{ matrix.os }}
     
@@ -36,7 +36,7 @@ jobs:
         
     - name: Configure CMake
       run: |
-        cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.arch && format('-A {0}', matrix.arch) || '' }}
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.arch && format('-A {0}', matrix.arch) || '' }}
         
     - name: Build
       run: |
