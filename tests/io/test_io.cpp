@@ -397,7 +397,7 @@ TEST_SUITE("io") {
     REQUIRE(write_result.has_value());
 
     // Add filesystem synchronization barrier to prevent race conditions
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
     // Read it back
     const auto read_result = read_text_file(test_file);
