@@ -35,6 +35,16 @@ enum class errc : std::uint8_t {
   no_animation = 7
 };
 
+}  // namespace art2img
+
+/// @brief Enable std::error_code construction from art2img::errc
+namespace std {
+template <>
+struct is_error_code_enum<art2img::errc> : std::true_type {};
+}  // namespace std
+
+namespace art2img {
+
 /// @brief Forward declaration of make_error_code function
 std::error_code make_error_code(errc e) noexcept;
 
@@ -106,9 +116,3 @@ std::expected<T, Error> make_success(T&& value) {
 }
 
 }  // namespace art2img
-
-/// @brief Enable std::error_code construction from art2img::errc
-namespace std {
-template <>
-struct is_error_code_enum<art2img::errc> : std::true_type {};
-}  // namespace std
