@@ -29,7 +29,10 @@ enum class errc : std::uint8_t {
     encoding_failure = 5,
     
     /// @brief Requested operation or format is not supported
-    unsupported = 6
+    unsupported = 6,
+    
+    /// @brief No animation data found in ART file
+    no_animation = 7
 };
 
 /// @brief Forward declaration of make_error_code function

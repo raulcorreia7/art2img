@@ -27,6 +27,9 @@ struct CliConfig {
     int shade_index = -1;  // -1 means no shading
     bool apply_lookup = true;
     bool premultiply_alpha = false;
+    bool export_animation = false;
+    std::string anim_ini_filename = "animdata.ini";
+    bool include_non_animated_tiles = true;
 };
 
 /**

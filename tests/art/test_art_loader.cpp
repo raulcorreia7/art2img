@@ -203,7 +203,7 @@ TEST_SUITE("ART Loader") {
     TEST_CASE("Load ART file from filesystem") {
         // Create a temporary ART file
         const auto test_data = ArtTestFixture::create_minimal_art_file();
-        const std::string temp_file = std::filesystem::temp_directory_path() / "test_temp.art";
+        const std::string temp_file = (std::filesystem::temp_directory_path() / "test_temp.art").string();
         
         // Write test data to file
         std::ofstream file(temp_file, std::ios::binary);
@@ -376,7 +376,17 @@ TEST_SUITE("Sidecar File Discovery") {
             return; // Skip test if file not found
         }
         
-        auto result = art2img::load_lookup_data(lookup_path);
+        // Read file into memory first
+        std::ifstream file(lookup_path, std::ios::binary | std::ios::ate);
+        std::streamsize size = file.tellg();
+        file.seekg(0, std::ios::beg);
+        
+        std::vector<std::byte> buffer(size);
+        if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) {
+            return; // Skip test if file read fails
+        }
+        
+        auto result = art2img::load_lookup_data(buffer);
         
         REQUIRE(result.has_value());
         const auto& lookup_data = result.value();

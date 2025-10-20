@@ -18,19 +18,23 @@
 /// All functions use std::expected<T, Error> for error handling with proper validation
 /// according to Architecture §14 validation rules.
 
-#include <art2img/types.hpp>
 #include <art2img/art.hpp>
+#include <art2img/types.hpp>
 #include <fstream>
 #include <algorithm>
 #include <cstring>
 #include <filesystem>
+#include <iomanip>
+#include <sstream>
 
 namespace art2img
 {
-    using types::byte;
-    using types::u8;
-    using types::u16;
-    using types::u32;
+using types::byte;
+using types::u8;
+using types::i8;
+using types::u16;
+using types::i32;
+using types::u32;
 
     namespace
     {
@@ -132,44 +136,18 @@ namespace art2img
         u32 result = 0;
         result |= static_cast<u32>(frame_count & 0x3F);
         result |= static_cast<u32>(static_cast<u8>(type) & 0x03) << 6;
-        result |= static_cast<u32>(static_cast<u8>(y_center_offset) & 0xFF) << 8;
         result |= static_cast<u32>(static_cast<u8>(x_center_offset) & 0xFF) << 16;
+        result |= static_cast<u32>(static_cast<u8>(y_center_offset) & 0xFF) << 8;
         result |= static_cast<u32>(speed & 0x0F) << 24;
         return result;
-    }
+}
 
     // ============================================================================
-    // ArtData Implementation
-    // ============================================================================
-
-    std::optional<TileView> ArtData::get_tile(std::size_t index) const noexcept
-    {
-        if (index >= tiles.size())
-        {
-            return std::nullopt;
-        }
-        return tiles[index];
-    }
-
-    std::optional<TileView> ArtData::get_tile_by_id(u32 tile_id) const noexcept
-    {
-        // Find the tile with the matching ID
-        for (std::size_t i = 0; i < tile_ids.size(); ++i)
-        {
-            if (tile_ids[i] == tile_id)
-            {
-                return tiles[i];
-            }
-        }
-        return std::nullopt;
-    }
-
-    // ============================================================================
-    // ART Loading Implementation
+    // ART Bundle Loading Implementation
     // ============================================================================
 
     std::expected<ArtData, Error> load_art_bundle(
-        const std::filesystem::path &path,
+        const std::filesystem::path& path,
         PaletteHint hint)
     {
         // Open file in binary mode
@@ -198,13 +176,13 @@ namespace art2img
 
         // Read entire file into buffer
         std::vector<byte> buffer(static_cast<std::size_t>(file_size));
-        if (!file.read(reinterpret_cast<char *>(buffer.data()), file_size))
+        if (!file.read(reinterpret_cast<char*>(buffer.data()), file_size))
         {
             return make_error_expected<ArtData>(errc::io_failure,
                                                 "Failed to read ART file: " + path.string());
         }
 
-        // Parse the loaded data
+        // Parse loaded data
         return load_art_bundle(buffer, hint);
     }
 
@@ -385,26 +363,26 @@ namespace art2img
     // Helper Functions Implementation
     // ============================================================================
 
-    std::optional<TileView> make_tile_view(const ArtData &art_data, std::size_t index)
+    std::optional<TileView> make_tile_view(const ArtData& art_data, std::size_t index)
     {
         return art_data.get_tile(index);
     }
 
-    std::optional<TileView> make_tile_view_by_id(const ArtData &art_data, u32 tile_id)
+    std::optional<TileView> make_tile_view_by_id(const ArtData& art_data, u32 tile_id)
     {
         return art_data.get_tile_by_id(tile_id);
     }
 
-    std::filesystem::path discover_sidecar_palette(const std::filesystem::path &art_path)
+    std::filesystem::path discover_sidecar_palette(const std::filesystem::path& art_path)
     {
-        // Try to find PALETTE.DAT in the same directory
+        // Try to find PALETTE.DAT in same directory
         const std::filesystem::path palette_path = art_path.parent_path() / "PALETTE.DAT";
         if (std::filesystem::exists(palette_path))
         {
             return palette_path;
         }
 
-        // Try to find a palette with the same basename as the ART file
+        // Try to find a palette with same basename as ART file
         const std::filesystem::path same_basename = art_path.parent_path() / art_path.stem().concat(".DAT");
         if (std::filesystem::exists(same_basename))
         {
@@ -414,9 +392,9 @@ namespace art2img
         return {}; // Not found
     }
 
-    std::filesystem::path discover_lookup_file(const std::filesystem::path &art_path)
+    std::filesystem::path discover_lookup_file(const std::filesystem::path& art_path)
     {
-        // Try to find LOOKUP.DAT in the same directory
+        // Try to find LOOKUP.DAT in same directory
         const std::filesystem::path lookup_path = art_path.parent_path() / "LOOKUP.DAT";
         if (std::filesystem::exists(lookup_path))
         {
@@ -426,71 +404,47 @@ namespace art2img
         return {}; // Not found
     }
 
-    std::expected<std::vector<u8>, Error> load_lookup_data(
-        const std::filesystem::path &lookup_path)
+    std::expected<std::vector<types::u8>, Error> load_lookup_data(
+        std::span<const types::byte> data)
     {
-        // Open file in binary mode
-        std::ifstream file(lookup_path, std::ios::binary | std::ios::ate);
-        if (!file)
-        {
-            return make_error_expected<std::vector<u8>>(errc::io_failure,
-                                                        "Failed to open LOOKUP.DAT file: " + lookup_path.string());
-        }
-
-        // Get file size
-        const auto file_size = file.tellg();
-        if (file_size < 0)
-        {
-            return make_error_expected<std::vector<u8>>(errc::io_failure,
-                                                        "Failed to determine LOOKUP.DAT file size: " + lookup_path.string());
-        }
-
-        // Seek back to beginning
-        file.seekg(0, std::ios::beg);
-        if (!file)
-        {
-            return make_error_expected<std::vector<u8>>(errc::io_failure,
-                                                        "Failed to seek in LOOKUP.DAT file: " + lookup_path.string());
-        }
-
-        // Validate file size (LOOKUP.DAT should have reasonable size)
-        if (file_size < 256)
-        {
-            return make_error_expected<std::vector<u8>>(errc::invalid_art,
-                                                        "Invalid LOOKUP.DAT file size: " + std::to_string(file_size) +
-                                                            " bytes (must be at least 256)");
-        }
-
-        // Read entire file into buffer
-        std::vector<u8> buffer(static_cast<std::size_t>(file_size));
-        if (!file.read(reinterpret_cast<char *>(buffer.data()), file_size))
-        {
-            return make_error_expected<std::vector<u8>>(errc::io_failure,
-                                                        "Failed to read LOOKUP.DAT file: " + lookup_path.string());
-        }
-
-        return buffer;
-    }
-
-    std::expected<std::vector<u8>, Error> load_lookup_data(
-        std::span<const byte> data)
-    {
-        // Validate data size (LOOKUP.DAT should have reasonable size)
+        // LOOKUP.DAT should contain shade tables - minimum reasonable size is 256 bytes
         if (data.size() < 256)
         {
-            return make_error_expected<std::vector<u8>>(errc::invalid_art,
-                                                        "Invalid LOOKUP.DAT data size: " + std::to_string(data.size()) +
-                                                            " bytes (must be at least 256)");
+            return make_error_expected<std::vector<types::u8>>(errc::invalid_art,
+                                                             "LOOKUP.DAT data must be at least 256 bytes");
         }
 
-        // Convert byte span to uint8 vector
-        std::vector<u8> result(data.size());
-        for (std::size_t i = 0; i < data.size(); ++i)
-        {
-            result[i] = static_cast<u8>(data[i]);
-        }
+        // Convert byte span to u8 vector
+        std::vector<types::u8> result(data.size());
+        std::memcpy(result.data(), data.data(), data.size());
 
         return result;
+    }
+
+    // ============================================================================
+    // ArtData Helper Methods Implementation  
+    // ============================================================================
+
+    std::optional<TileView> ArtData::get_tile(std::size_t index) const noexcept
+    {
+        if (index < tiles.size())
+        {
+            return tiles[index];
+        }
+        return std::nullopt;
+    }
+
+    std::optional<TileView> ArtData::get_tile_by_id(u32 tile_id) const noexcept
+    {
+        // Find tile with matching ID
+        for (std::size_t i = 0; i < tile_ids.size(); ++i)
+        {
+            if (tile_ids[i] == tile_id)
+            {
+                return tiles[i];
+            }
+        }
+        return std::nullopt;
     }
 
 } // namespace art2img

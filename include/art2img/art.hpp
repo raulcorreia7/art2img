@@ -49,10 +49,10 @@ struct TileAnimation {
     /// @brief Animation speed/timing (bits 24-27 of picanm)
     u8 speed = 0;
     
-    /// @brief X-center offset (bits 16-23 of picanm, signed)
+    /// @brief X-center offset (bits 8-15 of picanm, signed)
     i8 x_center_offset = 0;
     
-    /// @brief Y-center offset (bits 8-15 of picanm, signed)
+    /// @brief Y-center offset (bits 16-23 of picanm, signed)
     i8 y_center_offset = 0;
     
     /// @brief Default constructor
@@ -187,13 +187,38 @@ std::filesystem::path discover_lookup_file(const std::filesystem::path& art_path
 /// @brief Load LOOKUP.DAT remap data
 /// @param lookup_path Path to LOOKUP.DAT file
 /// @return Expected vector of remap data on success, Error on failure
-std::expected<std::vector<u8>, Error> load_lookup_data(
-    const std::filesystem::path& lookup_path);
+std::expected<std::vector<types::u8>, Error> load_lookup_data(
+    std::span<const types::byte> data);
 
-/// @brief Load LOOKUP.DAT remap data from byte span
-/// @param data Span containing the raw LOOKUP.DAT data
-/// @return Expected vector of remap data on success, Error on failure
-std::expected<std::vector<u8>, Error> load_lookup_data(
-    std::span<const std::byte> data);
+/// @brief Animation data export configuration
+struct AnimationExportConfig {
+    /// @brief Output directory for animation files
+    std::filesystem::path output_dir = ".";
+    
+    /// @brief Base filename for animation tiles
+    std::string base_name = "tile";
+    
+    /// @brief Include tiles without animation data
+    bool include_non_animated = true;
+    
+    /// @brief Generate INI file with animation metadata
+    bool generate_ini = true;
+    
+    /// @brief INI filename (default: animdata.ini)
+    std::string ini_filename = "animdata.ini";
+};
+
+/// @brief Export animation data from ART file to INI format
+/// @param art_data The art data container
+/// @param config Export configuration
+/// @return Expected monostate on success, Error on failure
+std::expected<std::monostate, Error> export_animation_data(
+    const ArtData& art_data,
+    const AnimationExportConfig& config = {});
+
+/// @brief Get animation type string from enum value
+/// @param type Animation type enum
+/// @return String representation of animation type
+std::string get_animation_type_string(TileAnimation::Type type);
 
 } // namespace art2img
