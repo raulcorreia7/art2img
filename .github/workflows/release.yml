@@ -155,9 +155,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          ${{ matrix.artifact_path }}
           ${{ matrix.archive_name }}${{ matrix.archive_ext }}
-          ${{ matrix.asset_name }}.sha256
           ${{ matrix.archive_name }}${{ matrix.archive_ext }}.sha256
 
   source:
