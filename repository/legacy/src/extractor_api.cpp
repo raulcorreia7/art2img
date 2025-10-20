@@ -384,7 +384,7 @@ std::string ExtractorAPI::get_animation_type_string(uint32_t anim_type) const {
   case 0:
     return "none";
   case 1:
-    return "oscillation";
+    return "oscillating";
   case 2:
     return "forward";
   case 3:
