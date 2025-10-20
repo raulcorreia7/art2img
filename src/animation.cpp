@@ -141,12 +141,6 @@ std::expected<std::monostate, Error> export_animation_data(
 
     ini_file.close();
 
-    if (!found_animated_tiles && !config.include_non_animated)
-    {
-        return make_error_expected<std::monostate>(errc::no_animation,
-                                               "No animated tiles found in ART file");
-    }
-
     return std::monostate{};
 }
 
