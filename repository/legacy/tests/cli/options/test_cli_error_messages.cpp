@@ -8,8 +8,8 @@
 #include <string>
 #include <system_error>
 
-#include "cli_operations.hpp"
 #include "art2img/palette.hpp"
+#include "cli_operations.hpp"
 #include "test_helpers.hpp"
 
 namespace {

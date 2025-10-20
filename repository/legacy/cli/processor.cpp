@@ -10,8 +10,8 @@
 #include <thread>
 #include <vector>
 
-#include "cli_operations.hpp"
 #include "art2img/version.hpp"
+#include "cli_operations.hpp"
 
 // =============================================================================
 

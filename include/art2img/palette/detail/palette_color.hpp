@@ -5,7 +5,7 @@
 
 namespace art2img::palette::detail {
 
-color::Color make_palette_color(const Palette& palette, types::u8 index) noexcept;
+color::Color make_palette_color(const Palette &palette,
+                                types::u8 index) noexcept;
 
 } // namespace art2img::palette::detail
-

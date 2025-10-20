@@ -8,14 +8,14 @@
 // =============================================================================
 
 #include "art2img/art_file.hpp"
-#include "cli_app_builder.hpp"
 #include "art2img/colors.hpp"
-#include "config.hpp"
 #include "art2img/exceptions.hpp"
 #include "art2img/extractor_api.hpp"
 #include "art2img/palette.hpp"
-#include "processor.hpp"
 #include "art2img/version.hpp"
+#include "cli_app_builder.hpp"
+#include "config.hpp"
+#include "processor.hpp"
 
 // =============================================================================
 // Main Entry Point

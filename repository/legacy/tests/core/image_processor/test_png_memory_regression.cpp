@@ -47,7 +47,7 @@ TEST_CASE("PNG Memory Regression - In-memory vs File output") {
     SUBCASE("Image processor RGBA conversion") {
       // Test the image_processor module directly
       auto rgba_data = image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
-                                                                 pixel_data.size(), options);
+                                                        pixel_data.size(), options);
       CHECK_EQ(rgba_data.size(), pixel_count * 4);
 
       // Verify alpha values
@@ -59,7 +59,7 @@ TEST_CASE("PNG Memory Regression - In-memory vs File output") {
     SUBCASE("File operations PNG encoding") {
       // Test the file_operations module directly
       auto rgba_data = image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
-                                                                 pixel_data.size(), options);
+                                                        pixel_data.size(), options);
       auto png_data =
           art2img::file_operations::encode_png_to_memory(rgba_data, tile.width, tile.height);
       CHECK_GT(png_data.size(), 0);
@@ -81,7 +81,7 @@ TEST_CASE("PNG Memory Regression - In-memory vs File output") {
 
       // Direct module usage
       auto rgba_data = image_processor::convert_to_rgba(palette, tile, pixel_data.data(),
-                                                                 pixel_data.size(), options);
+                                                        pixel_data.size(), options);
       auto direct_png =
           art2img::file_operations::encode_png_to_memory(rgba_data, tile.width, tile.height);
       CHECK_GT(direct_png.size(), 0);
