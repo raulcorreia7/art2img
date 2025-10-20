@@ -1,0 +1,81 @@
+# .clang-format configuration for art2img project
+# Based on Google style with some adjustments for C++23
+
+Language: Cpp
+BasedOnStyle: Google
+
+# Standard to use for parsing
+Standard: c++23
+
+# Line length limit
+ColumnLimit: 100
+
+# Indentation
+IndentWidth: 2
+UseTab: Never
+IndentCaseLabels: true
+
+# Braces
+BreakBeforeBraces: Attach
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: Never
+
+# Spaces
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+SpacesInCStyleCastParentheses: false
+SpaceAfterCStyleCast: false
+SpacesInSquareBrackets: false
+SpaceBeforeAssignmentOperators: true
+
+# References
+DerivePointerAlignment: false
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# Includes
+SortIncludes: true
+IncludeBlocks: Regroup
+IncludeCategories:
+  # Standard library headers
+  - Regex:           '^<[a-z_]+>$'
+    Priority:        1
+  # C++ standard library headers  
+  - Regex:           '^<[a-z_]+(/.*)?>$'
+    Priority:        2
+  # Third-party libraries (stb, fmt, CLI11, doctest)
+  - Regex:           '^<.*>$'
+    Priority:        3
+  # Project headers
+  - Regex:           '^".*"$'
+    Priority:        4
+
+# Namespaces
+NamespaceIndentation: None
+CompactNamespaces: false
+
+# Line breaking
+AllowShortBlocksOnASingleLine: Empty
+AllowShortEnumsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+
+# Comments
+ReflowComments: true
+
+# Alignment
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignOperands: true
+AlignTrailingComments: true
+
+# Modern C++ features
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllArgumentsOnNextLine: false
+BinPackArguments: false
+BinPackParameters: false
+
+# Trailing whitespace and newlines
+DeriveLineEnding: true
+RemoveBracesLLVM: false
