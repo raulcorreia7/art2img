@@ -30,6 +30,7 @@
 
 #include <art2img/art.hpp>
 #include <art2img/detail/binary_reader.hpp>
+#include <art2img/detail/validation.hpp>
 #include <art2img/types.hpp>
 
 namespace art2img {
@@ -41,13 +42,6 @@ using types::u32;
 using types::u8;
 
 namespace {
-
-/// @brief Validate tile dimensions are within reasonable bounds
-constexpr bool is_valid_tile_dimensions(u16 width, u16 height) noexcept {
-  return (width == 0 && height == 0) ||  // Allow empty tiles
-         (width > 0 && height > 0 && width <= constants::MAX_TILE_WIDTH &&
-          height <= constants::MAX_TILE_HEIGHT);
-}
 
 /// @brief Calculate expected pixel data size for all tiles
 std::size_t calculate_total_pixel_size(std::span<const u16> widths,
@@ -223,7 +217,7 @@ std::expected<ArtData, Error> load_art_bundle(std::span<const byte> data,
 
   // Validate tile dimensions
   for (u32 i = 0; i < tile_count; ++i) {
-    if (!is_valid_tile_dimensions(tile_widths[i], tile_heights[i])) {
+    if (!detail::is_valid_tile_dimensions(tile_widths[i], tile_heights[i])) {
       return make_error_expected<ArtData>(
           errc::invalid_art, "Invalid tile dimensions for tile " +
                                  std::to_string(i) + ": " +
