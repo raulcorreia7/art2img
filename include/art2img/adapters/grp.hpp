@@ -18,20 +18,23 @@ struct GrpEntry {
   std::span<const std::byte> data;
 };
 
-struct GrpCatalog {
-  std::vector<GrpEntry> entries;
+class GrpFile {
+ public:
+  GrpFile() = default;
+
+  const std::vector<GrpEntry>& entries() const noexcept { return entries_; }
+
+  std::optional<GrpEntry> entry(std::string_view name) const noexcept;
 
  private:
+  std::vector<GrpEntry> entries_;
   std::shared_ptr<std::vector<std::byte>> storage_{};
 
-  friend std::expected<GrpCatalog, core::Error> load_grp(
+  friend std::expected<GrpFile, core::Error> load_grp(
       std::span<const std::byte>) noexcept;
 };
 
-std::expected<GrpCatalog, core::Error> load_grp(
+std::expected<GrpFile, core::Error> load_grp(
     std::span<const std::byte> blob) noexcept;
-
-std::optional<GrpEntry> find_entry(const GrpCatalog& catalog,
-                                   std::string_view name) noexcept;
 
 }  // namespace art2img::adapters
