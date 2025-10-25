@@ -7,13 +7,9 @@
 #include <span>
 #include <vector>
 
-#include <art2img/io.hpp>
-
 #include "../core/error.hpp"
 
 namespace art2img::adapters {
-
-namespace core = ::art2img::core;
 
 std::expected<std::vector<std::byte>, core::Error> read_binary_file(
     const std::filesystem::path& path);

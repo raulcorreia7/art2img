@@ -8,8 +8,6 @@
 
 namespace art2img::adapters {
 
-namespace core = ::art2img::core;
-
 namespace {
 core::Error manifest_error(std::string message) {
   return core::make_error(core::errc::conversion_failure, std::move(message));

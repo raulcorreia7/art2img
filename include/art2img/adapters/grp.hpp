@@ -13,8 +13,6 @@
 
 namespace art2img::adapters {
 
-namespace core = ::art2img::core;
-
 struct GrpEntry {
   std::string name;
   std::span<const std::byte> data;
