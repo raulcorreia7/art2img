@@ -8,17 +8,18 @@
  * Include this header to access the complete art2img API.
  */
 
-// Core types and error handling
-#include "error.hpp"
-#include "types.hpp"
-
-// Core modules
-#include "art.hpp"
-#include "convenience.hpp"
-#include "convert.hpp"
-#include "encode.hpp"
-#include "io.hpp"
-#include "palette.hpp"
+// Public memory-first surface
+#include "adapters/grp.hpp"
+#include "adapters/io.hpp"
+#include "adapters/meta_serialization.hpp"
+#include "core/art.hpp"
+#include "core/convert.hpp"
+#include "core/encode.hpp"
+#include "core/error.hpp"
+#include "core/image.hpp"
+#include "core/meta.hpp"
+#include "core/palette.hpp"
+#include "extras/batch.hpp"
 
 /**
  * @namespace art2img
