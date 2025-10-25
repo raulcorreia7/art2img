@@ -41,7 +41,7 @@ std::string normalise_name(std::string_view name) {
 
 }  // namespace
 
-std::expected<GrpCatalog, core::Error> load_grp(
+std::expected<GrpFile, core::Error> load_grp(
     std::span<const std::byte> blob) noexcept {
   if (blob.size() < kSignature.size() + 4) {
     return std::unexpected(core::make_error(
@@ -85,16 +85,15 @@ std::expected<GrpCatalog, core::Error> load_grp(
     directory_cursor += kDirectoryEntrySize;
   }
 
-  GrpCatalog catalog;
-  catalog.entries = std::move(entries);
-  catalog.storage_ = std::move(storage);
-  return catalog;
+  GrpFile file;
+  file.entries_ = std::move(entries);
+  file.storage_ = std::move(storage);
+  return file;
 }
 
-std::optional<GrpEntry> find_entry(const GrpCatalog& catalog,
-                                   std::string_view name) noexcept {
+std::optional<GrpEntry> GrpFile::entry(std::string_view name) const noexcept {
   std::string key = normalise_name(name);
-  for (const auto& entry : catalog.entries) {
+  for (const auto& entry : entries_) {
     if (entry.name == key) {
       return entry;
     }
