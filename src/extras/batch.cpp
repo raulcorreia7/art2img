@@ -10,8 +10,6 @@
 
 namespace art2img::extras {
 
-namespace core = ::art2img::core;
-
 std::expected<BatchResult, core::Error> convert_tiles(
     const BatchRequest& request) {
   if (request.archive == nullptr || request.palette == nullptr) {

@@ -13,8 +13,6 @@
 
 namespace art2img::adapters {
 
-namespace core = ::art2img::core;
-
 namespace {
 constexpr std::string_view kSignature = "KenSilverman";
 constexpr std::size_t kDirectoryEntrySize = 16;

@@ -8,8 +8,6 @@
 
 namespace art2img::adapters {
 
-namespace core = ::art2img::core;
-
 std::expected<std::string, core::Error> format_animation_ini(
     const core::ExportManifest& manifest);
 

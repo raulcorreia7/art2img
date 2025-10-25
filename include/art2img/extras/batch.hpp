@@ -9,8 +9,6 @@
 
 namespace art2img::extras {
 
-namespace core = ::art2img::core;
-
 struct BatchRequest {
   const core::ArtArchive* archive = nullptr;
   const core::Palette* palette = nullptr;
