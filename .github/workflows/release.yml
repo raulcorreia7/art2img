@@ -88,12 +88,25 @@ jobs:
     - name: Build Verification
       shell: bash
       run: |
-        if [ ! -f "${{ matrix.artifact_path }}" ]; then
-          echo "Build artifact not found at ${{ matrix.artifact_path }}"
-          find build -name "art2img*" -type f 2>/dev/null || echo "No art2img artifacts found"
-          exit 1
+        # Use CMake to find the actual test executable location
+        cd build
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          TEST_PATH=$(find . -name "art2img_tests.exe" -type f | head -1)
+          if [ -z "$TEST_PATH" ]; then
+            echo "No art2img_tests.exe found in build directory"
+            find . -name "*.exe" -type f || echo "No executables found"
+            exit 1
+          fi
+          echo "Test executable found at: $TEST_PATH"
+        else
+          TEST_PATH=$(find . -name "art2img_tests" -type f | head -1)
+          if [ -z "$TEST_PATH" ]; then
+            echo "No art2img_tests found in build directory"
+            find . -name "art2img*" -type f -executable || echo "No executables found"
+            exit 1
+          fi
+          echo "Test executable found at: $TEST_PATH"
         fi
-        echo "Build artifact found at ${{ matrix.artifact_path }}"
         
     - name: Test Release Build
       shell: bash
