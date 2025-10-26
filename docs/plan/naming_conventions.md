@@ -20,7 +20,7 @@ This document establishes consistent naming conventions for the art2img library 
 
 ### Loading Functions
 - Use `load_` prefix for functions that load data from external sources
-- Example: `load_art_bundle()`, `load_palette()`
+- Example: `load_art()`, `load_palette()`
 
 ### Conversion Functions
 - Use `to_` or `convert_to_` prefix for functions that transform data
@@ -54,12 +54,12 @@ This document establishes consistent naming conventions for the art2img library 
 
 ### Classes and Structs
 - Use `PascalCase` for class and struct names
-- Example: `ArtData`, `TileView`
+- Example: `ArtArchive`, `TileView`
 
 ### Enums
 - Use `PascalCase` for enum names
 - Use `snake_case` for enum values
-- Example: `ImageFormat::png`, `PaletteHint::sidecar`
+- Example: `core::ImageFormat::png`, `core::ConversionOptions`
 
 ### Type Aliases
 - Use `snake_case` for type aliases

@@ -1,11 +1,10 @@
-#include <art2img/error.hpp>
+#include <art2img/core/error.hpp>
+
 #include <sstream>
 
-namespace art2img {
+namespace art2img::core {
 
-const char* error_category::name() const noexcept {
-  return "art2img";
-}
+const char* error_category::name() const noexcept { return "art2img"; }
 
 std::string error_category::message(int ev) const {
   switch (static_cast<errc>(ev)) {
@@ -57,4 +56,4 @@ std::string format_tile_error(const std::string& base_message,
   return base_message + " [tile: " + std::to_string(tile_index) + "]";
 }
 
-}  // namespace art2img
+}  // namespace art2img::core
