@@ -21,13 +21,11 @@ namespace fs = std::filesystem;
 
 namespace {
 
-using art2img::adapters::read_binary_file;
-using art2img::adapters::write_file;
+// Keep frequently used types
 using art2img::core::ConversionOptions;
 using art2img::core::EncoderOptions;
 using art2img::core::Error;
 using art2img::core::ImageFormat;
-using art2img::core::PaletteView;
 using art2img::core::PostprocessOptions;
 
 struct CliConfig {
@@ -57,14 +55,16 @@ std::expected<ImageFormat, std::string> parse_format(std::string_view text) {
 
 std::expected<void, Error> convert_tile(std::size_t index,
                                         const art2img::core::TileView& tile,
-                                        PaletteView palette,
+                                        const fs::path& output_dir,
                                         const CliConfig& config,
+                                        art2img::core::PaletteView palette,
                                         ImageFormat format) {
   ConversionOptions convert_opts{};
   convert_opts.apply_lookup = config.apply_lookup;
   convert_opts.shade_index = config.shade_index;
 
-  auto image_result = art2img::core::palette_to_rgba(tile, palette, convert_opts);
+  auto image_result =
+      art2img::core::palette_to_rgba(tile, palette, convert_opts);
   if (!image_result) {
     return std::unexpected(image_result.error());
   }
@@ -82,11 +82,12 @@ std::expected<void, Error> convert_tile(std::size_t index,
   }
 
   const auto extension = art2img::core::file_extension(format);
-  const auto filename = std::format("{}_{:04}.{}", config.input_art.stem().string(),
-                                    index, extension);
+  const auto filename = std::format(
+      "{}_{:04}.{}", config.input_art.stem().string(), index, extension);
   const auto output_path = config.output_dir / filename;
-  auto bytes = std::span<const std::byte>(encoded->bytes.data(), encoded->bytes.size());
-  auto write_result = write_file(output_path, bytes);
+  auto bytes =
+      std::span<const std::byte>(encoded->bytes.data(), encoded->bytes.size());
+  auto write_result = art2img::adapters::write_file(output_path, bytes);
   if (!write_result) {
     return write_result;
   }
@@ -137,7 +138,7 @@ int main(int argc, const char** argv) {
   }
   const auto format = *format_result;
 
-  auto art_bytes = read_binary_file(config.input_art);
+  auto art_bytes = art2img::adapters::read_binary_file(config.input_art);
   if (!art_bytes) {
     std::cerr << art_bytes.error().message << '\n';
     return 1;
@@ -150,14 +151,14 @@ int main(int argc, const char** argv) {
     return 1;
   }
 
-  auto palette_bytes = read_binary_file(config.palette_path);
+  auto palette_bytes = art2img::adapters::read_binary_file(config.palette_path);
   if (!palette_bytes) {
     std::cerr << palette_bytes.error().message << '\n';
     return 1;
   }
 
-  auto palette = art2img::core::load_palette(std::span<const std::byte>(
-      palette_bytes->data(), palette_bytes->size()));
+  auto palette = art2img::core::load_palette(
+      std::span<const std::byte>(palette_bytes->data(), palette_bytes->size()));
   if (!palette) {
     std::cerr << palette.error().message << '\n';
     return 1;
@@ -174,11 +175,12 @@ int main(int argc, const char** argv) {
     if (!tile) {
       continue;
     }
-    auto result = convert_tile(i, *tile, palette_view, config, format);
+    auto result =
+        convert_tile(i, *tile, config.output_dir, config, palette_view, format);
     if (!result) {
       ++failures;
       std::cerr << std::format("Failed to convert tile {}: {}\n", i,
-                                result.error().message);
+                               result.error().message);
     }
   }
 
@@ -188,7 +190,7 @@ int main(int argc, const char** argv) {
   }
 
   std::cout << std::format("Converted {} tiles from {} to {}\n", total,
-                            config.input_art.filename().string(),
-                            config.output_dir.string());
+                           config.input_art.filename().string(),
+                           config.output_dir.string());
   return 0;
 }

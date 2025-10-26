@@ -30,9 +30,9 @@ struct EncodedImage {
   std::vector<std::byte> bytes;
 };
 
-std::expected<EncodedImage, Error> encode_image(
-    const RgbaImageView& image, ImageFormat format,
-    EncoderOptions options = {});
+std::expected<EncodedImage, Error> encode_image(const RgbaImageView& image,
+                                                ImageFormat format,
+                                                EncoderOptions options = {});
 
 constexpr std::string_view file_extension(ImageFormat format) noexcept {
   switch (format) {

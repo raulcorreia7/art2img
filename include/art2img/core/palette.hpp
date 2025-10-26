@@ -24,8 +24,8 @@ struct PaletteView {
 
   constexpr bool has_shades() const noexcept {
     return shade_table_count > 0 &&
-           shade_tables.size() >= static_cast<std::size_t>(shade_table_count) *
-                                      shade_table_size;
+           shade_tables.size() >=
+               static_cast<std::size_t>(shade_table_count) * shade_table_size;
   }
 };
 
