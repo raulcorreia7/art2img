@@ -67,6 +67,22 @@ if(BUILD_BENCHMARKS)
 endif()
 
 # ============================================================================
+# TEST CONFIGURATION
+# ============================================================================
+# Platform-specific executable naming
+if(WIN32)
+    set(CLI_EXECUTABLE_NAME "art2img.exe")
+else()
+    set(CLI_EXECUTABLE_NAME "art2img")
+endif()
+
+# Test directory configuration
+set(TEST_CLI_BINARY_DIR "${CMAKE_BINARY_DIR}/cli" CACHE PATH "CLI binary directory")
+set(TEST_CLI_EXECUTABLE "${TEST_CLI_BINARY_DIR}/${CLI_EXECUTABLE_NAME}" CACHE PATH "CLI executable path")
+set(TEST_OUTPUT_BASE "${CMAKE_BINARY_DIR}/test_output" CACHE PATH "Base test output directory")
+set(TEST_ASSETS_DIR "${CMAKE_SOURCE_DIR}/tests/assets" CACHE PATH "Test assets directory")
+
+# ============================================================================
 # LIBRARY CREATION
 # ============================================================================
 file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
