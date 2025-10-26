@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.20)
 # PROJECT SETUP
 # ============================================================================
 project(art2img 
-    VERSION 1.0.0
+    VERSION 1.1.0
     DESCRIPTION "ART file to image converter library"
     LANGUAGES CXX
     HOMEPAGE_URL "https://github.com/raulcorreia7/art2img"
@@ -29,41 +29,21 @@ endif()
 # CI/CD pipelines will override this with --parallel 1
 set(CMAKE_CTEST_ARGUMENTS --parallel)
 
-if(MSVC)
-    add_compile_options(/W4)
-else()
-    add_compile_options(-Wall -Wextra -pedantic)
-    if(NOT WIN32)
-        add_compile_options(-pthread)
-    endif()
-endif()
-
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    if(MSVC)
-        add_compile_options(/O2)
-    else()
-        add_compile_options(-O3 -DNDEBUG)
-    endif()
-endif()
+# Find Threads package - use native threads (Win32 on Windows, pthreads elsewhere)
+find_package(Threads REQUIRED)
 
 # ============================================================================
 # DEPENDENCIES
 # ============================================================================
 set(CPM_SOURCE_CACHE "${CMAKE_CURRENT_SOURCE_DIR}/.cache")
-include(cmake/CPM.cmake)
+include(cmake/get_cpm.cmake)
 
+# STB image library - simple include directory approach
 CPMAddPackage(
     NAME stb
     GITHUB_REPOSITORY nothings/stb
     GIT_TAG fede005abaf93d9d7f3a679d1999b2db341b360f
 )
-
-add_library(stb_headers INTERFACE)
-target_include_directories(stb_headers INTERFACE ${stb_SOURCE_DIR})
-set_target_properties(stb_headers PROPERTIES
-    INTERFACE_COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:CXX>:-w>"
-)
-add_library(stb ALIAS stb_headers)
 
 option(BUILD_TESTING "Build tests" ON)
 if(BUILD_TESTING)
@@ -92,23 +72,42 @@ endif()
 file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 file(GLOB_RECURSE LIB_HEADERS CONFIGURE_DEPENDS "include/art2img/*.hpp")
 
-add_library(art2img_core ${LIB_SOURCES} ${LIB_HEADERS})
+add_library(libart2img ${LIB_SOURCES} ${LIB_HEADERS})
+set_target_properties(libart2img PROPERTIES OUTPUT_NAME art2img)
 
-target_include_directories(art2img_core
+# Compiler options - target-specific with generator expressions
+target_compile_options(libart2img PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic>
+)
+
+# Link Threads library (handles pthread, win32 threads, etc.)
+target_link_libraries(libart2img PRIVATE Threads::Threads)
+
+# Optimization flags for Release build
+target_compile_options(libart2img PRIVATE
+    $<$<CONFIG:Release>:
+        $<$<CXX_COMPILER_ID:MSVC>:/O2>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O3 -DNDEBUG>
+    >
+)
+
+target_include_directories(libart2img
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
 
-if(TARGET stb)
-    target_link_libraries(art2img_core PUBLIC stb)
-    target_compile_definitions(art2img_core PUBLIC STB_IMAGE_WRITE_IMPLEMENTATION)
+# STB integration - header-only library
+if(stb_SOURCE_DIR)
+    target_include_directories(libart2img PUBLIC ${stb_SOURCE_DIR})
+    target_compile_definitions(libart2img PUBLIC STB_IMAGE_WRITE_IMPLEMENTATION)
 endif()
 
 # ============================================================================
 # INSTALLATION
 # ============================================================================
-install(TARGETS art2img_core
+install(TARGETS libart2img
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     RUNTIME DESTINATION bin
