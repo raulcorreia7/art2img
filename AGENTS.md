@@ -7,7 +7,16 @@ Authoritative, minimal contract for autonomous work. Optimize for simple, clean,
 ## Quick Start
 ```bash
 make setup
-make all
+make build
+make test
+```
+
+## Test Targets
+```bash
+make test          # Run all tests
+make test-unit     # Run unit tests only
+make test-intg     # Run integration tests only  
+make test-smoke    # Run smoke tests only
 ```
 
 ---
