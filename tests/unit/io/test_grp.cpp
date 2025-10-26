@@ -10,6 +10,7 @@
 #include <doctest/doctest.h>
 
 #include <art2img/adapters/grp.hpp>
+#include <art2img/core/error.hpp>
 
 namespace {
 
