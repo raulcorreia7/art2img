@@ -15,11 +15,14 @@
 namespace {
 
 std::vector<std::byte> make_grp_blob(
-    std::initializer_list<std::pair<std::string, std::vector<std::byte>>> entries) {
+    std::initializer_list<std::pair<std::string, std::vector<std::byte>>>
+        entries) {
   constexpr std::string_view signature = "KenSilverman";
   std::vector<std::byte> blob;
   blob.reserve(signature.size() + 4 + entries.size() * 16);
-  blob.insert(blob.end(), signature.begin(), signature.end());
+  for (char c : signature) {
+    blob.push_back(static_cast<std::byte>(c));
+  }
 
   const auto entry_count = static_cast<std::uint32_t>(entries.size());
   for (int i = 0; i < 4; ++i) {
@@ -31,8 +34,9 @@ std::vector<std::byte> make_grp_blob(
     std::array<char, 12> name_field{};
     const auto copy_len = std::min(name.size(), name_field.size());
     std::copy_n(name.data(), copy_len, name_field.data());
-    blob.insert(blob.end(), reinterpret_cast<std::byte*>(name_field.data()),
-                reinterpret_cast<std::byte*>(name_field.data() + name_field.size()));
+    blob.insert(
+        blob.end(), reinterpret_cast<std::byte*>(name_field.data()),
+        reinterpret_cast<std::byte*>(name_field.data() + name_field.size()));
 
     const auto size = static_cast<std::uint32_t>(data.size());
     for (int i = 0; i < 4; ++i) {
@@ -48,8 +52,9 @@ std::vector<std::byte> make_grp_blob(
 }  // namespace
 
 TEST_CASE("load_grp parses entries and keeps storage alive") {
-  const auto blob = make_grp_blob({{"FIRSTART", {std::byte{0x01}, std::byte{0x02}}},
-                                   {"SECONDART", {std::byte{0xAA}}}});
+  const auto blob =
+      make_grp_blob({{"FIRSTART", {std::byte{0x01}, std::byte{0x02}}},
+                     {"SECONDART", {std::byte{0xAA}}}});
 
   const auto grp = art2img::adapters::load_grp(blob);
   REQUIRE(grp);

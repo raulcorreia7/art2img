@@ -14,7 +14,7 @@ namespace art2img::adapters {
 std::expected<std::vector<std::byte>, core::Error> read_binary_file(
     const std::filesystem::path& path);
 
-std::expected<void, core::Error> write_file(
-    const std::filesystem::path& path, std::span<const std::byte> data);
+std::expected<void, core::Error> write_file(const std::filesystem::path& path,
+                                            std::span<const std::byte> data);
 
 }  // namespace art2img::adapters

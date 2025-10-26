@@ -19,7 +19,19 @@ enum class errc : std::uint8_t {
   encoding_failure = 5,
   unsupported = 6,
   no_animation = 7,
+  animation_format = 8,
 };
+
+}  // namespace art2img::core
+
+// Enable implicit conversion from errc to std::error_code
+// This specialization must be visible before any use
+namespace std {
+template <>
+struct is_error_code_enum<art2img::core::errc> : true_type {};
+}  // namespace std
+
+namespace art2img::core {
 
 class error_category : public std::error_category {
  public:
@@ -36,8 +48,10 @@ struct Error {
   std::string message;
 
   Error() = default;
+
   Error(std::error_code ec, std::string msg)
       : code(std::move(ec)), message(std::move(msg)) {}
+
   Error(errc e, std::string msg)
       : code(make_error_code(e)), message(std::move(msg)) {}
 };
@@ -82,8 +96,3 @@ inline Error make_error(errc code, std::string message) {
 }
 
 }  // namespace art2img::core
-
-namespace std {
-template <>
-struct is_error_code_enum<art2img::core::errc> : std::true_type {};
-}  // namespace std

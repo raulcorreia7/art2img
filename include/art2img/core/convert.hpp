@@ -21,11 +21,10 @@ struct PostprocessOptions {
   bool sanitize_matte = false;
 };
 
-std::expected<RgbaImage, Error> palette_to_rgba(
-    const TileView& tile, PaletteView palette,
-    ConversionOptions options = {});
+std::expected<RgbaImage, Error> palette_to_rgba(const TileView& tile,
+                                                PaletteView palette,
+                                                ConversionOptions options = {});
 
-void postprocess_rgba(RgbaImage& image,
-                      PostprocessOptions options = {});
+void postprocess_rgba(RgbaImage& image, PostprocessOptions options = {});
 
 }  // namespace art2img::core
