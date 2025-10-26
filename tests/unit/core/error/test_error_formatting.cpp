@@ -1,7 +1,7 @@
 #include <doctest/doctest.h>
-#include <art2img/error.hpp>
+#include <art2img/core/error.hpp>
 
-using namespace art2img;
+using namespace art2img::core;
 
 TEST_SUITE("Error Formatting") {
   TEST_CASE("format_error_message with context") {

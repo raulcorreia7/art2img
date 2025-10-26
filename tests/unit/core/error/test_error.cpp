@@ -2,11 +2,11 @@
 
 #include <doctest/doctest.h>
 
-#include <art2img/error.hpp>
+#include <art2img/core/error.hpp>
 
 TEST_SUITE("error handling") {
   TEST_CASE("errc enum values are correct") {
-    using art2img::errc;
+    using art2img::core::errc;
 
     CHECK(static_cast<int>(errc::none) == 0);
     CHECK(static_cast<int>(errc::io_failure) == 1);
@@ -18,8 +18,8 @@ TEST_SUITE("error handling") {
   }
 
   TEST_CASE("Error struct construction") {
-    using art2img::errc;
-    using art2img::Error;
+    using art2img::core::errc;
+    using art2img::core::Error;
 
     // Test default construction
     Error default_error;
@@ -39,8 +39,8 @@ TEST_SUITE("error handling") {
   }
 
   TEST_CASE("make_error_code function") {
-    using art2img::errc;
-    using art2img::make_error_code;
+    using art2img::core::errc;
+    using art2img::core::make_error_code;
 
     auto ec = make_error_code(errc::invalid_palette);
     CHECK(ec.value() == static_cast<int>(errc::invalid_palette));
@@ -48,8 +48,8 @@ TEST_SUITE("error handling") {
   }
 
   TEST_CASE("Error category name and messages") {
-    using art2img::errc;
-    using art2img::make_error_code;
+    using art2img::core::errc;
+    using art2img::core::make_error_code;
 
     const auto& category = make_error_code(errc::none).category();
     CHECK(std::string(category.name()) == "art2img");
@@ -73,9 +73,9 @@ TEST_SUITE("error handling") {
   }
 
   TEST_CASE("make_error_expected functions") {
-    using art2img::errc;
-    using art2img::Error;
-    using art2img::make_error_expected;
+    using art2img::core::errc;
+    using art2img::core::Error;
+    using art2img::core::make_error_expected;
 
     // Test with errc and message
     auto result1 = make_error_expected(errc::invalid_art, "Bad ART file");
@@ -105,7 +105,7 @@ TEST_SUITE("error handling") {
   }
 
   TEST_CASE("make_success functions") {
-    using art2img::make_success;
+    using art2img::core::make_success;
 
     // Test monostate success
     auto result1 = make_success();
@@ -123,11 +123,11 @@ TEST_SUITE("error handling") {
   }
 
   TEST_CASE("std::error_code compatibility") {
-    using art2img::errc;
-    using art2img::make_error_code;
+    using art2img::core::errc;
+    using art2img::core::make_error_code;
 
     // Test that errc can be implicitly converted to std::error_code
-    std::error_code ec = errc::invalid_art;
+    std::error_code ec = art2img::core::errc::invalid_art;
     CHECK(ec.value() == static_cast<int>(errc::invalid_art));
     CHECK(ec.category().name() == std::string("art2img"));
 

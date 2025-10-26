@@ -29,7 +29,7 @@ Concise repo survey:
 * Code quality heuristics (composability, coupling, simplicity). Favor "organic" APIs that are easy to read/use
 * Risks/unknowns and immediate low-risk wins
 
-Output: print summary to console and write `REVIEW_NOTES.md` at repo root.
+Output: print summary to console
 
 ### PLAN MODE (NON BLOCKING/STOPPING)
 

@@ -24,53 +24,39 @@ make build
 ## Basic Usage
 
 ```bash
-# Convert a single ART file to PNG
-art2img_cli TILES.ART
+# Convert a single ART file to PNG using an explicit palette
+art2img_cli --input TILES.ART --palette PALETTE.DAT
 
-# Convert to specific format with output directory
-art2img_cli TILES.ART --format tga --output output/
+# Write TGA images to a custom directory with matte hygiene enabled
+art2img_cli --input TILES.ART --palette PALETTE.DAT --format tga --matte --output output/
 
-# Convert all ART files in a directory
-art2img_cli art_folder/ --output images/
-
-# Disable transparency fix (for some games)
-art2img_cli TILES.ART --no-transparency-fix
-
-# Extract animation data with custom INI filename
-art2img_cli art_folder/ --export-animation --anim-ini-filename my_anim.ini --output game/
+# Apply shade table index 4 without lookup remapping
+art2img_cli --input TILES.ART --palette PALETTE.DAT --shade 4 --no-lookup
 ```
 
 ## Key Features
 
-- **Multiple Formats**: Convert to PNG, TGA, or BMP
-- **Transparency Support**: Automatic magenta transparency fixing
-- **Animation Export**: Extract animation data with INI files
-- **Batch Processing**: Convert entire directories of ART files
-- **Custom Palettes**: Use custom palette files if needed
-- **Cross-Platform**: Works on Windows, Linux, and macOS
-- **Library API**: Use as a C++ library with convenience functions and builder patterns
-- **Enhanced Error Handling**: Improved error messages with contextual information
+- **Multiple Formats**: Encode tiles as PNG, TGA, or BMP images.
+- **Palette-Aware Pipeline**: Memory-first conversion with lookup tables and shade support.
+- **Post-Processing Controls**: Configure transparency cleanup, alpha premultiplication, and matte hygiene.
+- **Reusable Modules**: Compose loaders, converters, and encoders from the `core`, `adapters`, and `extras` namespaces.
+- **Cross-Platform**: Works on Windows, Linux, and macOS with a modern C++23 toolchain.
+- **Enhanced Error Handling**: Unified `core::Error` reports contextual diagnostics across modules.
 
 ## Command Line Options
 
 ```
--h, --help                    Print this help message and exit
--o, --output DIR              Output directory (default: current directory)
--p, --palette FILE            Palette file path (default: auto-detect)
--f, --format FORMAT           Output format: png, tga, bmp (default: png)
-    --no-transparency-fix     Disable transparency fix
-    --shade INT               Apply shade table index (-1 to disable)
-    --no-lookup               Disable lookup table application
-    --premultiply-alpha       Premultiply alpha channel
-    --matte-hygiene           Apply matte hygiene to remove halo effects
-    --no-parallel             Disable parallel processing
--j, --jobs N                  Number of parallel jobs (0 for auto-detect)
-    --export-animation        Export animation data instead of individual tiles
-    --anim-ini-filename FILE  INI filename for animation data (default: animdata.ini)
-    --include-non-animated-tiles Include non-animated tiles in animation export
--q, --quiet                   Suppress non-error output
--v, --verbose                 Verbose output
-    --version                 Display program version information
+art2img_cli --input TILES.ART --palette PALETTE.DAT [options]
+
+-i, --input PATH        ART file to convert (required)
+-p, --palette PATH      Palette file to use (required)
+-o, --output DIR        Output directory (default: current directory)
+-f, --format FORMAT     Output format: png, tga, bmp (default: png)
+    --shade INT         Apply shade table index (0-255)
+    --no-lookup         Disable lookup table remapping
+    --no-transparency   Skip transparency cleanup
+    --premultiply       Premultiply the alpha channel
+    --matte             Apply matte hygiene to soften edges
 ```
 
 ## Library Usage
@@ -78,40 +64,43 @@ art2img_cli art_folder/ --export-animation --anim-ini-filename my_anim.ini --out
 The art2img library provides a clean, modern C++ API for integrating ART file conversion into your own applications:
 
 ```cpp
-#include <art2img/api.hpp>
+#include <art2img/adapters/io.hpp>
+#include <art2img/core/art.hpp>
+#include <art2img/core/convert.hpp>
+#include <art2img/core/encode.hpp>
+#include <art2img/core/palette.hpp>
 
-// Simple one-call conversion
-auto result = art2img::convert_and_export(
-    "TILES.ART", 
-    "output/", 
-    art2img::ImageFormat::png);
+auto art_bytes = art2img::adapters::read_binary_file("TILES.ART");
+auto palette_bytes = art2img::adapters::read_binary_file("PALETTE.DAT");
 
-// Builder pattern for complex configurations
-auto conversion_options = art2img::ConversionOptionsBuilder()
-    .fix_transparency(true)
-    .apply_lookup(true)
-    .shade_index(0)
-    .build();
+auto archive = art2img::core::load_art(std::span<const std::byte>(
+    art_bytes->data(), art_bytes->size()));
+auto palette = art2img::core::load_palette(std::span<const std::byte>(
+    palette_bytes->data(), palette_bytes->size()));
 
-auto export_options = art2img::ExportOptionsBuilder()
-    .output_dir("output/")
-    .format(art2img::ImageFormat::tga)
-    .conversion_options(conversion_options)
-    .build();
+const auto palette_view = art2img::core::view_palette(*palette);
+for (std::size_t index = 0; index < art2img::core::tile_count(*archive); ++index) {
+    auto tile = art2img::core::get_tile(*archive, index);
+    if (!tile) continue;
 
-// Convert single tile to image in memory
-auto image_result = art2img::convert_tile("TILES.ART", "PALETTE.DAT", 0);
+    auto rgba = art2img::core::palette_to_rgba(*tile, palette_view);
+    art2img::core::postprocess_rgba(*rgba);
+
+    auto encoded = art2img::core::encode_image(
+        art2img::core::make_view(*rgba), art2img::core::ImageFormat::png);
+    art2img::adapters::write_file(
+        std::format("tile_{:04}.png", index),
+        std::span<const std::byte>(encoded->bytes.data(), encoded->bytes.size()));
+}
 ```
 
 ## Troubleshooting
 
-**Transparency issues:** Transparency fix is enabled by default. Use `--no-transparency-fix` to disable if needed
+**Transparency issues:** Transparency cleanup is enabled by default. Use `--no-transparency` to keep raw palette data.
 
-**Animation export:** Use `--export-animation` to export animation data with INI files
+**Shading:** Provide `--shade <index>` to apply a specific shade table during conversion.
 
-**Custom game palette:** Use `--palette custom.pal` with your palette file
-
-**Performance:** Use `--jobs N` to control parallel processing (0 for auto-detect)
+**Custom palette:** Always supply the palette file that matches the ART resources with `--palette`.
 
 ## License
 
