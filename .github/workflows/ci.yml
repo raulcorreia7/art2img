@@ -73,9 +73,21 @@ jobs:
       run: |
         cd build
         if [ "${{ runner.os }}" = "Windows" ]; then
-          if [ ! -f "tests/art2img_tests.exe" ] && [ ! -f "tests/Debug/art2img_tests.exe" ]; then exit 1; fi
+          TEST_PATH=$(find . -name "art2img_tests.exe" -type f | head -1)
+          if [ -z "$TEST_PATH" ]; then
+            echo "No art2img_tests.exe found in build directory"
+            find . -name "*.exe" -type f || echo "No executables found"
+            exit 1
+          fi
+          echo "Test executable found at: $TEST_PATH"
         else
-          if [ ! -f "tests/art2img_tests" ]; then exit 1; fi
+          TEST_PATH=$(find . -name "art2img_tests" -type f | head -1)
+          if [ -z "$TEST_PATH" ]; then
+            echo "No art2img_tests found in build directory"
+            find . -name "art2img*" -type f -executable || echo "No executables found"
+            exit 1
+          fi
+          echo "Test executable found at: $TEST_PATH"
         fi
         
     - name: Test

@@ -100,7 +100,7 @@ target_include_directories(libart2img
 
 # STB integration - header-only library
 if(stb_SOURCE_DIR)
-    target_include_directories(libart2img PUBLIC ${stb_SOURCE_DIR})
+    target_include_directories(libart2img SYSTEM PUBLIC ${stb_SOURCE_DIR})
     target_compile_definitions(libart2img PUBLIC STB_IMAGE_WRITE_IMPLEMENTATION)
 endif()
 
