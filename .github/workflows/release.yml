@@ -15,23 +15,23 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact_path: build/cli/art2img_cli
+            artifact_path: build/cli/art2img
             asset_name: art2img-linux-x64
             archive_name: art2img-${{ github.ref_name }}-linux-x64
             archive_ext: .tar.gz
           - os: macos-latest
-            artifact_path: build/cli/art2img_cli
+            artifact_path: build/cli/art2img
             asset_name: art2img-macos-x64
             archive_name: art2img-${{ github.ref_name }}-macos-x64
             archive_ext: .tar.gz
           - os: windows-latest
-            artifact_path: build/cli/Release/art2img_cli.exe
+            artifact_path: build/cli/art2img.exe
             asset_name: art2img-windows-x64.exe
             archive_name: art2img-${{ github.ref_name }}-windows-x64
             archive_ext: .zip
             arch: x64
           - os: windows-latest
-            artifact_path: build/cli/Release/art2img_cli.exe
+            artifact_path: build/cli/art2img.exe
             asset_name: art2img-windows-x86.exe
             archive_name: art2img-${{ github.ref_name }}-windows-x86
             archive_ext: .zip
@@ -91,24 +91,28 @@ jobs:
         # Use CMake to find the actual test executable location
         cd build
         if [ "${{ runner.os }}" = "Windows" ]; then
-          TEST_PATH=$(find . -name "art2img_tests.exe" -type f | head -1)
-          if [ -z "$TEST_PATH" ]; then
-            echo "No art2img_tests.exe found in build directory"
+          TEST_PATHS=$(find . -name "*_tests.exe" -type f)
+          if [ -z "$TEST_PATHS" ]; then
+            echo "No test executables found in build directory"
             find . -name "*.exe" -type f || echo "No executables found"
             exit 1
           fi
-          echo "Test executable found at: $TEST_PATH"
+          echo "Found test executables:"
+          echo "$TEST_PATHS"
         else
-          TEST_PATH=$(find . -name "art2img_tests" -type f | head -1)
-          if [ -z "$TEST_PATH" ]; then
-            echo "No art2img_tests found in build directory"
+          TEST_PATHS=$(find . -name "*_tests" -type f -executable)
+          if [ -z "$TEST_PATHS" ]; then
+            echo "No test executables found in build directory"
             find . -name "art2img*" -type f -executable || echo "No executables found"
             exit 1
           fi
-          echo "Test executable found at: $TEST_PATH"
+          echo "Found test executables:"
+          echo "$TEST_PATHS"
         fi
         
     - name: Test Release Build
+      env:
+        ART2IMG_CLI_PATH: ${{ github.workspace }}/build/cli/art2img
       shell: bash
       run: |
         cd build

@@ -73,25 +73,29 @@ jobs:
       run: |
         cd build
         if [ "${{ runner.os }}" = "Windows" ]; then
-          TEST_PATH=$(find . -name "art2img_tests.exe" -type f | head -1)
-          if [ -z "$TEST_PATH" ]; then
-            echo "No art2img_tests.exe found in build directory"
+          TEST_PATHS=$(find . -name "*_tests.exe" -type f)
+          if [ -z "$TEST_PATHS" ]; then
+            echo "No test executables found in build directory"
             find . -name "*.exe" -type f || echo "No executables found"
             exit 1
           fi
-          echo "Test executable found at: $TEST_PATH"
+          echo "Found test executables:"
+          echo "$TEST_PATHS"
         else
-          TEST_PATH=$(find . -name "art2img_tests" -type f | head -1)
-          if [ -z "$TEST_PATH" ]; then
-            echo "No art2img_tests found in build directory"
+          TEST_PATHS=$(find . -name "*_tests" -type f -executable)
+          if [ -z "$TEST_PATHS" ]; then
+            echo "No test executables found in build directory"
             find . -name "art2img*" -type f -executable || echo "No executables found"
             exit 1
           fi
-          echo "Test executable found at: $TEST_PATH"
+          echo "Found test executables:"
+          echo "$TEST_PATHS"
         fi
         
     - name: Test
       if: always()
+      env:
+        ART2IMG_CLI_PATH: ${{ github.workspace }}/build/cli/art2img
       shell: bash
       run: |
         cd build
