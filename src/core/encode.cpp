@@ -15,15 +15,18 @@ namespace {
 
 constexpr std::size_t kChannels = 4;
 
-bool validate_view(const RgbaImageView& view) noexcept {
+bool validate_view(const RgbaImageView& view) noexcept
+{
   return view.valid();
 }
 
-std::size_t row_bytes(const RgbaImageView& view) noexcept {
+std::size_t row_bytes(const RgbaImageView& view) noexcept
+{
   return static_cast<std::size_t>(view.width) * kChannels;
 }
 
-std::vector<std::uint8_t> make_contiguous_rgba(const RgbaImageView& view) {
+std::vector<std::uint8_t> make_contiguous_rgba(const RgbaImageView& view)
+{
   const auto bytes_per_row = row_bytes(view);
   std::vector<std::uint8_t> buffer(static_cast<std::size_t>(view.height) *
                                    bytes_per_row);
@@ -37,9 +40,13 @@ std::vector<std::uint8_t> make_contiguous_rgba(const RgbaImageView& view) {
   return buffer;
 }
 
-std::vector<std::uint8_t> drop_alpha(const std::uint8_t* data, std::uint32_t width,
-                                     std::uint32_t height, std::size_t stride) {
-  std::vector<std::uint8_t> buffer(static_cast<std::size_t>(width) * height * 3);
+std::vector<std::uint8_t> drop_alpha(const std::uint8_t* data,
+                                     std::uint32_t width,
+                                     std::uint32_t height,
+                                     std::size_t stride)
+{
+  std::vector<std::uint8_t> buffer(static_cast<std::size_t>(width) * height *
+                                   3);
   for (std::uint32_t y = 0; y < height; ++y) {
     const auto* src_row = data + static_cast<std::size_t>(y) * stride;
     auto* dst_row = buffer.data() + static_cast<std::size_t>(y) * width * 3;
@@ -54,7 +61,8 @@ std::vector<std::uint8_t> drop_alpha(const std::uint8_t* data, std::uint32_t wid
   return buffer;
 }
 
-void write_bytes(void* context, void* data, int size) {
+void write_bytes(void* context, void* data, int size)
+{
   auto* output = static_cast<std::vector<std::byte>*>(context);
   const auto* begin = static_cast<const std::uint8_t*>(data);
   const auto* end = begin + size;
@@ -63,10 +71,12 @@ void write_bytes(void* context, void* data, int size) {
 }
 
 std::expected<std::vector<std::byte>, Error> encode_png(
-    const RgbaImageView& view, EncoderOptions options) {
+    const RgbaImageView& view,
+    EncoderOptions options)
+{
   if (!validate_view(view)) {
-    return std::unexpected(make_error(errc::encoding_failure,
-                                      "invalid image view for PNG"));
+    return std::unexpected(
+        make_error(errc::encoding_failure, "invalid image view for PNG"));
   }
 
   const auto expected_stride = row_bytes(view);
@@ -86,10 +96,9 @@ std::expected<std::vector<std::byte>, Error> encode_png(
   }
 
   std::vector<std::byte> output;
-  const int result = stbi_write_png_to_func(write_bytes, &output,
-                                            static_cast<int>(view.width),
-                                            static_cast<int>(view.height), channels,
-                                            data_ptr, channels * view.width);
+  const int result = stbi_write_png_to_func(
+      write_bytes, &output, static_cast<int>(view.width),
+      static_cast<int>(view.height), channels, data_ptr, channels * view.width);
   if (result == 0) {
     return std::unexpected(
         make_error(errc::encoding_failure, "failed to encode PNG"));
@@ -98,10 +107,12 @@ std::expected<std::vector<std::byte>, Error> encode_png(
 }
 
 std::expected<std::vector<std::byte>, Error> encode_tga(
-    const RgbaImageView& view, EncoderOptions options) {
+    const RgbaImageView& view,
+    EncoderOptions options)
+{
   if (!validate_view(view)) {
-    return std::unexpected(make_error(errc::encoding_failure,
-                                      "invalid image view for TGA"));
+    return std::unexpected(
+        make_error(errc::encoding_failure, "invalid image view for TGA"));
   }
 
   const auto expected_stride = row_bytes(view);
@@ -121,10 +132,9 @@ std::expected<std::vector<std::byte>, Error> encode_tga(
   }
 
   std::vector<std::byte> output;
-  const int result = stbi_write_tga_to_func(write_bytes, &output,
-                                            static_cast<int>(view.width),
-                                            static_cast<int>(view.height),
-                                            channels, data_ptr);
+  const int result =
+      stbi_write_tga_to_func(write_bytes, &output, static_cast<int>(view.width),
+                             static_cast<int>(view.height), channels, data_ptr);
   if (result == 0) {
     return std::unexpected(
         make_error(errc::encoding_failure, "failed to encode TGA"));
@@ -133,10 +143,12 @@ std::expected<std::vector<std::byte>, Error> encode_tga(
 }
 
 std::expected<std::vector<std::byte>, Error> encode_bmp(
-    const RgbaImageView& view, EncoderOptions options) {
+    const RgbaImageView& view,
+    EncoderOptions options)
+{
   if (!validate_view(view)) {
-    return std::unexpected(make_error(errc::encoding_failure,
-                                      "invalid image view for BMP"));
+    return std::unexpected(
+        make_error(errc::encoding_failure, "invalid image view for BMP"));
   }
 
   const auto expected_stride = row_bytes(view);
@@ -155,10 +167,9 @@ std::expected<std::vector<std::byte>, Error> encode_bmp(
   }
 
   std::vector<std::byte> output;
-  const int result = stbi_write_bmp_to_func(write_bytes, &output,
-                                            static_cast<int>(view.width),
-                                            static_cast<int>(view.height),
-                                            channels, data_ptr);
+  const int result =
+      stbi_write_bmp_to_func(write_bytes, &output, static_cast<int>(view.width),
+                             static_cast<int>(view.height), channels, data_ptr);
   if (result == 0) {
     return std::unexpected(
         make_error(errc::encoding_failure, "failed to encode BMP"));
@@ -170,7 +181,8 @@ std::expected<std::vector<std::byte>, Error> encode_bmp(
 
 std::expected<EncodedImage, Error> encode_image(const RgbaImageView& image,
                                                 ImageFormat format,
-                                                EncoderOptions options) {
+                                                EncoderOptions options)
+{
   if (!image.valid()) {
     return std::unexpected(
         make_error(errc::encoding_failure, "invalid image view"));

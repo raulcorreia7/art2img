@@ -13,10 +13,11 @@ constexpr std::size_t kShadeCountBytes = 2;
 }  // namespace
 
 std::expected<Palette, Error> load_palette(
-    std::span<const std::byte> blob) noexcept {
+    std::span<const std::byte> blob) noexcept
+{
   if (blob.size() < kPaletteBytes + kShadeCountBytes) {
-    return std::unexpected(make_error(errc::invalid_palette,
-                                      "palette data too small"));
+    return std::unexpected(
+        make_error(errc::invalid_palette, "palette data too small"));
   }
 
   Palette palette{};
@@ -33,12 +34,12 @@ std::expected<Palette, Error> load_palette(
         make_error(errc::invalid_palette, "invalid shade table count"));
   }
 
-  const std::size_t shade_bytes = static_cast<std::size_t>(palette.shade_table_count) *
-                                  shade_table_size;
+  const std::size_t shade_bytes =
+      static_cast<std::size_t>(palette.shade_table_count) * shade_table_size;
   if (shade_bytes > 0) {
     if (blob.size() < offset + shade_bytes) {
-      return std::unexpected(make_error(errc::invalid_palette,
-                                        "palette missing shade data"));
+      return std::unexpected(
+          make_error(errc::invalid_palette, "palette missing shade data"));
     }
     palette.shade_tables.resize(shade_bytes);
     std::memcpy(palette.shade_tables.data(), blob.data() + offset, shade_bytes);
@@ -48,14 +49,16 @@ std::expected<Palette, Error> load_palette(
   if (blob.size() >= offset + translucent_table_size) {
     std::memcpy(palette.translucent.data(), blob.data() + offset,
                 translucent_table_size);
-  } else {
+  }
+  else {
     palette.translucent.fill(0);
   }
 
   return palette;
 }
 
-PaletteView view_palette(const Palette& palette) noexcept {
+PaletteView view_palette(const Palette& palette) noexcept
+{
   PaletteView view{};
   view.rgb = palette.rgb;
   view.shade_table_count = palette.shade_table_count;
