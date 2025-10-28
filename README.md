@@ -17,8 +17,8 @@ Pre-built binaries for Windows, Linux, and macOS are available on the [Releases 
 # Clone and build
 make build
 
-# The executable will be at: build/linux-x64/cli/art2img_cli
-# Or for Windows: build/windows-x64/cli/art2img_cli.exe
+# The executable will be at: build/cli/art2img
+# Or for Windows: build/cli/art2img.exe
 ```
 
 ## Basic Usage

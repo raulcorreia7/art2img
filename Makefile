@@ -31,8 +31,8 @@ all: build
 
 # Native Linux build
 build:
-	@$(CMAKE) -S . -B $(BUILD_DIR)/linux-x64 -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
-	@$(CMAKE) --build $(BUILD_DIR)/linux-x64 --parallel $(JOBS)
+	@$(CMAKE) -S . -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
+	@$(CMAKE) --build $(BUILD_DIR) --parallel $(JOBS)
 
 # ============================================================================
 # Cross-compilation Support Functions
@@ -91,15 +91,19 @@ macos: macos-x64-osxcross macos-arm64-osxcross
 
 # Run tests (Linux native)
 test: build
-	@cd $(BUILD_DIR)/linux-x64 && ctest --output-on-failure --parallel $(JOBS)
+	@cd $(BUILD_DIR) && ctest --output-on-failure --parallel $(JOBS)
 
-# Run integration tests only (tests 91-96)
+# Run integration tests only (tests 19-21)
 test-intg: build
-	@cd $(BUILD_DIR)/linux-x64 && ctest --output-on-failure --parallel $(JOBS) -I 91,96
+	@cd $(BUILD_DIR) && ctest --output-on-failure --parallel $(JOBS) -I 19,21
 
-# Run unit tests only (tests 1-90, 97-117)
+# Run unit tests only (tests 1-18)
 test-unit: build
-	@cd $(BUILD_DIR)/linux-x64 && ctest --output-on-failure --parallel $(JOBS) -I 1,90 && ctest --output-on-failure --parallel $(JOBS) -I 97,117
+	@cd $(BUILD_DIR) && ctest --output-on-failure --parallel $(JOBS) -I 1,18
+
+# Run smoke tests only (tests 22-29)
+test-smoke: build
+	@cd $(BUILD_DIR) && ctest --output-on-failure --parallel $(JOBS) -I 22,29
 
 
 
@@ -157,7 +161,7 @@ clean:
 # ============================================================================
 
 # Source file patterns
-SRCDIRS := src include tests
+SRCDIRS := src include tests cli
 CPPFILES := $(shell $(FIND) $(SRCDIRS) -name '*.cpp' -o -name '*.hpp' 2>/dev/null)
 
 # Format code (src, include, and tests directories)
@@ -182,10 +186,10 @@ lint:
 # Generate code coverage report
 coverage: build
 	@echo "Generating code coverage report..."
-	@cd $(BUILD_DIR)/linux-x64 && \
+	@cd $(BUILD_DIR) && \
 		make art2img_tests && \
 		./tests/art2img_tests && \
-		gcovr --html-details coverage.html --root ../.. --print-summary
+		gcovr --html-details coverage.html --root .. --print-summary
 
 # ============================================================================
 # Help Target
@@ -214,6 +218,7 @@ help:
 	@echo "  test                   - Run all tests (Linux) in parallel"
 	@echo "  test-unit              - Run unit tests only in parallel"
 	@echo "  test-intg              - Run integration tests only in parallel"
+	@echo "  test-smoke             - Run smoke tests only in parallel"
 	@echo "  test-windows           - Test Windows cross-compiled builds"
 	@echo "  test-macos             - Test macOS cross-compiled builds"
 	@echo "  coverage               - Generate code coverage report"
