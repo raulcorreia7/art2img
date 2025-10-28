@@ -9,6 +9,8 @@
  */
 
 // Public memory-first surface
+#include <string>
+#include <format>
 #include "adapters/grp.hpp"
 #include "adapters/io.hpp"
 #include "adapters/meta_serialization.hpp"
@@ -20,7 +22,6 @@
 #include "core/meta.hpp"
 #include "core/palette.hpp"
 #include "extras/batch.hpp"
-#include <format>
 /**
  * @namespace art2img
  * @brief Main namespace for the art2img library
@@ -40,10 +41,13 @@ struct Version {
   static constexpr int patch = 0;
 
   /**
-   * @brief Get version string
+   * @brief Get version string (compile-time)
    * @return Version string in format "major.minor.patch"
    */
-  static constexpr const char* string() { return std::format("{}.{}.{}", major, minor, patch).c_str(); }
+  static constexpr const std::string_view version()
+  {
+    return std::format("{}.{}.{}", major, minor, patch);
+  }
 };
 
 }  // namespace art2img
