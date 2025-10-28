@@ -11,7 +11,13 @@ CPMAddPackage(
 # ============================================================================
 # CLI EXECUTABLE
 # ============================================================================
-add_executable(art2img main.cpp)
+add_executable(art2img 
+    main.cpp
+    config_parser.cpp
+    conversion_pipeline.cpp
+    file_processor.cpp
+    progress_reporter.cpp
+)
 
 target_link_libraries(art2img 
     PRIVATE 
