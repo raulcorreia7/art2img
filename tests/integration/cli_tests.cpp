@@ -182,6 +182,33 @@ TEST_CASE_FIXTURE(CLITestFixture, "CLI basic conversion")
     // Keep test files for manual verification - no cleanup
   }
 
+  SUBCASE("Convert with matte hygiene enabled")
+  {
+    auto test_dir = create_test_dir();
+    std::vector<std::string> args;
+    args.push_back("--input");
+    args.push_back((test_dir / "TILES000.ART").string());
+    args.push_back("--palette");
+    args.push_back((test_dir / "PALETTE.DAT").string());
+    args.push_back("--matte");
+    args.push_back("--premultiply");
+    args.push_back("--output");
+    args.push_back(test_dir.string());
+
+    std::string output = run_cli(args);
+
+    bool found_png = false;
+    for (const auto& entry : fs::directory_iterator(test_dir)) {
+      if (entry.path().extension() == ".png") {
+        found_png = true;
+        break;
+      }
+    }
+
+    CHECK(found_png);
+    // Keep test files for manual verification - no cleanup
+  }
+
   SUBCASE("Convert with premultiplied alpha")
   {
     auto test_dir = create_test_dir();
