@@ -5,6 +5,7 @@
 #include <optional>
 
 #include "art.hpp"
+#include "color_helpers.hpp"
 #include "image.hpp"
 #include "palette.hpp"
 
@@ -13,6 +14,9 @@ namespace art2img::core {
 struct ConversionOptions {
   bool apply_lookup = false;
   std::optional<std::uint8_t> shade_index{};
+  bool fix_transparency = true;
+  bool premultiply_alpha = false;
+  bool matte_hygiene = false;
 };
 
 struct PostprocessOptions {
