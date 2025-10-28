@@ -50,10 +50,14 @@ struct Error {
   Error() = default;
 
   Error(std::error_code ec, std::string msg)
-      : code(std::move(ec)), message(std::move(msg)) {}
+      : code(std::move(ec)), message(std::move(msg))
+  {
+  }
 
   Error(errc e, std::string msg)
-      : code(make_error_code(e)), message(std::move(msg)) {}
+      : code(make_error_code(e)), message(std::move(msg))
+  {
+  }
 };
 
 std::string format_error_message(const std::string& base_message,
@@ -66,32 +70,37 @@ std::string format_tile_error(const std::string& base_message,
                               std::size_t tile_index);
 
 template <typename T = std::monostate>
-std::expected<T, Error> make_error_expected(errc e,
-                                            const std::string& message) {
+std::expected<T, Error> make_error_expected(errc e, const std::string& message)
+{
   return std::unexpected(Error(e, message));
 }
 
 template <typename T = std::monostate>
 std::expected<T, Error> make_error_expected(const std::error_code& ec,
-                                            const std::string& message) {
+                                            const std::string& message)
+{
   return std::unexpected(Error(ec, message));
 }
 
 template <typename T = std::monostate>
-std::expected<T, Error> make_error_expected(const Error& error) {
+std::expected<T, Error> make_error_expected(const Error& error)
+{
   return std::unexpected(error);
 }
 
-inline std::expected<std::monostate, Error> make_success() {
+inline std::expected<std::monostate, Error> make_success()
+{
   return std::monostate{};
 }
 
 template <typename T>
-std::expected<T, Error> make_success(T&& value) {
+std::expected<T, Error> make_success(T&& value)
+{
   return std::forward<T>(value);
 }
 
-inline Error make_error(errc code, std::string message) {
+inline Error make_error(errc code, std::string message)
+{
   return Error(code, std::move(message));
 }
 
