@@ -16,7 +16,8 @@ namespace {
 
 std::vector<std::byte> make_grp_blob(
     std::initializer_list<std::pair<std::string, std::vector<std::byte>>>
-        entries) {
+        entries)
+{
   constexpr std::string_view signature = "KenSilverman";
   std::vector<std::byte> blob;
   blob.reserve(signature.size() + 4 + entries.size() * 16);
@@ -51,7 +52,8 @@ std::vector<std::byte> make_grp_blob(
 
 }  // namespace
 
-TEST_CASE("load_grp parses entries and keeps storage alive") {
+TEST_CASE("load_grp parses entries and keeps storage alive")
+{
   const auto blob =
       make_grp_blob({{"FIRSTART", {std::byte{0x01}, std::byte{0x02}}},
                      {"SECONDART", {std::byte{0xAA}}}});
@@ -72,7 +74,8 @@ TEST_CASE("load_grp parses entries and keeps storage alive") {
   CHECK(!missing);
 }
 
-TEST_CASE("load_grp rejects invalid headers") {
+TEST_CASE("load_grp rejects invalid headers")
+{
   std::vector<std::byte> blob = {std::byte{0x00}, std::byte{0x01}};
   const auto result = art2img::adapters::load_grp(blob);
   CHECK(!result);

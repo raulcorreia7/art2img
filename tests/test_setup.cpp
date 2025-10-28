@@ -11,7 +11,8 @@
 #include "test_helpers.hpp"
 
 // Simple test to verify test helpers are working
-TEST_CASE("Test Setup - Verify Helpers" * doctest::test_suite("Global Setup")) {
+TEST_CASE("Test Setup - Verify Helpers" * doctest::test_suite("Global Setup"))
+{
   const auto test_output_dir = test_helpers::get_test_output_dir();
 
   // Ensure the directory exists first

@@ -4,8 +4,10 @@
 
 #include <art2img/core/error.hpp>
 
-TEST_SUITE("error handling") {
-  TEST_CASE("errc enum values are correct") {
+TEST_SUITE("error handling")
+{
+  TEST_CASE("errc enum values are correct")
+  {
     using art2img::core::errc;
 
     CHECK(static_cast<int>(errc::none) == 0);
@@ -17,7 +19,8 @@ TEST_SUITE("error handling") {
     CHECK(static_cast<int>(errc::unsupported) == 6);
   }
 
-  TEST_CASE("Error struct construction") {
+  TEST_CASE("Error struct construction")
+  {
     using art2img::core::errc;
     using art2img::core::Error;
 
@@ -38,7 +41,8 @@ TEST_SUITE("error handling") {
     CHECK(file_error.message == "File not found");
   }
 
-  TEST_CASE("make_error_code function") {
+  TEST_CASE("make_error_code function")
+  {
     using art2img::core::errc;
     using art2img::core::make_error_code;
 
@@ -47,7 +51,8 @@ TEST_SUITE("error handling") {
     CHECK(ec.category().name() == std::string("art2img"));
   }
 
-  TEST_CASE("Error category name and messages") {
+  TEST_CASE("Error category name and messages")
+  {
     using art2img::core::errc;
     using art2img::core::make_error_code;
 
@@ -72,7 +77,8 @@ TEST_SUITE("error handling") {
     CHECK(category.message(999) == "Unknown error");
   }
 
-  TEST_CASE("make_error_expected functions") {
+  TEST_CASE("make_error_expected functions")
+  {
     using art2img::core::errc;
     using art2img::core::Error;
     using art2img::core::make_error_expected;
@@ -104,7 +110,8 @@ TEST_SUITE("error handling") {
     CHECK(result4.error().code.value() == static_cast<int>(errc::io_failure));
   }
 
-  TEST_CASE("make_success functions") {
+  TEST_CASE("make_success functions")
+  {
     using art2img::core::make_success;
 
     // Test monostate success
@@ -122,7 +129,8 @@ TEST_SUITE("error handling") {
     CHECK(result3.value() == "hello");
   }
 
-  TEST_CASE("std::error_code compatibility") {
+  TEST_CASE("std::error_code compatibility")
+  {
     using art2img::core::errc;
     using art2img::core::make_error_code;
 
