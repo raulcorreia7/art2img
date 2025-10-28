@@ -9,22 +9,25 @@
 namespace art2img::adapters {
 
 namespace {
-core::Error manifest_error(std::string message) {
+core::Error manifest_error(std::string message)
+{
   return core::make_error(core::errc::conversion_failure, std::move(message));
 }
 
 void append_animation_ini(std::ostream& out,
-                          const core::AnimationData& animation) {
+                          const core::AnimationData& animation)
+{
   out << "[" << animation.name << "]\n";
-  out << "frames=" << animation.frames.first << ","
-      << animation.frames.count << "\n";
+  out << "frames=" << animation.frames.first << "," << animation.frames.count
+      << "\n";
   out << "frame_time_ms=" << animation.frame_time.count() << "\n";
   out << "loops=" << (animation.loops ? "true" : "false") << "\n\n";
 }
 
 void append_animation_json(std::ostream& out,
                            const core::AnimationData& animation,
-                           bool last) {
+                           bool last)
+{
   out << "    {\n";
   out << "      \"name\": \"" << animation.name << "\",\n";
   out << "      \"first_frame\": " << animation.frames.first << ",\n";
@@ -37,10 +40,10 @@ void append_animation_json(std::ostream& out,
 }  // namespace
 
 std::expected<std::string, core::Error> format_animation_ini(
-    const core::ExportManifest& manifest) {
+    const core::ExportManifest& manifest)
+{
   if (manifest.palette_name.empty()) {
-    return std::unexpected(
-        manifest_error("manifest requires palette_name"));
+    return std::unexpected(manifest_error("manifest requires palette_name"));
   }
 
   std::ostringstream out;
@@ -57,10 +60,10 @@ std::expected<std::string, core::Error> format_animation_ini(
 }
 
 std::expected<std::string, core::Error> format_animation_json(
-    const core::ExportManifest& manifest) {
+    const core::ExportManifest& manifest)
+{
   if (manifest.palette_name.empty()) {
-    return std::unexpected(
-        manifest_error("manifest requires palette_name"));
+    return std::unexpected(manifest_error("manifest requires palette_name"));
   }
 
   std::ostringstream out;

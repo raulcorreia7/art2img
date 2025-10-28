@@ -9,7 +9,8 @@
 namespace art2img::adapters {
 
 std::expected<std::vector<std::byte>, core::Error> read_binary_file(
-    const std::filesystem::path& path) {
+    const std::filesystem::path& path)
+{
   std::ifstream file(path, std::ios::binary | std::ios::ate);
   if (!file) {
     return std::unexpected(core::make_error(
@@ -18,8 +19,9 @@ std::expected<std::vector<std::byte>, core::Error> read_binary_file(
 
   const auto size = file.tellg();
   if (size < 0) {
-    return std::unexpected(core::make_error(
-        core::errc::io_failure, "failed to determine file size: " + path.string()));
+    return std::unexpected(
+        core::make_error(core::errc::io_failure,
+                         "failed to determine file size: " + path.string()));
   }
 
   std::vector<std::byte> buffer(static_cast<std::size_t>(size));
@@ -33,11 +35,13 @@ std::expected<std::vector<std::byte>, core::Error> read_binary_file(
 }
 
 std::expected<void, core::Error> write_file(const std::filesystem::path& path,
-                                            std::span<const std::byte> data) {
+                                            std::span<const std::byte> data)
+{
   std::ofstream file(path, std::ios::binary | std::ios::trunc);
   if (!file) {
-    return std::unexpected(core::make_error(
-        core::errc::io_failure, "failed to open file for writing: " + path.string()));
+    return std::unexpected(
+        core::make_error(core::errc::io_failure,
+                         "failed to open file for writing: " + path.string()));
   }
 
   if (!data.empty() &&

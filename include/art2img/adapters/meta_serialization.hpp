@@ -17,8 +17,9 @@ std::expected<std::string, core::Error> format_animation_json(
     const core::ExportManifest& manifest);
 
 std::expected<std::string, core::Error> format_animation(
-    const core::ExportManifest& manifest, animation_format format) {
-
+    const core::ExportManifest& manifest,
+    animation_format format)
+{
   decltype(&format_animation_ini) func = nullptr;
 
   switch (format) {

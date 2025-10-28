@@ -20,7 +20,7 @@
 #include "core/meta.hpp"
 #include "core/palette.hpp"
 #include "extras/batch.hpp"
-
+#include <format>
 /**
  * @namespace art2img
  * @brief Main namespace for the art2img library
@@ -36,14 +36,14 @@ namespace art2img {
  */
 struct Version {
   static constexpr int major = 1;
-  static constexpr int minor = 0;
+  static constexpr int minor = 1;
   static constexpr int patch = 0;
 
   /**
    * @brief Get version string
    * @return Version string in format "major.minor.patch"
    */
-  static constexpr const char* string() { return "1.0.0"; }
+  static constexpr const char* string() { return std::format("{}.{}.{}", major, minor, patch).c_str(); }
 };
 
 }  // namespace art2img

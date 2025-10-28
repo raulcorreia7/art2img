@@ -11,7 +11,8 @@
 namespace art2img::extras {
 
 std::expected<BatchResult, core::Error> convert_tiles(
-    const BatchRequest& request) {
+    const BatchRequest& request)
+{
   if (request.archive == nullptr || request.palette == nullptr) {
     return std::unexpected(core::make_error(core::errc::invalid_art,
                                             "batch request missing data"));
@@ -24,11 +25,12 @@ std::expected<BatchResult, core::Error> convert_tiles(
   for (std::size_t index : request.tiles) {
     auto tile_view = core::get_tile(*request.archive, index);
     if (!tile_view) {
-      return std::unexpected(core::make_error(
-          core::errc::invalid_art, "tile index out of range"));
+      return std::unexpected(
+          core::make_error(core::errc::invalid_art, "tile index out of range"));
     }
 
-    auto rgba = core::palette_to_rgba(*tile_view, palette_view, request.conversion);
+    auto rgba =
+        core::palette_to_rgba(*tile_view, palette_view, request.conversion);
     if (!rgba) {
       return std::unexpected(rgba.error());
     }
