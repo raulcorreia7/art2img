@@ -22,7 +22,8 @@ struct PaletteView {
   std::span<const std::uint8_t> translucent{};
   std::uint16_t shade_table_count = 0;
 
-  constexpr bool has_shades() const noexcept {
+  constexpr bool has_shades() const noexcept
+  {
     return shade_table_count > 0 &&
            shade_tables.size() >=
                static_cast<std::size_t>(shade_table_count) * shade_table_size;

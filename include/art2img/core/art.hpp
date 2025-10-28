@@ -23,7 +23,8 @@ struct TileView {
   std::uint32_t width = 0;
   std::uint32_t height = 0;
 
-  constexpr bool valid() const noexcept {
+  constexpr bool valid() const noexcept
+  {
     const auto required =
         static_cast<std::size_t>(width) * static_cast<std::size_t>(height);
     return indices.size() >= required;
