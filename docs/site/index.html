@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>art2img - Build Engine ART to Image Converter</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="nav">
+                <h1 class="logo">art2img</h1>
+                <nav>
+                    <a href="#features">Features</a>
+                    <a href="#usage">Usage</a>
+                    <a href="#api">API</a>
+                    <a href="https://github.com/rcorreia/art2img" target="_blank">GitHub</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <h1>art2img</h1>
+                    <p class="hero-subtitle">Convert Build Engine ART files to PNG, TGA, and BMP. Supports Duke Nukem 3D, Shadow Warrior, Blood, and other Build Engine games.</p>
+                    <div class="hero-buttons">
+                        <a href="https://github.com/rcorreia/art2img" class="btn btn-primary">GitHub</a>
+                        <a href="#usage" class="btn btn-secondary">Usage</a>
+                    </div>
+                </div>
+                <div class="hero-visual">
+                    <div class="code-block">
+                        <pre><code class="language-bash"># Convert ART files to PNG
+art2img convert TILES000.ART --output png/
+
+# Apply transparency and shading
+art2img convert TILES001.ART \
+  --palette PALETTE.DAT \
+  --transparency \
+  --shading \
+  --output tiles/</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="features">
+            <div class="container">
+                <h2>Features</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <h3>ART File Support</h3>
+                        <p>Read Build Engine ART files from Duke Nukem 3D, Shadow Warrior, Blood, and other games.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Image Formats</h3>
+                        <p>Convert to PNG, TGA, and BMP with RGBA color support and transparency handling.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Palette Processing</h3>
+                        <p>Handle PALETTE.DAT files with shade tables, translucency data, and color correction.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>CLI & Library</h3>
+                        <p>Command-line tool and C++ library for both batch processing and programmatic use.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Cross-Platform</h3>
+                        <p>Build and run on Windows, Linux, and macOS.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>C++23</h3>
+                        <p>Modern C++ implementation with std::expected error handling.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="usage" class="usage">
+            <div class="container">
+                <h2>Usage</h2>
+                <div class="usage-grid">
+                    <div class="usage-card">
+                        <h3>Build</h3>
+                        <div class="code-block">
+                            <pre><code class="language-bash">git clone https://github.com/rcorreia/art2img.git
+cd art2img
+make setup
+make build</code></pre>
+                        </div>
+                    </div>
+                    <div class="usage-card">
+                        <h3>Convert</h3>
+                        <div class="code-block">
+                            <pre><code class="language-bash">./art2img convert TILES000.ART
+./art2img convert TILES000.ART \
+  --palette PALETTE.DAT \
+  --output output/
+./art2img convert *.ART \
+  --format png \
+  --transparency</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="api" class="api">
+            <div class="container">
+                <h2>API</h2>
+                <div class="code-block">
+                    <pre><code class="language-cpp">#include &lt;art2img/api.hpp&gt;
+
+using namespace art2img;
+
+auto art = core::load_art("TILES000.ART");
+auto palette = core::load_palette("PALETTE.DAT");
+auto image = core::convert_to_image(art, palette);
+encode::png(image, "output.png");</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="about">
+            <div class="container">
+                <h2>About</h2>
+                <p>art2img converts Build Engine ART files to modern image formats. For game modders and developers working with classic Build Engine games.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 art2img. Open source under MIT License.</p>
+            <p>
+                <a href="https://github.com/rcorreia/art2img">GitHub</a> •
+                <a href="https://github.com/rcorreia/art2img/issues">Issues</a> •
+                <a href="https://github.com/rcorreia/art2img/blob/main/LICENSE">License</a>
+            </p>
+        </div>
+    </footer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>
