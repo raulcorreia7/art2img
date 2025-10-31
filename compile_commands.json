@@ -1,0 +1,158 @@
+[
+{
+  "directory": "/home/rcorreia/projects/art2img/build",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -I/home/rcorreia/projects/art2img/include -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -Wall -Wextra -pedantic -o CMakeFiles/libart2img.dir/src/adapters/grp.cpp.o -c /home/rcorreia/projects/art2img/src/adapters/grp.cpp",
+  "file": "/home/rcorreia/projects/art2img/src/adapters/grp.cpp",
+  "output": "CMakeFiles/libart2img.dir/src/adapters/grp.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -I/home/rcorreia/projects/art2img/include -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -Wall -Wextra -pedantic -o CMakeFiles/libart2img.dir/src/adapters/io.cpp.o -c /home/rcorreia/projects/art2img/src/adapters/io.cpp",
+  "file": "/home/rcorreia/projects/art2img/src/adapters/io.cpp",
+  "output": "CMakeFiles/libart2img.dir/src/adapters/io.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -I/home/rcorreia/projects/art2img/include -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -Wall -Wextra -pedantic -o CMakeFiles/libart2img.dir/src/adapters/meta_serialization.cpp.o -c /home/rcorreia/projects/art2img/src/adapters/meta_serialization.cpp",
+  "file": "/home/rcorreia/projects/art2img/src/adapters/meta_serialization.cpp",
+  "output": "CMakeFiles/libart2img.dir/src/adapters/meta_serialization.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -I/home/rcorreia/projects/art2img/include -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -Wall -Wextra -pedantic -o CMakeFiles/libart2img.dir/src/core/art.cpp.o -c /home/rcorreia/projects/art2img/src/core/art.cpp",
+  "file": "/home/rcorreia/projects/art2img/src/core/art.cpp",
+  "output": "CMakeFiles/libart2img.dir/src/core/art.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -I/home/rcorreia/projects/art2img/include -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -Wall -Wextra -pedantic -o CMakeFiles/libart2img.dir/src/core/convert.cpp.o -c /home/rcorreia/projects/art2img/src/core/convert.cpp",
+  "file": "/home/rcorreia/projects/art2img/src/core/convert.cpp",
+  "output": "CMakeFiles/libart2img.dir/src/core/convert.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -I/home/rcorreia/projects/art2img/include -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -Wall -Wextra -pedantic -o CMakeFiles/libart2img.dir/src/core/encode.cpp.o -c /home/rcorreia/projects/art2img/src/core/encode.cpp",
+  "file": "/home/rcorreia/projects/art2img/src/core/encode.cpp",
+  "output": "CMakeFiles/libart2img.dir/src/core/encode.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -I/home/rcorreia/projects/art2img/include -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -Wall -Wextra -pedantic -o CMakeFiles/libart2img.dir/src/core/error.cpp.o -c /home/rcorreia/projects/art2img/src/core/error.cpp",
+  "file": "/home/rcorreia/projects/art2img/src/core/error.cpp",
+  "output": "CMakeFiles/libart2img.dir/src/core/error.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -I/home/rcorreia/projects/art2img/include -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -Wall -Wextra -pedantic -o CMakeFiles/libart2img.dir/src/core/palette.cpp.o -c /home/rcorreia/projects/art2img/src/core/palette.cpp",
+  "file": "/home/rcorreia/projects/art2img/src/core/palette.cpp",
+  "output": "CMakeFiles/libart2img.dir/src/core/palette.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -I/home/rcorreia/projects/art2img/include -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -Wall -Wextra -pedantic -o CMakeFiles/libart2img.dir/src/extras/batch.cpp.o -c /home/rcorreia/projects/art2img/src/extras/batch.cpp",
+  "file": "/home/rcorreia/projects/art2img/src/extras/batch.cpp",
+  "output": "CMakeFiles/libart2img.dir/src/extras/batch.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build/_deps/doctest-build",
+  "command": "/usr/bin/c++ -DDOCTEST_CONFIG_IMPLEMENT_WITH_MAIN -I/home/rcorreia/projects/art2img/.cache/doctest/848104da622fdd9ea369022a1839b90f97a5dd84 -g -std=c++11 -o CMakeFiles/doctest_with_main.dir/doctest/parts/doctest.cpp.o -c /home/rcorreia/projects/art2img/.cache/doctest/848104da622fdd9ea369022a1839b90f97a5dd84/doctest/parts/doctest.cpp",
+  "file": "/home/rcorreia/projects/art2img/.cache/doctest/848104da622fdd9ea369022a1839b90f97a5dd84/doctest/parts/doctest.cpp",
+  "output": "_deps/doctest-build/CMakeFiles/doctest_with_main.dir/doctest/parts/doctest.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build/cli",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -I/home/rcorreia/projects/art2img/cli -I/home/rcorreia/projects/art2img/cli/../include -I/home/rcorreia/projects/art2img/include -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -isystem /home/rcorreia/projects/art2img/.cache/cli11/1ad7a9ebd37f496c34803f83b7dae421b6728f9b/include -g -std=c++23 -o CMakeFiles/art2img.dir/main.cpp.o -c /home/rcorreia/projects/art2img/cli/main.cpp",
+  "file": "/home/rcorreia/projects/art2img/cli/main.cpp",
+  "output": "cli/CMakeFiles/art2img.dir/main.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build/cli",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -I/home/rcorreia/projects/art2img/cli -I/home/rcorreia/projects/art2img/cli/../include -I/home/rcorreia/projects/art2img/include -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -isystem /home/rcorreia/projects/art2img/.cache/cli11/1ad7a9ebd37f496c34803f83b7dae421b6728f9b/include -g -std=c++23 -o CMakeFiles/art2img.dir/config_parser.cpp.o -c /home/rcorreia/projects/art2img/cli/config_parser.cpp",
+  "file": "/home/rcorreia/projects/art2img/cli/config_parser.cpp",
+  "output": "cli/CMakeFiles/art2img.dir/config_parser.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build/cli",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -I/home/rcorreia/projects/art2img/cli -I/home/rcorreia/projects/art2img/cli/../include -I/home/rcorreia/projects/art2img/include -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -isystem /home/rcorreia/projects/art2img/.cache/cli11/1ad7a9ebd37f496c34803f83b7dae421b6728f9b/include -g -std=c++23 -o CMakeFiles/art2img.dir/conversion_pipeline.cpp.o -c /home/rcorreia/projects/art2img/cli/conversion_pipeline.cpp",
+  "file": "/home/rcorreia/projects/art2img/cli/conversion_pipeline.cpp",
+  "output": "cli/CMakeFiles/art2img.dir/conversion_pipeline.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build/cli",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -I/home/rcorreia/projects/art2img/cli -I/home/rcorreia/projects/art2img/cli/../include -I/home/rcorreia/projects/art2img/include -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -isystem /home/rcorreia/projects/art2img/.cache/cli11/1ad7a9ebd37f496c34803f83b7dae421b6728f9b/include -g -std=c++23 -o CMakeFiles/art2img.dir/file_processor.cpp.o -c /home/rcorreia/projects/art2img/cli/file_processor.cpp",
+  "file": "/home/rcorreia/projects/art2img/cli/file_processor.cpp",
+  "output": "cli/CMakeFiles/art2img.dir/file_processor.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build/cli",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -I/home/rcorreia/projects/art2img/cli -I/home/rcorreia/projects/art2img/cli/../include -I/home/rcorreia/projects/art2img/include -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -isystem /home/rcorreia/projects/art2img/.cache/cli11/1ad7a9ebd37f496c34803f83b7dae421b6728f9b/include -g -std=c++23 -o CMakeFiles/art2img.dir/progress_reporter.cpp.o -c /home/rcorreia/projects/art2img/cli/progress_reporter.cpp",
+  "file": "/home/rcorreia/projects/art2img/cli/progress_reporter.cpp",
+  "output": "cli/CMakeFiles/art2img.dir/progress_reporter.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build/tests/unit",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -DTEST_ASSETS_DIR=\\\"/home/rcorreia/projects/art2img/tests/assets\\\" -DTEST_CLI_EXECUTABLE=\\\"/home/rcorreia/projects/art2img/build/cli/art2img\\\" -DTEST_OUTPUT_DIR=\\\"/home/rcorreia/projects/art2img/build/test_output/unit\\\" -I/home/rcorreia/projects/art2img/include -I/home/rcorreia/projects/art2img/.cache/doctest/848104da622fdd9ea369022a1839b90f97a5dd84 -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -o CMakeFiles/art2img_unit_tests.dir/core/error/test_error.cpp.o -c /home/rcorreia/projects/art2img/tests/unit/core/error/test_error.cpp",
+  "file": "/home/rcorreia/projects/art2img/tests/unit/core/error/test_error.cpp",
+  "output": "tests/unit/CMakeFiles/art2img_unit_tests.dir/core/error/test_error.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build/tests/unit",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -DTEST_ASSETS_DIR=\\\"/home/rcorreia/projects/art2img/tests/assets\\\" -DTEST_CLI_EXECUTABLE=\\\"/home/rcorreia/projects/art2img/build/cli/art2img\\\" -DTEST_OUTPUT_DIR=\\\"/home/rcorreia/projects/art2img/build/test_output/unit\\\" -I/home/rcorreia/projects/art2img/include -I/home/rcorreia/projects/art2img/.cache/doctest/848104da622fdd9ea369022a1839b90f97a5dd84 -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -o CMakeFiles/art2img_unit_tests.dir/core/error/test_error_formatting.cpp.o -c /home/rcorreia/projects/art2img/tests/unit/core/error/test_error_formatting.cpp",
+  "file": "/home/rcorreia/projects/art2img/tests/unit/core/error/test_error_formatting.cpp",
+  "output": "tests/unit/CMakeFiles/art2img_unit_tests.dir/core/error/test_error_formatting.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build/tests/unit",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -DTEST_ASSETS_DIR=\\\"/home/rcorreia/projects/art2img/tests/assets\\\" -DTEST_CLI_EXECUTABLE=\\\"/home/rcorreia/projects/art2img/build/cli/art2img\\\" -DTEST_OUTPUT_DIR=\\\"/home/rcorreia/projects/art2img/build/test_output/unit\\\" -I/home/rcorreia/projects/art2img/include -I/home/rcorreia/projects/art2img/.cache/doctest/848104da622fdd9ea369022a1839b90f97a5dd84 -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -o CMakeFiles/art2img_unit_tests.dir/core/test_art.cpp.o -c /home/rcorreia/projects/art2img/tests/unit/core/test_art.cpp",
+  "file": "/home/rcorreia/projects/art2img/tests/unit/core/test_art.cpp",
+  "output": "tests/unit/CMakeFiles/art2img_unit_tests.dir/core/test_art.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build/tests/unit",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -DTEST_ASSETS_DIR=\\\"/home/rcorreia/projects/art2img/tests/assets\\\" -DTEST_CLI_EXECUTABLE=\\\"/home/rcorreia/projects/art2img/build/cli/art2img\\\" -DTEST_OUTPUT_DIR=\\\"/home/rcorreia/projects/art2img/build/test_output/unit\\\" -I/home/rcorreia/projects/art2img/include -I/home/rcorreia/projects/art2img/.cache/doctest/848104da622fdd9ea369022a1839b90f97a5dd84 -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -o CMakeFiles/art2img_unit_tests.dir/core/test_convert.cpp.o -c /home/rcorreia/projects/art2img/tests/unit/core/test_convert.cpp",
+  "file": "/home/rcorreia/projects/art2img/tests/unit/core/test_convert.cpp",
+  "output": "tests/unit/CMakeFiles/art2img_unit_tests.dir/core/test_convert.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build/tests/unit",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -DTEST_ASSETS_DIR=\\\"/home/rcorreia/projects/art2img/tests/assets\\\" -DTEST_CLI_EXECUTABLE=\\\"/home/rcorreia/projects/art2img/build/cli/art2img\\\" -DTEST_OUTPUT_DIR=\\\"/home/rcorreia/projects/art2img/build/test_output/unit\\\" -I/home/rcorreia/projects/art2img/include -I/home/rcorreia/projects/art2img/.cache/doctest/848104da622fdd9ea369022a1839b90f97a5dd84 -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -o CMakeFiles/art2img_unit_tests.dir/core/test_encode.cpp.o -c /home/rcorreia/projects/art2img/tests/unit/core/test_encode.cpp",
+  "file": "/home/rcorreia/projects/art2img/tests/unit/core/test_encode.cpp",
+  "output": "tests/unit/CMakeFiles/art2img_unit_tests.dir/core/test_encode.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build/tests/unit",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -DTEST_ASSETS_DIR=\\\"/home/rcorreia/projects/art2img/tests/assets\\\" -DTEST_CLI_EXECUTABLE=\\\"/home/rcorreia/projects/art2img/build/cli/art2img\\\" -DTEST_OUTPUT_DIR=\\\"/home/rcorreia/projects/art2img/build/test_output/unit\\\" -I/home/rcorreia/projects/art2img/include -I/home/rcorreia/projects/art2img/.cache/doctest/848104da622fdd9ea369022a1839b90f97a5dd84 -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -o CMakeFiles/art2img_unit_tests.dir/core/test_palette.cpp.o -c /home/rcorreia/projects/art2img/tests/unit/core/test_palette.cpp",
+  "file": "/home/rcorreia/projects/art2img/tests/unit/core/test_palette.cpp",
+  "output": "tests/unit/CMakeFiles/art2img_unit_tests.dir/core/test_palette.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build/tests/unit",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -DTEST_ASSETS_DIR=\\\"/home/rcorreia/projects/art2img/tests/assets\\\" -DTEST_CLI_EXECUTABLE=\\\"/home/rcorreia/projects/art2img/build/cli/art2img\\\" -DTEST_OUTPUT_DIR=\\\"/home/rcorreia/projects/art2img/build/test_output/unit\\\" -I/home/rcorreia/projects/art2img/include -I/home/rcorreia/projects/art2img/.cache/doctest/848104da622fdd9ea369022a1839b90f97a5dd84 -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -o CMakeFiles/art2img_unit_tests.dir/io/test_grp.cpp.o -c /home/rcorreia/projects/art2img/tests/unit/io/test_grp.cpp",
+  "file": "/home/rcorreia/projects/art2img/tests/unit/io/test_grp.cpp",
+  "output": "tests/unit/CMakeFiles/art2img_unit_tests.dir/io/test_grp.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build/tests/unit",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -DTEST_ASSETS_DIR=\\\"/home/rcorreia/projects/art2img/tests/assets\\\" -DTEST_CLI_EXECUTABLE=\\\"/home/rcorreia/projects/art2img/build/cli/art2img\\\" -DTEST_OUTPUT_DIR=\\\"/home/rcorreia/projects/art2img/build/test_output/unit\\\" -I/home/rcorreia/projects/art2img/include -I/home/rcorreia/projects/art2img/.cache/doctest/848104da622fdd9ea369022a1839b90f97a5dd84 -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -o CMakeFiles/art2img_unit_tests.dir/__/test_setup.cpp.o -c /home/rcorreia/projects/art2img/tests/test_setup.cpp",
+  "file": "/home/rcorreia/projects/art2img/tests/test_setup.cpp",
+  "output": "tests/unit/CMakeFiles/art2img_unit_tests.dir/__/test_setup.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build/tests/integration",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -DTEST_ASSETS_DIR=\\\"/home/rcorreia/projects/art2img/tests/assets\\\" -DTEST_CLI_EXECUTABLE=\\\"/home/rcorreia/projects/art2img/build/cli/art2img\\\" -DTEST_OUTPUT_DIR=\\\"/home/rcorreia/projects/art2img/build/test_output/integration\\\" -I/home/rcorreia/projects/art2img/include -I/home/rcorreia/projects/art2img/.cache/doctest/848104da622fdd9ea369022a1839b90f97a5dd84 -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -o CMakeFiles/art2img_integration_tests.dir/cli_tests.cpp.o -c /home/rcorreia/projects/art2img/tests/integration/cli_tests.cpp",
+  "file": "/home/rcorreia/projects/art2img/tests/integration/cli_tests.cpp",
+  "output": "tests/integration/CMakeFiles/art2img_integration_tests.dir/cli_tests.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build/tests/integration",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -DTEST_ASSETS_DIR=\\\"/home/rcorreia/projects/art2img/tests/assets\\\" -DTEST_CLI_EXECUTABLE=\\\"/home/rcorreia/projects/art2img/build/cli/art2img\\\" -DTEST_OUTPUT_DIR=\\\"/home/rcorreia/projects/art2img/build/test_output/integration\\\" -I/home/rcorreia/projects/art2img/include -I/home/rcorreia/projects/art2img/.cache/doctest/848104da622fdd9ea369022a1839b90f97a5dd84 -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -o CMakeFiles/art2img_integration_tests.dir/__/test_setup.cpp.o -c /home/rcorreia/projects/art2img/tests/test_setup.cpp",
+  "file": "/home/rcorreia/projects/art2img/tests/test_setup.cpp",
+  "output": "tests/integration/CMakeFiles/art2img_integration_tests.dir/__/test_setup.cpp.o"
+},
+{
+  "directory": "/home/rcorreia/projects/art2img/build/tests/smoke",
+  "command": "/usr/bin/c++ -DSTB_IMAGE_WRITE_IMPLEMENTATION -DTEST_ASSETS_DIR=\\\"/home/rcorreia/projects/art2img/tests/assets\\\" -DTEST_CLI_EXECUTABLE=\\\"/home/rcorreia/projects/art2img/build/cli/art2img\\\" -DTEST_OUTPUT_DIR=\\\"/home/rcorreia/projects/art2img/build/test_output/smoke\\\" -I/home/rcorreia/projects/art2img/include -I/home/rcorreia/projects/art2img/.cache/doctest/848104da622fdd9ea369022a1839b90f97a5dd84 -isystem /home/rcorreia/projects/art2img/.cache/stb/c14037050a3047886d8b98e10945b8040403c19f -g -std=c++23 -o CMakeFiles/art2img_smoke_tests.dir/test_smoke.cpp.o -c /home/rcorreia/projects/art2img/tests/smoke/test_smoke.cpp",
+  "file": "/home/rcorreia/projects/art2img/tests/smoke/test_smoke.cpp",
+  "output": "tests/smoke/CMakeFiles/art2img_smoke_tests.dir/test_smoke.cpp.o"
+}
+]
