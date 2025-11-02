@@ -1,8 +1,10 @@
 #include <art2img/adapters/io.hpp>
 
+#include <climits>
 #include <expected>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <string>
 #include <utility>
 
@@ -17,11 +19,19 @@ std::expected<std::vector<std::byte>, core::Error> read_binary_file(
         core::errc::io_failure, "failed to open file: " + path.string()));
   }
 
-  const auto size = file.tellg();
-  if (size < 0) {
+  const auto size_pos = file.tellg();
+  if (size_pos < 0) {
     return std::unexpected(
         core::make_error(core::errc::io_failure,
                          "failed to determine file size: " + path.string()));
+  }
+
+  // Convert file position to size_t safely
+  std::size_t size = static_cast<std::size_t>(size_pos);
+  if (size_pos != static_cast<decltype(size_pos)>(size)) {
+    return std::unexpected(
+        core::make_error(core::errc::io_failure,
+                         "file too large to allocate: " + path.string()));
   }
 
   std::vector<std::byte> buffer(static_cast<std::size_t>(size));
