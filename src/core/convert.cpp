@@ -76,7 +76,9 @@ RgbaPixel sample_color(std::uint8_t index,
   }
 
   // ART format uses palette index 255 for transparency, not index 0
-  if (shaded == 255 || is_build_engine_magenta(pixel.r, pixel.g, pixel.b)) {
+  // Only apply transparency detection if fix_transparency is enabled
+  if (options.fix_transparency &&
+      (shaded == 255 || is_build_engine_magenta(pixel.r, pixel.g, pixel.b))) {
     pixel.a = 0;
     pixel.r = 0;
     pixel.g = 0;
