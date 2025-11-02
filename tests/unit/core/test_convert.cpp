@@ -161,17 +161,18 @@ TEST_SUITE("convert module")
     std::span<const std::uint8_t> rgba_data_without_fix(
         result_without_fix->pixels);
 
-    // Note: Even with fix_transparency=false, magenta pixels at index 255 are
-    // still converted to transparent pixels because that's the correct ART
-    // format behavior. The fix_transparency flag mainly affects the additional
-    // cleanup of transparent pixels. So we expect no magenta in either case due
-    // to the index 255 detection.
-    CHECK_FALSE(contains_build_engine_magenta(rgba_data_without_fix));
-    CHECK_EQ(count_build_engine_magenta(rgba_data_without_fix), 0);
+    // With fix_transparency=false, magenta pixels at index 255 should NOT be
+    // converted to transparent pixels. They should remain as opaque magenta.
+    CHECK(contains_build_engine_magenta(rgba_data_without_fix));
+    CHECK_EQ(count_build_engine_magenta(rgba_data_without_fix), 2);
 
-    // However, we can verify that the transparency processing differs by
-    // checking that specific transparent pixels have RGB values of 0 when fix
-    // is enabled (this is handled by clean_transparent_pixels)
+    // Verify that the magenta pixels are opaque (not transparent)
+    CHECK_EQ(rgba_data_without_fix[3], 255);  // Alpha should be 255 (opaque)
+    CHECK_EQ(rgba_data_without_fix[0],
+             255);  // R should be 255 (252 expanded to 8-bit)
+    CHECK_EQ(rgba_data_without_fix[1], 0);  // G should be 0
+    CHECK_EQ(rgba_data_without_fix[2],
+             255);  // B should be 255 (252 expanded to 8-bit)
   }
 
   TEST_CASE("Transparency fix with explicit magenta colors")
@@ -201,12 +202,13 @@ TEST_SUITE("convert module")
     palette.rgb = palette_rgb;
 
     // Create a tile with various magenta indices
+    // Note: conversion uses x * tile.height + y indexing
     std::vector<std::byte> tile_pixels(16, std::byte{0});  // 4x4 tile
-    tile_pixels[0] =
-        std::byte{255};  // Standard magenta (should be transparent)
-    tile_pixels[1] = std::byte{254};  // Magenta variant (should be transparent)
-    tile_pixels[2] = std::byte{253};  // Bright magenta (should be transparent)
-    tile_pixels[3] = std::byte{0};    // Gray (should remain opaque)
+    tile_pixels[0] = std::byte{255};  // Position (0,0) - Standard magenta
+    tile_pixels[4] = std::byte{254};  // Position (1,0) - Magenta variant
+    tile_pixels[8] = std::byte{253};  // Position (2,0) - Bright magenta
+    tile_pixels[12] =
+        std::byte{0};  // Position (3,0) - Gray (should remain opaque)
 
     art2img::core::TileView tile;
     tile.indices = tile_pixels;
@@ -214,30 +216,79 @@ TEST_SUITE("convert module")
     tile.height = 4;
 
     // Test with transparency fix enabled
-    ConversionOptions opts;
-    opts.fix_transparency = true;
+    ConversionOptions opts_with_fix;
+    opts_with_fix.fix_transparency = true;
 
-    auto result = art2img::core::palette_to_rgba(tile, palette, opts);
-    REQUIRE(result.has_value());
+    auto result_with_fix =
+        art2img::core::palette_to_rgba(tile, palette, opts_with_fix);
+    REQUIRE(result_with_fix.has_value());
 
-    std::span<const std::uint8_t> rgba_data(result->pixels);
+    std::span<const std::uint8_t> rgba_data_with_fix(result_with_fix->pixels);
 
-    // Verify no magenta pixels remain
-    CHECK_FALSE(contains_build_engine_magenta(rgba_data));
-    CHECK_EQ(count_build_engine_magenta(rgba_data), 0);
+    // With fix_transparency=true, magenta pixels should be converted to
+    // transparent
+    CHECK_FALSE(contains_build_engine_magenta(rgba_data_with_fix));
+    CHECK_EQ(count_build_engine_magenta(rgba_data_with_fix), 0);
 
     // Verify specific pixel colors
     // First pixel (index 255) should be transparent
-    CHECK_EQ(rgba_data[3], 0);  // Alpha of first pixel should be 0
-    CHECK_EQ(rgba_data[0], 0);  // R should be 0 when alpha is 0
-    CHECK_EQ(rgba_data[1], 0);  // G should be 0 when alpha is 0
-    CHECK_EQ(rgba_data[2], 0);  // B should be 0 when alpha is 0
+    CHECK_EQ(rgba_data_with_fix[3], 0);  // Alpha of first pixel should be 0
+    CHECK_EQ(rgba_data_with_fix[0], 0);  // R should be 0 when alpha is 0
+    CHECK_EQ(rgba_data_with_fix[1], 0);  // G should be 0 when alpha is 0
+    CHECK_EQ(rgba_data_with_fix[2], 0);  // B should be 0 when alpha is 0
 
     // Fourth pixel (index 0, gray) should be opaque
-    CHECK_EQ(rgba_data[15], 255);  // Alpha of fourth pixel should be 255
-    CHECK_EQ(rgba_data[12], 150);  // R should be 150 (100 expanded to 8-bit)
-    CHECK_EQ(rgba_data[13], 150);  // G should be 150 (100 expanded to 8-bit)
-    CHECK_EQ(rgba_data[14], 150);  // B should be 150 (100 expanded to 8-bit)
+    CHECK_EQ(rgba_data_with_fix[15],
+             255);  // Alpha of fourth pixel should be 255
+    CHECK_EQ(rgba_data_with_fix[12],
+             150);  // R should be 150 (100 expanded to 8-bit)
+    CHECK_EQ(rgba_data_with_fix[13],
+             150);  // G should be 150 (100 expanded to 8-bit)
+    CHECK_EQ(rgba_data_with_fix[14],
+             150);  // B should be 150 (100 expanded to 8-bit)
+
+    // Test with transparency fix disabled
+    ConversionOptions opts_without_fix;
+    opts_without_fix.fix_transparency = false;
+
+    auto result_without_fix =
+        art2img::core::palette_to_rgba(tile, palette, opts_without_fix);
+    REQUIRE(result_without_fix.has_value());
+
+    std::span<const std::uint8_t> rgba_data_without_fix(
+        result_without_fix->pixels);
+
+    // With fix_transparency=false, magenta pixels should remain opaque
+    CHECK(contains_build_engine_magenta(rgba_data_without_fix));
+    // Note: Only 2 out of 3 magenta pixels are detected because the green
+    // component from palette index 254 (value 5) expands to 20, which is > 5
+    CHECK_EQ(count_build_engine_magenta(rgba_data_without_fix), 2);
+
+    // Verify that magenta pixels remain opaque
+    // Position (0,0): pixel data at indices 0,1,2,3
+    CHECK_EQ(rgba_data_without_fix[3], 255);  // Alpha should be 255
+    CHECK_EQ(rgba_data_without_fix[0],
+             255);  // R should be 255 (252 expanded to 8-bit)
+    CHECK_EQ(rgba_data_without_fix[1], 0);  // G should be 0
+    CHECK_EQ(rgba_data_without_fix[2],
+             255);  // B should be 255 (252 expanded to 8-bit)
+
+    // Position (1,0): pixel data at indices 4,5,6,7
+    CHECK_EQ(rgba_data_without_fix[7], 255);  // Alpha should be 255
+    CHECK_EQ(rgba_data_without_fix[4],
+             239);  // R should be 239 (250 expanded to 8-bit)
+    CHECK_EQ(rgba_data_without_fix[5],
+             20);  // G should be 20 (5 expanded to 8-bit)
+    CHECK_EQ(rgba_data_without_fix[6],
+             239);  // B should be 239 (250 expanded to 8-bit)
+
+    // Position (2,0): pixel data at indices 8,9,10,11
+    CHECK_EQ(rgba_data_without_fix[11], 255);  // Alpha should be 255
+    CHECK_EQ(rgba_data_without_fix[8],
+             255);  // R should be 255 (255 expanded to 8-bit)
+    CHECK_EQ(rgba_data_without_fix[9], 0);  // G should be 0
+    CHECK_EQ(rgba_data_without_fix[10],
+             255);  // B should be 255 (255 expanded to 8-bit)
   }
 
   TEST_CASE("File-based transparency fix verification")
