@@ -9,8 +9,8 @@
  */
 
 // Public memory-first surface
-#include <string>
 #include <format>
+#include <string>
 #include "adapters/grp.hpp"
 #include "adapters/io.hpp"
 #include "adapters/meta_serialization.hpp"

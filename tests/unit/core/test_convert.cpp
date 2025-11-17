@@ -119,10 +119,10 @@ TEST_SUITE("convert module")
 
     // Create a mock palette with magenta at index 255
     std::vector<std::uint8_t> palette_rgb(256 * 3, 0);
-    // Set index 255 to magenta (RGB: 252, 0, 252)
-    palette_rgb[255 * 3 + 0] = 252;  // R
-    palette_rgb[255 * 3 + 1] = 0;    // G
-    palette_rgb[255 * 3 + 2] = 252;  // B
+    // Set index 255 to magenta (RGB: 63, 0, 63) - 6-bit values expanded to 255
+    palette_rgb[255 * 3 + 0] = 63;  // R (expands to 255)
+    palette_rgb[255 * 3 + 1] = 0;   // G
+    palette_rgb[255 * 3 + 2] = 63;  // B (expands to 255)
 
     art2img::core::PaletteView palette;
     palette.rgb = palette_rgb;
@@ -184,19 +184,22 @@ TEST_SUITE("convert module")
     // Create a palette with explicit magenta colors at various indices
     std::vector<std::uint8_t> palette_rgb(256 * 3, 0);
 
-    // Set multiple indices to magenta variants
-    palette_rgb[255 * 3 + 0] = 252;
+    // Set multiple indices to magenta variants (6-bit palette values)
+    palette_rgb[255 * 3 + 0] =
+        63;  // Index 255: standard magenta (expands to 255)
     palette_rgb[255 * 3 + 1] = 0;
-    palette_rgb[255 * 3 + 2] = 252;  // Index 255: standard magenta
-    palette_rgb[254 * 3 + 0] = 250;
+    palette_rgb[255 * 3 + 2] = 63;
+    palette_rgb[254 * 3 + 0] =
+        59;  // Index 254: magenta variant (expands to 239)
     palette_rgb[254 * 3 + 1] = 5;
-    palette_rgb[254 * 3 + 2] = 250;  // Index 254: magenta variant
-    palette_rgb[253 * 3 + 0] = 255;
+    palette_rgb[254 * 3 + 2] = 59;
+    palette_rgb[253 * 3 + 0] =
+        63;  // Index 253: bright magenta (expands to 255)
     palette_rgb[253 * 3 + 1] = 0;
-    palette_rgb[253 * 3 + 2] = 255;  // Index 253: bright magenta
-    palette_rgb[0 * 3 + 0] = 100;
-    palette_rgb[0 * 3 + 1] = 100;
-    palette_rgb[0 * 3 + 2] = 100;  // Index 0: gray (not transparent)
+    palette_rgb[253 * 3 + 2] = 63;
+    palette_rgb[0 * 3 + 0] = 37;  // Index 0: gray (expands to 150)
+    palette_rgb[0 * 3 + 1] = 37;
+    palette_rgb[0 * 3 + 2] = 37;
 
     art2img::core::PaletteView palette;
     palette.rgb = palette_rgb;
