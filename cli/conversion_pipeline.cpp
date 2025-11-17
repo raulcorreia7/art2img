@@ -1,7 +1,8 @@
 #include "conversion_pipeline.hpp"
 
-#include <format>
+#include <iomanip>
 #include <span>
+#include <sstream>
 
 #include <art2img/adapters/io.hpp>
 #include <art2img/core/convert.hpp>
@@ -37,8 +38,11 @@ std::expected<void, art2img::core::Error> convert_tile(
   }
 
   const auto extension = art2img::core::file_extension(format);
-  const auto filename = std::format(
-      "{}_{:04}.{}", config.input_art.stem().string(), index, extension);
+  // Use string concatenation for g++-12 compatibility
+  std::ostringstream filename_stream;
+  filename_stream << config.input_art.stem().string() << "_" << std::setw(4)
+                  << std::setfill('0') << index << "." << extension;
+  const auto filename = filename_stream.str();
   const auto output_path = output_dir / filename;
   auto bytes =
       std::span<const std::byte>(encoded->bytes.data(), encoded->bytes.size());
