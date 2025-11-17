@@ -2,140 +2,173 @@ name: CI
 
 on:
   push:
-    branches: [ main, development ]
+    branches: [ master, development ]
   pull_request:
-    branches: [ main, development ]
+    branches: [ master, development ]
+
+permissions:
+  contents: read
+  security-events: write
 
 jobs:
-  build:
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
-          - os: macos-latest
-          - os: windows-latest
-            arch: x64
-          - os: windows-latest
-            arch: Win32
-    
-    runs-on: ${{ matrix.os }}
-    
+        language: [ 'cpp' ]
+
     steps:
-    - name: Checkout
+    - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install dependencies (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v3
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{matrix.language}}"
+
+  build:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        cxx: [g++-12, g++-13]
+        build_type: [Release, Debug]
+        include:
+          - cxx: g++-12
+            std: c++23
+          - cxx: g++-13
+            std: c++23
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y lcov
-        
-    - name: Cache CPM dependencies
-      uses: actions/cache@v4
+        sudo apt-get install -y build-essential cmake ninja-build git
+
+    - name: Install g++-12
+      if: matrix.cxx == 'g++-12'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y g++-12
+
+    - name: Install g++-13
+      if: matrix.cxx == 'g++-13'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y g++-13
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+          -DCMAKE_CXX_STANDARD=23 \
+          -DART2IMG_TESTS=ON
+
+    - name: Build
+      run: |
+        cmake --build build --config ${{ matrix.build_type }}
+
+    - name: Run tests
+      run: |
+        cd build && ctest --output-on-failure
+
+    - name: Upload build artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
       with:
-        path: .cache
-        key: ${{ runner.os }}-${{ matrix.arch || 'default' }}-cpm-${{ hashFiles('cmake/CPM.cmake', '**/CMakeLists.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-${{ matrix.arch || 'default' }}-cpm-
-          
-    - name: Configure CMake (Windows)
-      if: runner.os == 'Windows'
+        name: build-artifacts-${{ matrix.cxx }}-${{ matrix.build_type }}
+        path: |
+          build/
+          !build/.cmake/
+        retention-days: 7
+
+  build-macos:
+    runs-on: macos-latest
+    
+    strategy:
+      matrix:
+        build_type: [Release, Debug]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON ${{ matrix.arch && format('-A {0}', matrix.arch) || '' }}
-        
-    - name: Configure CMake (Unix)
-      if: runner.os != 'Windows'
+        brew install cmake ninja
+
+    - name: Configure CMake
       run: |
-        if [ "${{ runner.os }}" = "macOS" ]; then
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
-        else
-          which ninja && cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -G Ninja || cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
-        fi
-        
-    - name: Build (Windows)
-      if: runner.os == 'Windows'
+        cmake -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DCMAKE_CXX_STANDARD=23 \
+          -DART2IMG_TESTS=ON
+
+    - name: Build
       run: |
-        cmake --build build --config Debug --parallel 4
-        
-    - name: Build (Unix)
-      if: runner.os != 'Windows'
+        cmake --build build --config ${{ matrix.build_type }}
+
+    - name: Run tests
       run: |
-        if [ "${{ runner.os }}" = "macOS" ]; then
-          cmake --build build --config Debug --parallel 4
-        else
-          which ninja && cmake --build build --config Debug --parallel 4 || cmake --build build --config Debug --parallel 4
-        fi
-        
-    - name: Build Verification
+        cd build && ctest --output-on-failure
+
+    - name: Upload build artifacts
       if: always()
-      shell: bash
-      run: |
-        cd build
-        if [ "${{ runner.os }}" = "Windows" ]; then
-          TEST_PATHS=$(find . -name "*_tests.exe" -type f)
-          if [ -z "$TEST_PATHS" ]; then
-            echo "No test executables found in build directory"
-            find . -name "*.exe" -type f || echo "No executables found"
-            exit 1
-          fi
-          echo "Found test executables:"
-          echo "$TEST_PATHS"
-        else
-          TEST_PATHS=$(find . -name "*_tests" -type f -executable)
-          if [ -z "$TEST_PATHS" ]; then
-            echo "No test executables found in build directory"
-            find . -name "art2img*" -type f -executable || echo "No executables found"
-            exit 1
-          fi
-          echo "Found test executables:"
-          echo "$TEST_PATHS"
-        fi
-        
-    - name: Test
-      if: always()
-      env:
-        ART2IMG_CLI_PATH: ${{ github.workspace }}/build/cli/art2img
-      shell: bash
-      run: |
-        cd build
-        if [ "${{ runner.os }}" = "Windows" ]; then
-          ctest --output-on-failure --parallel 1 --timeout 300
-        elif [ "${{ runner.os }}" = "macOS" ]; then
-          ctest --output-on-failure --parallel 1 --timeout 300
-        else
-          ctest --output-on-failure --parallel 1 --timeout 300
-        fi
-        
-    - name: Test Status Check
-      if: always()
-      shell: bash
-      run: |
-        if [ "${{ job.status }}" = "failure" ]; then
-          echo "Job failed on ${{ matrix.os }}"
-          echo "Check the test logs above for specific failure details"
-          exit 1
-        elif [ "${{ job.status }}" = "success" ]; then
-          echo "All tests passed on ${{ matrix.os }}"
-        else
-          echo "Job status: ${{ job.status }} on ${{ matrix.os }}"
-          exit 1
-        fi
-        
-    - name: Generate coverage (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        cd build
-        if [ -f coverage.info ]; then
-          lcov --remove coverage.info '/usr/*' --output-file coverage.info
-          lcov --list coverage.info
-        fi
-        
-    - name: Upload coverage (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
-      uses: codecov/codecov-action@v3
+      uses: actions/upload-artifact@v4
       with:
-        file: ./build/coverage.info
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
+        name: build-artifacts-macos-${{ matrix.build_type }}
+        path: |
+          build/
+          !build/.cmake/
+        retention-days: 7
+
+  build-windows:
+    runs-on: windows-latest
+    
+    strategy:
+      matrix:
+        build_type: [Release, Debug]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DCMAKE_CXX_STANDARD=23 \
+          -DART2IMG_TESTS=ON
+
+    - name: Build
+      run: |
+        cmake --build build --config ${{ matrix.build_type }}
+
+    - name: Run tests
+      run: |
+        cd build && ctest --output-on-failure
+
+    - name: Upload build artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts-windows-${{ matrix.build_type }}
+        path: |
+          build/
+          !build/.cmake/
+        retention-days: 7
