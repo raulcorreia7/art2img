@@ -139,7 +139,7 @@ jobs:
         retention-days: 7
 
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2022  # Use Windows 2022 to avoid Windows 2025 MinGW issues
 
     strategy:
       matrix:
@@ -149,38 +149,23 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: |
-        # Install CMake and Ninja via chocolatey
-        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
-        choco install ninja -y
-
     - name: Configure CMake
-      shell: bash
       run: |
-        # Add CMake and Ninja to PATH for bash shell
-        export PATH="/c/Program Files/CMake/bin:$PATH"
-        export PATH="/c/ProgramData/chocolatey/bin:$PATH"
         cmake -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
           -DCMAKE_CXX_STANDARD=23 \
           -DART2IMG_TESTS=ON
+      shell: bash
 
     - name: Build
-      shell: bash
       run: |
-        # Add CMake and Ninja to PATH for bash shell
-        export PATH="/c/Program Files/CMake/bin:$PATH"
-        export PATH="/c/ProgramData/chocolatey/bin:$PATH"
         cmake --build build --config ${{ matrix.build_type }}
+      shell: bash
 
     - name: Run tests
-      shell: bash
       run: |
-        # Add CMake and Ninja to PATH for bash shell
-        export PATH="/c/Program Files/CMake/bin:$PATH"
-        export PATH="/c/ProgramData/chocolatey/bin:$PATH"
         cd build && ctest --output-on-failure
+      shell: bash
 
     - name: Upload build artifacts
       if: always()
