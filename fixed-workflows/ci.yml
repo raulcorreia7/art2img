@@ -45,9 +45,11 @@ jobs:
     
     strategy:
       matrix:
-        cxx: [g++-13]
+        cxx: [g++-12, g++-13]
         build_type: [Release, Debug]
         include:
+          - cxx: g++-12
+            std: c++23
           - cxx: g++-13
             std: c++23
 
@@ -78,8 +80,6 @@ jobs:
           -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
           -DCMAKE_CXX_STANDARD=23 \
           -DART2IMG_TESTS=ON
-        # Show compiler version for debugging
-        ${{ matrix.cxx }} --version
 
     - name: Build
       run: |
@@ -154,7 +154,6 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
           -DCMAKE_CXX_STANDARD=23 \
           -DART2IMG_TESTS=ON
-      shell: bash
 
     - name: Build
       run: |
