@@ -45,16 +45,12 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         build_type: [Release, Debug]
-        include:
+        exclude:
           # Only test Release builds on macOS and Windows to save time
-          - os: ubuntu-latest
-            build_type: Release
-          - os: ubuntu-latest
-            build_type: Debug
           - os: macos-latest
-            build_type: Release
+            build_type: Debug
           - os: windows-latest
-            build_type: Release
+            build_type: Debug
 
     steps:
     - name: Checkout repository
