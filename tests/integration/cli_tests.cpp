@@ -1,4 +1,5 @@
 #include <doctest/doctest.h>
+#include <array>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -22,29 +23,30 @@ class CLITestFixture {
  public:
   std::string run_cli(const std::vector<std::string>& args)
   {
-    std::string cli_path = get_cli_path();
-    std::string cmd = cli_path;
+    std::string cli_path = get_cli_path().string();
+    std::string cmd = "\"" + cli_path + "\"";
 
     for (const auto& arg : args) {
       cmd += " \"" + arg + "\"";
     }
 
-    std::array<char, 128> buffer;
-    std::string result;
+    // Use std::system to run command and capture output to temp file
+    std::string temp_file = std::tmpnam(nullptr);
+    std::string full_cmd = cmd + " > \"" + temp_file + "\" 2>&1";
 
-    // Capture both stdout and stderr
-    std::string full_cmd = cmd + " 2>&1";
-    FILE* pipe = popen(full_cmd.c_str(), "r");
-    if (!pipe) {
-      throw std::runtime_error("popen() failed!");
-    }
+    int result = std::system(full_cmd.c_str());
+    (void)result; // Suppress unused variable warning
 
-    while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
-      result += buffer.data();
-    }
+    // Read the output file
+    std::ifstream output_file(temp_file);
+    std::stringstream buffer;
+    buffer << output_file.rdbuf();
+    output_file.close();
 
-    pclose(pipe);
-    return result;
+    // Clean up temp file
+    std::remove(temp_file.c_str());
+
+    return buffer.str();
   }
 
   fs::path create_test_dir()

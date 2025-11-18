@@ -1,4 +1,5 @@
 #include <doctest/doctest.h>
+#include <array>
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
@@ -39,29 +40,36 @@ TEST_SUITE("Smoke Tests")
     REQUIRE_MESSAGE(std::filesystem::exists(cli_path),
                     "CLI executable should exist at: " << cli_path);
 
-    std::string cmd = cli_path + " --help";
-    FILE* pipe = popen(cmd.c_str(), "r");
+    std::string cmd = """ + cli_path + "" --help";
+    
+    // Use std::system to run command and capture output to temp file
+    std::string temp_file = std::tmpnam(nullptr);
+    std::string full_cmd = cmd + " > "" + temp_file + "" 2>&1";
+    
+    int pipe_result = std::system(full_cmd.c_str());
+    (void)pipe_result; // Suppress unused variable warning
 
-    REQUIRE_MESSAGE(pipe != nullptr,
+    REQUIRE_MESSAGE(pipe_result == 0,
                     "Should be able to execute CLI help command");
 
-    // Read first few lines to verify help content
-    char buffer[256];
+    // Read output file to verify help content
+    std::ifstream output_file(temp_file);
+    std::stringstream buffer_stream;
+    buffer_stream << output_file.rdbuf();
+    std::string output = buffer_stream.str();
+    output_file.close();
+    
+    // Clean up temp file
+    std::remove(temp_file.c_str());
+
     bool has_help_content = false;
-
-    while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-      std::string line(buffer);
-      // Look for typical help content indicators
-      if (line.find("Convert Build Engine ART tiles") != std::string::npos ||
-          line.find("-i,--input") != std::string::npos ||
-          line.find("-p,--palette") != std::string::npos ||
-          line.find("-o,--output") != std::string::npos) {
-        has_help_content = true;
-        break;
-      }
+    // Look for typical help content indicators
+    if (output.find("Convert Build Engine ART tiles") != std::string::npos ||
+        output.find("-i,--input") != std::string::npos ||
+        output.find("-p,--palette") != std::string::npos ||
+        output.find("-o,--output") != std::string::npos) {
+      has_help_content = true;
     }
-
-    pclose(pipe);
     CHECK_MESSAGE(has_help_content,
                   "CLI help should contain expected usage information");
   }
