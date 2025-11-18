@@ -57,47 +57,53 @@ jobs:
         brew install cmake
 
     - name: Configure CMake
+      shell: bash
       run: |
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
           cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
         else
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
         fi
 
     - name: Build
+      shell: bash
       run: |
         cmake --build build --config Release --parallel
 
     - name: Test
+      shell: bash
       run: |
         cd build && ctest --output-on-failure --timeout 300 -C Release
 
     - name: Package assets
+      shell: bash
       run: |
         mkdir -p package
         cp "${{ matrix.artifact_path }}" package/
         cp README.md LICENSE USAGE.md package/ 2>/dev/null || true
 
     - name: Create archive
+      shell: bash
       run: |
         cd package
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
           7z a "../${{ matrix.archive_name }}${{ matrix.archive_ext }}" .
         else
           tar -czf "../${{ matrix.archive_name }}${{ matrix.archive_ext }}" .
         fi
 
     - name: Generate checksums
+      shell: bash
       run: |
         # Binary checksum
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
           certutil -hashfile "${{ matrix.artifact_path }}" SHA256 | grep -E '^[a-fA-F0-9]{64}$' > "${{ matrix.asset_name }}.sha256"
         else
           sha256sum "${{ matrix.artifact_path }}" | cut -d' ' -f1 > "${{ matrix.asset_name }}.sha256"
         fi
 
         # Archive checksum
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
           certutil -hashfile "${{ matrix.archive_name }}${{ matrix.archive_ext }}" SHA256 | grep -E '^[a-fA-F0-9]{64}$' > "${{ matrix.archive_name }}${{ matrix.archive_ext }}.sha256"
         else
           sha256sum "${{ matrix.archive_name }}${{ matrix.archive_ext }}" | cut -d' ' -f1 > "${{ matrix.archive_name }}${{ matrix.archive_ext }}.sha256"
@@ -126,6 +132,7 @@ jobs:
         sudo apt-get install -y zip
 
     - name: Create source archives
+      shell: bash
       run: |
         mkdir -p source_dist/art2img
 
@@ -139,6 +146,7 @@ jobs:
         zip -r "../art2img-${{ github.ref_name }}.zip" art2img
 
     - name: Generate source checksums
+      shell: bash
       run: |
         sha256sum "art2img-${{ github.ref_name }}.tar.gz" | cut -d' ' -f1 > "art2img-${{ github.ref_name }}.tar.gz.sha256"
         sha256sum "art2img-${{ github.ref_name }}.zip" | cut -d' ' -f1 > "art2img-${{ github.ref_name }}.zip.sha256"

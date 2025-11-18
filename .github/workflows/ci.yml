@@ -79,8 +79,9 @@ jobs:
         brew install cmake ninja
 
     - name: Configure CMake
+      shell: bash
       run: |
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
           cmake -B build -G "Visual Studio 17 2022" -A x64 \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DCMAKE_CXX_STANDARD=23 \
@@ -93,10 +94,12 @@ jobs:
         fi
 
     - name: Build
+      shell: bash
       run: |
         cmake --build build --config ${{ matrix.build_type }} --parallel
 
     - name: Run tests
+      shell: bash
       run: |
         cd build && ctest --output-on-failure
 
