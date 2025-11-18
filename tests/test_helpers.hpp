@@ -4,13 +4,27 @@
 
 #pragma once
 
-#include <unistd.h>
 #include <atomic>
 #include <chrono>
 #include <filesystem>
 #include <iostream>
 #include <mutex>
 #include <string>
+
+// Cross-platform process ID retrieval
+#ifndef _WIN32
+#include <unistd.h>
+inline int get_process_id()
+{
+  return getpid();
+}
+#else
+#include <process.h>
+inline int get_process_id()
+{
+  return _getpid();
+}
+#endif
 
 namespace test_helpers {
 
@@ -128,7 +142,7 @@ inline void cleanup_test_output_dir(const std::filesystem::path& dir)
 inline std::string generate_unique_test_name(const std::string& prefix = "test")
 {
   // Get process ID for cross-process uniqueness
-  auto pid = std::to_string(getpid());
+  auto pid = std::to_string(get_process_id());
 
   // Get atomic counter for thread-safety within process
   int unique_id = get_test_counter().fetch_add(1);
