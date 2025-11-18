@@ -2,10 +2,13 @@
 #include <array>
 #include <chrono>
 #include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
+
+#include <sstream>
 
 #include <art2img/adapters/io.hpp>
 #include <art2img/core/art.hpp>
@@ -24,7 +27,13 @@ TEST_SUITE("Smoke Tests")
                   "CLI executable should exist at: " << cli_path);
 
     // Try to run the CLI with --help flag
-    int result = std::system((cli_path + " --help > /dev/null 2>&1").c_str());
+    std::string help_cmd;
+#ifdef _WIN32
+    help_cmd = "\"" + cli_path + "\" --help > NUL 2>&1";
+#else
+    help_cmd = "\"" + cli_path + "\" --help > /dev/null 2>&1";
+#endif
+    int result = std::system(help_cmd.c_str());
 
     // Exit code 0 means help was displayed successfully
     CHECK_MESSAGE(result == 0,
@@ -40,14 +49,16 @@ TEST_SUITE("Smoke Tests")
     REQUIRE_MESSAGE(std::filesystem::exists(cli_path),
                     "CLI executable should exist at: " << cli_path);
 
-    std::string cmd = """ + cli_path + "" --help";
-    
+    std::string cmd = "\"" + cli_path + "\" --help";
+
     // Use std::system to run command and capture output to temp file
-    std::string temp_file = std::tmpnam(nullptr);
-    std::string full_cmd = cmd + " > "" + temp_file + "" 2>&1";
-    
+    auto temp_path =
+        std::filesystem::temp_directory_path() / "art2img_test_help.txt";
+    std::string temp_file = temp_path.string();
+    std::string full_cmd = cmd + " > \"" + temp_file + "\" 2>&1";
+
     int pipe_result = std::system(full_cmd.c_str());
-    (void)pipe_result; // Suppress unused variable warning
+    (void)pipe_result;  // Suppress unused variable warning
 
     REQUIRE_MESSAGE(pipe_result == 0,
                     "Should be able to execute CLI help command");
@@ -58,7 +69,7 @@ TEST_SUITE("Smoke Tests")
     buffer_stream << output_file.rdbuf();
     std::string output = buffer_stream.str();
     output_file.close();
-    
+
     // Clean up temp file
     std::remove(temp_file.c_str());
 

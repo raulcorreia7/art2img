@@ -7,6 +7,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "../test_helpers.hpp"
@@ -31,11 +32,16 @@ class CLITestFixture {
     }
 
     // Use std::system to run command and capture output to temp file
-    std::string temp_file = std::tmpnam(nullptr);
+    auto temp_path = std::filesystem::temp_directory_path() /
+                     ("art2img_cli_test_" +
+                      std::to_string(std::hash<std::thread::id>{}(
+                          std::this_thread::get_id())) +
+                      ".txt");
+    std::string temp_file = temp_path.string();
     std::string full_cmd = cmd + " > \"" + temp_file + "\" 2>&1";
 
     int result = std::system(full_cmd.c_str());
-    (void)result; // Suppress unused variable warning
+    (void)result;  // Suppress unused variable warning
 
     // Read the output file
     std::ifstream output_file(temp_file);

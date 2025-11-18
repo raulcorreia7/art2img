@@ -32,6 +32,16 @@ target_include_directories(art2img
 )
 
 # ============================================================================
+# CLI EXECUTABLE OUTPUT CONFIGURATION
+# ============================================================================
+# Set the output directory to match test expectations
+set_target_properties(art2img PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${TEST_CLI_BINARY_DIR}
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE ${TEST_CLI_BINARY_DIR}
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG ${TEST_CLI_BINARY_DIR}
+)
+
+# ============================================================================
 # INSTALLATION
 # ============================================================================
 # Simplified installation using generator expressions for platform-specific naming
