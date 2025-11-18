@@ -10,9 +10,13 @@ permissions:
 
 jobs:
   build:
+    name: Build & Package (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
         include:
           - os: ubuntu-latest
             artifact_path: build/cli/art2img
@@ -29,182 +33,77 @@ jobs:
             asset_name: art2img-windows-x64.exe
             archive_name: art2img-${{ github.ref_name }}-windows-x64
             archive_ext: .zip
-            arch: x64
-          - os: windows-latest
-            artifact_path: build/cli/art2img.exe
-            asset_name: art2img-windows-x86.exe
-            archive_name: art2img-${{ github.ref_name }}-windows-x86
-            archive_ext: .zip
-            arch: Win32
-    
-    runs-on: ${{ matrix.os }}
-    
+
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: .cache
+        key: ${{ runner.os }}-${{ hashFiles('**/CMakeLists.txt') }}
+        restore-keys: ${{ runner.os }}-
 
     - name: Install dependencies (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
         sudo apt-get install -y lcov
-        
-    - name: Cache CPM dependencies
-      uses: actions/cache@v4
-      with:
-        path: .cache
-        key: ${{ runner.os }}-cpm-${{ hashFiles('cmake/CPM.cmake', '**/CMakeLists.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-cpm-
-          
-    - name: Configure CMake (Windows)
-      if: runner.os == 'Windows'
+
+    - name: Install dependencies (macOS)
+      if: matrix.os == 'macos-latest'
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON ${{ matrix.arch && format('-A {0}', matrix.arch) || '-A x64' }}
-        
-    - name: Configure CMake (Unix)
-      if: runner.os != 'Windows'
+        brew install cmake
+
+    - name: Configure CMake
       run: |
-        if [ "${{ runner.os }}" = "macOS" ]; then
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
         else
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
         fi
-        
-    - name: Build (Windows)
-      if: runner.os == 'Windows'
+
+    - name: Build
       run: |
         cmake --build build --config Release --parallel
-        
-    - name: Build (Unix)
-      if: runner.os != 'Windows'
+
+    - name: Test
       run: |
-        if [ "${{ runner.os }}" = "macOS" ]; then
-          cmake --build build --config Release
+        cd build && ctest --output-on-failure --timeout 300 -C Release
+
+    - name: Package assets
+      run: |
+        mkdir -p package
+        cp "${{ matrix.artifact_path }}" package/
+        cp README.md LICENSE USAGE.md package/ 2>/dev/null || true
+
+    - name: Create archive
+      run: |
+        cd package
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          7z a "../${{ matrix.archive_name }}${{ matrix.archive_ext }}" .
         else
-          cmake --build build --config Release --parallel
+          tar -czf "../${{ matrix.archive_name }}${{ matrix.archive_ext }}" .
         fi
-        
-    - name: Build Verification
-      shell: bash
+
+    - name: Generate checksums
       run: |
-        # Use CMake to find the actual test executable location with portable syntax
-        cd build
-        if [ "${{ runner.os }}" = "Windows" ]; then
-          # Windows: Look for test executables with .exe extension
-          TEST_PATHS=$(find . -name "*_tests.exe" -type f 2>/dev/null || true)
-          if [ -z "$TEST_PATHS" ]; then
-            echo "No test executables found with *_tests.exe pattern"
-            # Fallback: look for any .exe files that might be tests
-            ALL_EXES=$(find . -name "*.exe" -type f 2>/dev/null || true)
-            if [ -n "$ALL_EXES" ]; then
-              echo "Found other executables:"
-              echo "$ALL_EXES"
-              # Check if any contain test-related keywords
-              for exe in $ALL_EXES; do
-                if echo "$exe" | grep -qi "test"; then
-                  TEST_PATHS="$TEST_PATHS $exe"
-                fi
-              done
-            fi
-          fi
-          if [ -z "$TEST_PATHS" ]; then
-            echo "No test executables found in build directory"
-            find . -name "*.exe" -type f 2>/dev/null || echo "No executables found"
-            exit 1
-          fi
-          echo "Found test executables:"
-          echo "$TEST_PATHS"
-        else
-          # Unix/macOS: Use portable find syntax (no -executable flag for BSD compatibility)
-          TEST_PATHS=$(find . -name "*_tests" -type f 2>/dev/null | xargs test -x 2>/dev/null || true)
-          if [ -z "$TEST_PATHS" ]; then
-            echo "No test executables found with *_tests pattern"
-            # Fallback: look for any files that might be executables
-            ALL_FILES=$(find . -name "art2img*" -type f 2>/dev/null || true)
-            if [ -n "$ALL_FILES" ]; then
-              echo "Found art2img-related files:"
-              echo "$ALL_FILES"
-              # Check which ones are executable
-              for file in $ALL_FILES; do
-                if [ -x "$file" ]; then
-                  TEST_PATHS="$TEST_PATHS $file"
-                fi
-              done
-            fi
-          fi
-          if [ -z "$TEST_PATHS" ]; then
-            echo "No test executables found in build directory"
-            find . -name "art2img*" -type f 2>/dev/null || echo "No executables found"
-            exit 1
-          fi
-          echo "Found test executables:"
-          echo "$TEST_PATHS"
-        fi
-        
-    - name: Test Release Build
-      env:
-        ART2IMG_CLI_PATH: ${{ github.workspace }}/build/cli/art2img
-      shell: bash
-      run: |
-        cd build
-        # Use appropriate parallelization based on platform
-        if [ "${{ runner.os }}" = "Windows" ]; then
-          # Windows: Use reasonable parallelism but not too aggressive
-          ctest --output-on-failure --parallel 2 --timeout 300 -C Release
-        elif [ "${{ runner.os }}" = "macOS" ]; then
-          # macOS: Use moderate parallelism
-          ctest --output-on-failure --parallel 2 --timeout 300 -C Release
-        else
-          # Linux: Can use more aggressive parallelism
-          ctest --output-on-failure --parallel 4 --timeout 300 -C Release
-        fi
-        
-    - name: Create Archive Directory
-      shell: bash
-      run: |
-        mkdir -p archive_temp
-        cp "${{ matrix.artifact_path }}" "archive_temp/"
-        cp README.md "archive_temp/" 2>/dev/null || echo "No README.md found"
-        cp LICENSE "archive_temp/" 2>/dev/null || echo "No LICENSE found"
-        cp USAGE.md "archive_temp/" 2>/dev/null || echo "No USAGE.md found"
-        
-    - name: Create Archive (Unix)
-      if: runner.os != 'Windows'
-      shell: bash
-      run: |
-        cd archive_temp
-        tar -czf "../${{ matrix.archive_name }}${{ matrix.archive_ext }}" .
-        cd ..
-        echo "Created archive: ${{ matrix.archive_name }}${{ matrix.archive_ext }}"
-        
-    - name: Create Archive (Windows)
-      if: runner.os == 'Windows'
-      shell: bash
-      run: |
-        cd archive_temp
-        7z a "../${{ matrix.archive_name }}${{ matrix.archive_ext }}" .
-        cd ..
-        echo "Created archive: ${{ matrix.archive_name }}${{ matrix.archive_ext }}"
-        
-    - name: Generate Checksum
-      shell: bash
-      run: |
-        # Generate checksum for the binary
-        if [ "${{ runner.os }}" = "Windows" ]; then
+        # Binary checksum
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
           certutil -hashfile "${{ matrix.artifact_path }}" SHA256 | grep -E '^[a-fA-F0-9]{64}$' > "${{ matrix.asset_name }}.sha256"
         else
           sha256sum "${{ matrix.artifact_path }}" | cut -d' ' -f1 > "${{ matrix.asset_name }}.sha256"
         fi
-        
-        # Generate checksum for the archive
-        if [ "${{ runner.os }}" = "Windows" ]; then
+
+        # Archive checksum
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
           certutil -hashfile "${{ matrix.archive_name }}${{ matrix.archive_ext }}" SHA256 | grep -E '^[a-fA-F0-9]{64}$' > "${{ matrix.archive_name }}${{ matrix.archive_ext }}.sha256"
         else
           sha256sum "${{ matrix.archive_name }}${{ matrix.archive_ext }}" | cut -d' ' -f1 > "${{ matrix.archive_name }}${{ matrix.archive_ext }}.sha256"
         fi
-        
-    - name: Upload Release Assets
+
+    - name: Upload release assets
       uses: softprops/action-gh-release@v1
       with:
         files: |
@@ -212,51 +111,43 @@ jobs:
           ${{ matrix.archive_name }}${{ matrix.archive_ext }}.sha256
 
   source:
+    name: Package Source
     runs-on: ubuntu-latest
+
     steps:
     - name: Checkout
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        
+
     - name: Install zip
       run: |
         sudo apt-get update
         sudo apt-get install -y zip
-        
-    - name: Create Source Archives
+
+    - name: Create source archives
       run: |
-        # Create a clean source directory without hidden files
         mkdir -p source_dist/art2img
-        
-        # Copy only the essential files needed for distribution
-        cp -r cli/ source_dist/art2img/
-        cp -r cmake/ source_dist/art2img/
-        cp -r docs/ source_dist/art2img/
-        cp -r include/ source_dist/art2img/
-        cp -r src/ source_dist/art2img/
-        cp -r tests/ source_dist/art2img/
-        cp CMakeLists.txt source_dist/art2img/
-        cp LICENSE source_dist/art2img/
-        cp README.md source_dist/art2img/
-        cp USAGE.md source_dist/art2img/
-        cp Makefile source_dist/art2img/
-        
-        # Create source archives
+
+        # Copy essential files
+        cp -r cli cmake docs include src tests source_dist/art2img/
+        cp CMakeLists.txt LICENSE README.md USAGE.md Makefile source_dist/art2img/
+
+        # Create archives
         cd source_dist
         tar -czf "../art2img-${{ github.ref_name }}.tar.gz" art2img
         zip -r "../art2img-${{ github.ref_name }}.zip" art2img
-        cd ..
-        
-        # Generate checksums for source archives
+
+    - name: Generate source checksums
+      run: |
         sha256sum "art2img-${{ github.ref_name }}.tar.gz" | cut -d' ' -f1 > "art2img-${{ github.ref_name }}.tar.gz.sha256"
         sha256sum "art2img-${{ github.ref_name }}.zip" | cut -d' ' -f1 > "art2img-${{ github.ref_name }}.zip.sha256"
-        
-    - name: Upload Source Assets
+
+    - name: Upload source assets
       uses: softprops/action-gh-release@v1
       with:
         files: |
           art2img-${{ github.ref_name }}.tar.gz
-          art2img-${{ github.ref_name }}.zip
           art2img-${{ github.ref_name }}.tar.gz.sha256
+          art2img-${{ github.ref_name }}.zip
           art2img-${{ github.ref_name }}.zip.sha256
