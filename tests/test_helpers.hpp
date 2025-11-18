@@ -10,21 +10,7 @@
 #include <iostream>
 #include <mutex>
 #include <string>
-
-// Cross-platform process ID retrieval
-#ifndef _WIN32
-#include <unistd.h>
-inline int get_process_id()
-{
-  return getpid();
-}
-#else
-#include <process.h>
-inline int get_process_id()
-{
-  return _getpid();
-}
-#endif
+#include <thread>
 
 namespace test_helpers {
 
@@ -141,8 +127,8 @@ inline void cleanup_test_output_dir(const std::filesystem::path& dir)
 /// @return Unique directory name
 inline std::string generate_unique_test_name(const std::string& prefix = "test")
 {
-  // Get process ID for cross-process uniqueness
-  auto pid = std::to_string(get_process_id());
+  // Get thread ID for uniqueness (sufficient for test directory generation)
+  auto thread_id = std::hash<std::thread::id>{}(std::this_thread::get_id());
 
   // Get atomic counter for thread-safety within process
   int unique_id = get_test_counter().fetch_add(1);
@@ -153,8 +139,8 @@ inline std::string generate_unique_test_name(const std::string& prefix = "test")
                        now.time_since_epoch())
                        .count();
 
-  return prefix + "_pid" + pid + "_t" + std::to_string(timestamp) + "_" +
-         std::to_string(unique_id);
+  return prefix + "_tid" + std::to_string(thread_id) + "_t" +
+         std::to_string(timestamp) + "_" + std::to_string(unique_id);
 }
 
 /// @brief Get unique test directory path (thread-safe)
