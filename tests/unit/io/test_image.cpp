@@ -1,6 +1,5 @@
 #include <doctest/doctest.h>
 #include "art2img/image.hpp"
-#include <filesystem>
 #include <vector>
 
 TEST_CASE("Image IO") {
@@ -16,27 +15,21 @@ TEST_CASE("Image IO") {
         Byte{255}, Byte{0}, Byte{0}, Byte{255},  Byte{255}, Byte{0}, Byte{0}, Byte{255}
     };
 
-    std::filesystem::path out_dir = "test_output";
-    std::filesystem::create_directories(out_dir);
-
-    SUBCASE("Save PNG") {
-        auto path = out_dir / "test.png";
-        auto result = save_png(img, path);
+    SUBCASE("Encode PNG") {
+        auto result = encode_png(img);
         CHECK(result.has_value());
-        CHECK(std::filesystem::exists(path));
+        CHECK(result->size() > 0);
     }
 
-    SUBCASE("Save BMP") {
-        auto path = out_dir / "test.bmp";
-        auto result = save_bmp(img, path);
+    SUBCASE("Encode BMP") {
+        auto result = encode_bmp(img);
         CHECK(result.has_value());
-        CHECK(std::filesystem::exists(path));
+        CHECK(result->size() > 0);
     }
 
-    SUBCASE("Save TGA") {
-        auto path = out_dir / "test.tga";
-        auto result = save_tga(img, path);
+    SUBCASE("Encode TGA") {
+        auto result = encode_tga(img);
         CHECK(result.has_value());
-        CHECK(std::filesystem::exists(path));
+        CHECK(result->size() > 0);
     }
 }

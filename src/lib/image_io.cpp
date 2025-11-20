@@ -8,25 +8,36 @@
 
 namespace art2img {
 
-Result<void> save_png(const Image& img, const std::filesystem::path& path) {
-    if (stbi_write_png(path.string().c_str(), img.width, img.height, 4, img.rgba.data(), img.width * 4)) {
-        return {};
-    }
-    return std::unexpected(core::make_error(core::errc::io_failure, "Failed to save PNG"));
+namespace {
+void write_func(void *context, void *data, int size) {
+    auto* buffer = static_cast<std::vector<Byte>*>(context);
+    auto* bytes = static_cast<const Byte*>(data);
+    buffer->insert(buffer->end(), bytes, bytes + size);
+}
 }
 
-Result<void> save_bmp(const Image& img, const std::filesystem::path& path) {
-    if (stbi_write_bmp(path.string().c_str(), img.width, img.height, 4, img.rgba.data())) {
-        return {};
+Result<std::vector<Byte>> encode_png(const Image& img) {
+    std::vector<Byte> buffer;
+    if (stbi_write_png_to_func(write_func, &buffer, img.width, img.height, 4, img.rgba.data(), img.width * 4)) {
+        return buffer;
     }
-    return std::unexpected(core::make_error(core::errc::io_failure, "Failed to save BMP"));
+    return std::unexpected(Error(core::errc::io_failure, "Failed to encode PNG"));
 }
 
-Result<void> save_tga(const Image& img, const std::filesystem::path& path) {
-    if (stbi_write_tga(path.string().c_str(), img.width, img.height, 4, img.rgba.data())) {
-        return {};
+Result<std::vector<Byte>> encode_bmp(const Image& img) {
+    std::vector<Byte> buffer;
+    if (stbi_write_bmp_to_func(write_func, &buffer, img.width, img.height, 4, img.rgba.data())) {
+        return buffer;
     }
-    return std::unexpected(core::make_error(core::errc::io_failure, "Failed to save TGA"));
+    return std::unexpected(Error(core::errc::io_failure, "Failed to encode BMP"));
+}
+
+Result<std::vector<Byte>> encode_tga(const Image& img) {
+    std::vector<Byte> buffer;
+    if (stbi_write_tga_to_func(write_func, &buffer, img.width, img.height, 4, img.rgba.data())) {
+        return buffer;
+    }
+    return std::unexpected(Error(core::errc::io_failure, "Failed to encode TGA"));
 }
 
 } // namespace art2img
