@@ -168,10 +168,6 @@ void PixelTransformer::transform(RgbaImage& image) const noexcept
 namespace {
 constexpr std::size_t kChannels = 4;
 
-std::uint8_t expand_component(std::uint8_t value) noexcept
-{
-  return static_cast<std::uint8_t>((value << 2) | (value >> 4));
-}
 
 std::uint8_t apply_lookup(std::uint8_t index,
                           const TileView& tile,

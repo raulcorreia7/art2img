@@ -56,7 +56,7 @@ constexpr inline bool is_build_engine_magenta(std::uint8_t r,
  * @param b Blue channel value
  * @return true if pixel should be transparent
  */
-constexpr inline bool is_transparent_pixel(std::uint8_t index,
+constexpr inline bool is_transparent_pixel([[maybe_unused]] std::uint8_t index,
                                            std::uint8_t r,
                                            std::uint8_t g,
                                            std::uint8_t b) noexcept
@@ -97,7 +97,7 @@ struct RgbaPixel {
  * @return RGBA pixel with expanded color components
  */
 constexpr inline RgbaPixel make_pixel_from_palette(
-    std::uint8_t index,
+    [[maybe_unused]] std::uint8_t index,
     const std::uint8_t* palette_rgb,
     std::size_t palette_size,
     std::size_t offset) noexcept

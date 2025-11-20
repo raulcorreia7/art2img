@@ -2,7 +2,7 @@
 # UNIT TEST SOURCES
 # ============================================================================
 file(GLOB_RECURSE UNIT_TEST_SOURCES
-    **/*.cpp
+    *.cpp
 )
 
 # Add test setup file from parent directory
@@ -17,6 +17,13 @@ add_executable(art2img_unit_tests ${UNIT_TEST_SOURCES})
 # UNIT TEST CONFIGURATION
 # ============================================================================
 target_link_libraries(art2img_unit_tests PRIVATE libart2img doctest::doctest_with_main)
+
+if(NOT DEFINED TEST_OUTPUT_BASE)
+    set(TEST_OUTPUT_BASE "${CMAKE_BINARY_DIR}/test_output")
+endif()
+if(NOT DEFINED TEST_ASSETS_DIR)
+    set(TEST_ASSETS_DIR "${CMAKE_SOURCE_DIR}/tests/assets")
+endif()
 
 # Test configuration
 target_compile_definitions(art2img_unit_tests PRIVATE 
