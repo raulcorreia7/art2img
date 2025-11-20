@@ -1,12 +1,11 @@
 #include <doctest/doctest.h>
 #include "art2img/palette.hpp"
-#include <fstream>
-#include <filesystem>
+#include <vector>
 
-TEST_CASE("load_palette") {
-    // Create a temporary palette file
-    std::filesystem::path temp_path = "temp_palette.dat";
-    std::ofstream file(temp_path, std::ios::binary);
+TEST_CASE("parse_palette") {
+    // Create a temporary palette buffer
+    std::vector<std::byte> buffer;
+    buffer.reserve(768);
     
     // Write 256 colors
     for (int i = 0; i < 256; ++i) {
@@ -14,13 +13,13 @@ TEST_CASE("load_palette") {
         // 63 -> 255 (111111 -> 11111111)
         // 0 -> 0
         uint8_t val = (i % 64); 
-        file.put(static_cast<char>(val)); // R
-        file.put(static_cast<char>(val)); // G
-        file.put(static_cast<char>(val)); // B
+        std::byte b = std::byte{val};
+        buffer.push_back(b); // R
+        buffer.push_back(b); // G
+        buffer.push_back(b); // B
     }
-    file.close();
 
-    auto result = art2img::load_palette(temp_path);
+    auto result = art2img::parse_palette(buffer);
     CHECK(result.has_value());
     
     if (result.has_value()) {
@@ -46,26 +45,11 @@ TEST_CASE("load_palette") {
         // Check index 255 (alpha should be 0)
         CHECK(palette.colors[255].a == 0);
     }
-
-    std::filesystem::remove(temp_path);
 }
 
-TEST_CASE("load_palette too small") {
-    std::filesystem::path temp_path = "temp_small.dat";
-    std::ofstream file(temp_path, std::ios::binary);
-    file.write("abc", 3);
-    file.close();
+TEST_CASE("parse_palette too small") {
+    std::vector<std::byte> buffer = {std::byte{'a'}, std::byte{'b'}, std::byte{'c'}};
 
-    auto result = art2img::load_palette(temp_path);
+    auto result = art2img::parse_palette(buffer);
     CHECK(!result.has_value());
-    // We can't easily check the error code enum value without including core headers and dealing with namespaces,
-    // but we can check that it failed.
-    // If we want to check the code:
-    // CHECK(result.error().code == art2img::core::errc::invalid_palette);
-    // This requires art2img::core::errc to be visible and comparable.
-    // Since Result is std::expected<T, core::Error>, result.error() is core::Error.
-    // core::Error has .code which is std::error_code.
-    // std::error_code compares with errc if is_error_code_enum is specialized.
-    
-    std::filesystem::remove(temp_path);
 }

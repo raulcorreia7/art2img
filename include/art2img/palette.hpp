@@ -2,7 +2,6 @@
 
 #include <vector>
 #include <cstdint>
-#include <filesystem>
 #include "art2img/common.hpp"
 
 namespace art2img {
@@ -15,6 +14,6 @@ struct Palette {
     std::vector<Color> colors;
 };
 
-Result<Palette> load_palette(const std::filesystem::path& path);
+Result<Palette> parse_palette(ByteSpan data);
 
 } // namespace art2img

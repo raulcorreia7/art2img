@@ -1,5 +1,4 @@
 #include <art2img/art.hpp>
-#include <fstream>
 #include <vector>
 #include <span>
 #include <cstring>
@@ -9,13 +8,13 @@ namespace art2img {
 namespace {
 
 // Helper to read integers from span
-uint32_t read_u32(std::span<const Byte> data, size_t offset) {
+uint32_t read_u32(ByteSpan data, size_t offset) {
     uint32_t val;
     std::memcpy(&val, data.data() + offset, sizeof(val));
     return val;
 }
 
-uint16_t read_u16(std::span<const Byte> data, size_t offset) {
+uint16_t read_u16(ByteSpan data, size_t offset) {
     uint16_t val;
     std::memcpy(&val, data.data() + offset, sizeof(val));
     return val;
@@ -23,24 +22,7 @@ uint16_t read_u16(std::span<const Byte> data, size_t offset) {
 
 } // namespace
 
-Result<ArtFile> load_art(const std::filesystem::path& path) {
-    std::ifstream file(path, std::ios::binary | std::ios::ate);
-    if (!file) {
-        return std::unexpected(Error{"Failed to open file: " + path.string()});
-    }
-
-    auto size = file.tellg();
-    if (size < 0) {
-         return std::unexpected(Error{"Failed to get file size"});
-    }
-    
-    std::vector<Byte> buffer(static_cast<size_t>(size));
-    file.seekg(0, std::ios::beg);
-    if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) {
-        return std::unexpected(Error{"Failed to read file content"});
-    }
-
-    std::span<const Byte> data(buffer);
+Result<ArtFile> parse_art(ByteSpan data) {
     size_t offset = 0;
 
     // Header is 16 bytes
