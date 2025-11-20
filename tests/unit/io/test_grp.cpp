@@ -2,6 +2,8 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -11,6 +13,7 @@
 
 #include <art2img/adapters/grp.hpp>
 #include <art2img/core/error.hpp>
+#include <art2img/grp.hpp>
 
 namespace {
 
@@ -80,4 +83,23 @@ TEST_CASE("load_grp rejects invalid headers")
   const auto result = art2img::adapters::load_grp(blob);
   CHECK(!result);
   CHECK(result.error().code == art2img::core::errc::invalid_art);
+}
+
+TEST_CASE("load_grp (lib) parses file correctly")
+{
+  const auto blob = make_grp_blob({{"TEST", {std::byte{0x12}, std::byte{0x34}}}});
+  const std::string filename = "test_temp.grp";
+  {
+    std::ofstream out(filename, std::ios::binary);
+    out.write(reinterpret_cast<const char*>(blob.data()), blob.size());
+  }
+
+  const auto result = art2img::load_grp(filename);
+  REQUIRE(result);
+  CHECK(result->entries.size() == 1);
+  CHECK(result->entries[0].name == "test");
+  CHECK(result->entries[0].data.size() == 2);
+  CHECK(result->entries[0].data[0] == std::byte{0x12});
+
+  std::filesystem::remove(filename);
 }
