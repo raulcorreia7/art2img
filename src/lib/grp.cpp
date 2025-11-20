@@ -2,9 +2,8 @@
 
 #include <algorithm>
 #include <cctype>
-#include <fstream>
-#include <vector>
 #include <cstring>
+#include <vector>
 
 namespace art2img {
 
@@ -13,10 +12,9 @@ constexpr std::string_view kSignature = "KenSilverman";
 constexpr std::size_t kDirectoryEntrySize = 16;
 constexpr std::size_t kNameSize = 12;
 
-std::uint32_t read_u32(const std::vector<Byte>& data, std::size_t offset)
+std::uint32_t read_u32(ByteSpan data, std::size_t offset)
 {
   std::uint32_t value = 0;
-  // data is vector<std::byte>, so we cast to uint8_t
   for (std::size_t i = 0; i < 4; ++i) {
     value |= static_cast<std::uint32_t>(std::to_integer<uint8_t>(data[offset + i])) << (8 * i);
   }
@@ -38,21 +36,11 @@ std::string normalise_name(std::string_view name)
 
 } // namespace
 
-Result<GrpFile> load_grp(const std::filesystem::path& path)
+Result<GrpFile> parse_grp(ByteSpan blob)
 {
-  std::ifstream file(path, std::ios::binary | std::ios::ate);
-  if (!file) {
-    return std::unexpected(Error{"failed to open file: " + path.string()});
-  }
-
-  const auto file_size = file.tellg();
-  if (file_size < static_cast<std::streamoff>(kSignature.size() + 4)) {
+  if (blob.size() < kSignature.size() + 4) {
     return std::unexpected(Error{"file too small for GRP header"});
   }
-
-  file.seekg(0, std::ios::beg);
-  std::vector<Byte> blob(static_cast<size_t>(file_size));
-  file.read(reinterpret_cast<char*>(blob.data()), file_size);
 
   if (std::string_view(reinterpret_cast<const char*>(blob.data()),
                        kSignature.size()) != kSignature) {

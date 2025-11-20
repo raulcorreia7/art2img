@@ -1,6 +1,5 @@
 #pragma once
 
-#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -17,6 +16,6 @@ struct GrpFile {
   std::vector<GrpEntry> entries;
 };
 
-Result<GrpFile> load_grp(const std::filesystem::path& path);
+Result<GrpFile> parse_grp(ByteSpan data);
 
 } // namespace art2img
