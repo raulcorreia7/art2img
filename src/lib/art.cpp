@@ -100,4 +100,39 @@ Result<ArtFile> parse_art(ByteSpan data) {
     return art_file;
 }
 
+Result<Image> render_tile(const Tile& tile, const Palette& palette) {
+    size_t expected_size = static_cast<size_t>(tile.width) * tile.height;
+    if (tile.indices.size() != expected_size) {
+        return std::unexpected(Error{"Tile indices size mismatch"});
+    }
+
+    Image image;
+    image.width = tile.width;
+    image.height = tile.height;
+    image.rgba.resize(expected_size * 4);
+
+    for (size_t i = 0; i < expected_size; ++i) {
+        uint8_t index = static_cast<uint8_t>(tile.indices[i]);
+        
+        if (index >= palette.colors.size()) {
+            return std::unexpected(Error{"Palette index out of bounds"});
+        }
+
+        const auto& color = palette.colors[index];
+        
+        size_t pixel_offset = i * 4;
+        image.rgba[pixel_offset + 0] = static_cast<Byte>(color.r);
+        image.rgba[pixel_offset + 1] = static_cast<Byte>(color.g);
+        image.rgba[pixel_offset + 2] = static_cast<Byte>(color.b);
+        
+        if (index == 255) {
+            image.rgba[pixel_offset + 3] = static_cast<Byte>(0);
+        } else {
+            image.rgba[pixel_offset + 3] = static_cast<Byte>(255);
+        }
+    }
+
+    return image;
+}
+
 } // namespace art2img

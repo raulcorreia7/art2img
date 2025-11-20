@@ -61,4 +61,52 @@ TEST_SUITE("art lib module")
             CHECK(result.error().message == "Invalid version, expected 1");
         }
     }
+
+    TEST_CASE("Render tile")
+    {
+        art2img::Tile tile;
+        tile.width = 2;
+        tile.height = 2;
+        // Indices: 0, 1, 255, 0
+        tile.indices = {std::byte{0}, std::byte{1}, std::byte{255}, std::byte{0}};
+
+        art2img::Palette palette;
+        palette.colors.resize(256);
+        palette.colors[0] = {255, 0, 0, 255}; // Red
+        palette.colors[1] = {0, 255, 0, 255}; // Green
+        // 255 is transparent, color doesn't matter much but let's set it
+        palette.colors[255] = {0, 0, 255, 255}; // Blue
+
+        auto result = art2img::render_tile(tile, palette);
+        REQUIRE(result.has_value());
+
+        const auto& img = result.value();
+        CHECK(img.width == 2);
+        CHECK(img.height == 2);
+        CHECK(img.rgba.size() == 4 * 4);
+
+        // Pixel 0: Red, Alpha 255
+        CHECK(img.rgba[0] == std::byte{255});
+        CHECK(img.rgba[1] == std::byte{0});
+        CHECK(img.rgba[2] == std::byte{0});
+        CHECK(img.rgba[3] == std::byte{255});
+
+        // Pixel 1: Green, Alpha 255
+        CHECK(img.rgba[4] == std::byte{0});
+        CHECK(img.rgba[5] == std::byte{255});
+        CHECK(img.rgba[6] == std::byte{0});
+        CHECK(img.rgba[7] == std::byte{255});
+
+        // Pixel 2: Blue (from palette), but Alpha 0 (from index 255)
+        CHECK(img.rgba[8] == std::byte{0});
+        CHECK(img.rgba[9] == std::byte{0});
+        CHECK(img.rgba[10] == std::byte{255});
+        CHECK(img.rgba[11] == std::byte{0});
+
+        // Pixel 3: Red, Alpha 255
+        CHECK(img.rgba[12] == std::byte{255});
+        CHECK(img.rgba[13] == std::byte{0});
+        CHECK(img.rgba[14] == std::byte{0});
+        CHECK(img.rgba[15] == std::byte{255});
+    }
 }
