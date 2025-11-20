@@ -85,7 +85,7 @@ set(TEST_ASSETS_DIR "${CMAKE_SOURCE_DIR}/tests/assets" CACHE PATH "Test assets d
 # ============================================================================
 # LIBRARY CREATION
 # ============================================================================
-file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
+file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS "src/lib/*.cpp" "src/core/*.cpp" "src/adapters/*.cpp" "src/extras/*.cpp")
 file(GLOB_RECURSE LIB_HEADERS CONFIGURE_DEPENDS "include/art2img/*.hpp")
 
 add_library(libart2img ${LIB_SOURCES} ${LIB_HEADERS})

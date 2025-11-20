@@ -11,7 +11,7 @@ CPMAddPackage(
 # ============================================================================
 # CLI EXECUTABLE
 # ============================================================================
-add_executable(art2img 
+add_executable(art2img-cli 
     main.cpp
     config_parser.cpp
     conversion_pipeline.cpp
@@ -19,13 +19,13 @@ add_executable(art2img
     progress_reporter.cpp
 )
 
-target_link_libraries(art2img 
+target_link_libraries(art2img-cli 
     PRIVATE 
     libart2img
     CLI11::CLI11
 )
 
-target_include_directories(art2img 
+target_include_directories(art2img-cli 
     PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
@@ -35,7 +35,8 @@ target_include_directories(art2img
 # CLI EXECUTABLE OUTPUT CONFIGURATION
 # ============================================================================
 # Set the output directory to match test expectations
-set_target_properties(art2img PROPERTIES
+set_target_properties(art2img-cli PROPERTIES
+    OUTPUT_NAME "art2img"
     RUNTIME_OUTPUT_DIRECTORY ${TEST_CLI_BINARY_DIR}
     RUNTIME_OUTPUT_DIRECTORY_RELEASE ${TEST_CLI_BINARY_DIR}
     RUNTIME_OUTPUT_DIRECTORY_DEBUG ${TEST_CLI_BINARY_DIR}
@@ -45,6 +46,6 @@ set_target_properties(art2img PROPERTIES
 # INSTALLATION
 # ============================================================================
 # Simplified installation using generator expressions for platform-specific naming
-install(TARGETS art2img
+install(TARGETS art2img-cli
     RUNTIME DESTINATION bin
 )
