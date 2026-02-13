@@ -1,3 +1,19 @@
 ---
 BasedOnStyle: Chromium
-BreakBeforeBraces: Stroustrup
+BreakBeforeBraces: Attach
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+ColumnLimit: 100
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortLambdasOnASingleLine: Empty
+PointerAlignment: Left
+ReferenceAlignment: Left
+SortIncludes: true
+IncludeBlocks: Preserve
+SpaceAfterCStyleCast: false
+SpaceAfterTemplateKeyword: false
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInAngles: false
+Standard: c++17

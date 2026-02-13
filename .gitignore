@@ -1,45 +1,30 @@
-# Build artifacts
-build/*
-!scripts/build
-*.exe
-*.o
-*.a
-*.so
-*.dll
-*.lib
+# Build directories
+build/
+cmake-build-*/
+out/
+output/
 
-
-
-# IDE files
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# OS files
+# OS
 .DS_Store
 Thumbs.db
 
+# Test outputs
+*.png
+*.tga
+*.bmp
+test_output/
+
+# Downloaded test assets (large files)
+tests/shareware/*.zip
+tests/shareware/DUKE3D.GRP
+
 # Temporary files
 *.tmp
-*.temp
-
-# Log files
 *.log
-
-# Test outputs
-test_output/
-final_test/
-
-# Dependencies
-_fetch/
-.cpm/
-.bin
-.cache/
-*.png
-*.bpm
-*.tga
-*.idx
-*.kilocode
-build*/
-tests_output/

@@ -2,111 +2,81 @@
 
 **Convert Build Engine ART files to modern image formats**
 
-A command-line utility and C++ library for converting Duke Nukem 3D and other Build Engine ART files to PNG, TGA, or BMP formats. Designed for game modders who need to extract and modify game assets.
+A minimal, modern C++ library and CLI tool for converting Duke Nukem 3D and other Build Engine ART files to PNG, TGA, or BMP formats.
+
+## Features
+
+- **Clean C++17 API**: Non-throwing, Result-based error handling
+- **GRP Archive Support**: Extract ART files from Duke3D GRP archives
+- **Full Rendering Options**: Shade tables, lookup tables, transparency, premultiply, matte hygiene
+- **Zero Dependencies**: Only requires stb_image_write (vendored)
+- **Simple Build**: Single CMakeLists.txt, no external package managers
 
 ## Quick Start
 
-### Option 1: Download Pre-built Binaries (Recommended)
-Pre-built binaries for Windows, Linux, and macOS are available on the [Releases page](https://github.com/raulcorreia7/art2img/releases).
-
-### Option 2: Build from Source
-
-**Requirements:** CMake and a C++ compiler
-
 ```bash
-# Clone and build
-make build
+# Build
+mkdir build && cd build
+cmake .. && make -j
 
-# The executable will be at: build/cli/art2img
-# Or for Windows: build/cli/art2img.exe
-```
+# Run tests
+./art2img-test
 
-## Basic Usage
+# Convert ART file
+./art2img TILES000.ART PALETTE.DAT -o output/
 
-```bash
-# Convert a single ART file to PNG using an explicit palette
-art2img_cli --input TILES.ART --palette PALETTE.DAT
-
-# Write TGA images to a custom directory with matte hygiene enabled
-art2img_cli --input TILES.ART --palette PALETTE.DAT --format tga --matte --output output/
-
-# Apply shade table index 4 without lookup remapping
-art2img_cli --input TILES.ART --palette PALETTE.DAT --shade 4 --no-lookup
-```
-
-## Key Features
-
-- **Multiple Formats**: Encode tiles as PNG, TGA, or BMP images.
-- **Palette-Aware Pipeline**: Memory-first conversion with lookup tables and shade support.
-- **Post-Processing Controls**: Configure transparency cleanup, alpha premultiplication, and matte hygiene.
-- **Reusable Modules**: Compose loaders, converters, and encoders from the `core`, `adapters`, and `extras` namespaces.
-- **Cross-Platform**: Works on Windows, Linux, and macOS with a modern C++23 toolchain.
-- **Enhanced Error Handling**: Unified `core::Error` reports contextual diagnostics across modules.
-
-## Command Line Options
-
-```
-art2img_cli --input TILES.ART --palette PALETTE.DAT [options]
-
--i, --input PATH        ART file to convert (required)
--p, --palette PATH      Palette file to use (required)
--o, --output DIR        Output directory (default: current directory)
--f, --format FORMAT     Output format: png, tga, bmp (default: png)
-    --shade INT         Apply shade table index (0-255)
-    --no-lookup         Disable lookup table remapping
-    --no-transparency   Skip transparency cleanup
-    --premultiply       Premultiply the alpha channel
-    --matte             Apply matte hygiene to soften edges
+# Convert from GRP
+./art2img --grp DUKE3D.GRP -o output/ --verbose
 ```
 
 ## Library Usage
 
-The art2img library provides a clean, modern C++ API for integrating ART file conversion into your own applications:
-
 ```cpp
-#include <art2img/adapters/io.hpp>
-#include <art2img/core/art.hpp>
-#include <art2img/core/convert.hpp>
-#include <art2img/core/encode.hpp>
-#include <art2img/core/palette.hpp>
+#include <art2img.hpp>
 
-auto art_bytes = art2img::adapters::read_binary_file("TILES.ART");
-auto palette_bytes = art2img::adapters::read_binary_file("PALETTE.DAT");
+// Load ART file
+auto art = art2img::art_file::load("TILES000.ART");
+if (!art) { /* handle error */ }
 
-auto archive = art2img::core::load_art(std::span<const std::byte>(
-    art_bytes->data(), art_bytes->size()));
-auto palette = art2img::core::load_palette(std::span<const std::byte>(
-    palette_bytes->data(), palette_bytes->size()));
+// Load palette
+auto pal = art2img::palette::load("PALETTE.DAT");
+if (!pal) { /* handle error */ }
 
-const auto palette_view = art2img::core::view_palette(*palette);
-for (std::size_t index = 0; index < art2img::core::tile_count(*archive); ++index) {
-    auto tile = art2img::core::get_tile(*archive, index);
-    if (!tile) continue;
+// Extract all tiles
+auto images = art2img::extract_all(art.value(), pal.value());
+if (!images) { /* handle error */ }
 
-    auto rgba = art2img::core::palette_to_rgba(*tile, palette_view);
-    art2img::core::postprocess_rgba(*rgba);
-
-    auto encoded = art2img::core::encode_image(
-        art2img::core::make_view(*rgba), art2img::core::ImageFormat::png);
-    art2img::adapters::write_file(
-        std::format("tile_{:04}.png", index),
-        std::span<const std::byte>(encoded->bytes.data(), encoded->bytes.size()));
+// Save as PNG
+for (size_t i = 0; i < images.value().size(); ++i) {
+    auto png = art2img::encode(images.value()[i], art2img::format::png);
+    art2img::write_file("tile_" + std::to_string(i) + ".png", png.value());
 }
 ```
 
-## Troubleshooting
+## API Overview
 
-**Transparency issues:** Transparency cleanup is enabled by default. Use `--no-transparency` to keep raw palette data.
+| Class/Function | Description |
+|----------------|-------------|
+| `grp_file` | Duke3D GRP archive handling |
+| `art_file` | Build Engine ART file parser |
+| `palette` | 768-byte palette with shade table support |
+| `render()` | Convert tile to RGBA image |
+| `encode()` | Encode to PNG/TGA/BMP |
+| `extract_all()` | Extract all tiles from ART |
+| `convert_art()` | Batch convert and save |
 
-**Shading:** Provide `--shade <index>` to apply a specific shade table during conversion.
+## Error Handling
 
-**Custom palette:** Always supply the palette file that matches the ART resources with `--palette`.
+All operations return `Result<T>` which is either a value or an error:
+
+```cpp
+auto result = art2img::art_file::load("file.art");
+if (!result) {
+    std::cerr << result.message() << "\n";
+    // Error codes: io_error, invalid_format, corrupted_data, not_found, etc.
+}
+```
 
 ## License
 
-[GPL v2](LICENSE) - Free and open-source software.
-
-## Credits
-
-Based on original work by Mathieu Olivier and Kenneth Silverman.
-Modern implementation by [Raúl Correia](https://github.com/raulcorreia7).
+GPL v2 - See LICENSE file
