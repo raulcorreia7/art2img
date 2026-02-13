@@ -20,6 +20,14 @@
 #include <memory>
 #include <string>
 
+#ifdef _WIN32
+#define POPEN _popen
+#define PCLOSE _pclose
+#else
+#define POPEN popen
+#define PCLOSE pclose
+#endif
+
 using namespace art2img::test;
 using namespace art2img::test::constants;
 
@@ -49,17 +57,21 @@ CliResult run_cli(const std::vector<std::string>& args) {
   std::array<char, 4096> buffer;
   std::string output;
 
-  FILE* pipe = popen(cmd.c_str(), "r");
+  FILE* pipe = POPEN(cmd.c_str(), "r");
   if (!pipe) {
     return {-1, "", "failed to run command"};
   }
 
-  while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
+  while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe) != nullptr) {
     output += buffer.data();
   }
 
-  int status = pclose(pipe);
+  int status = PCLOSE(pipe);
+#ifdef _WIN32
+  int exit_code = status;
+#else
   int exit_code = WEXITSTATUS(status);
+#endif
 
   return {exit_code, output, ""};
 }
