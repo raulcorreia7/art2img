@@ -102,9 +102,9 @@ jobs:
       shell: bash
       run: |
         cd build
-        # Skip e2e tests on Windows (binary path differs)
+        # Skip e2e and legacy "art2img" tests on Windows (binary path differs)
         if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          ctest --output-on-failure -C ${{ matrix.build_type }} -E e2e
+          ctest --output-on-failure -C ${{ matrix.build_type }} -E "e2e|art2img"
         else
           ctest --output-on-failure -C ${{ matrix.build_type }}
         fi
