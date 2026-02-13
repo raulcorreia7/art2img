@@ -19,17 +19,17 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         include:
           - os: ubuntu-latest
-            artifact_path: build/cli/art2img
+            artifact_path: build/art2img
             asset_name: art2img-linux-x64
             archive_name: art2img-${{ github.ref_name }}-linux-x64
             archive_ext: .tar.gz
           - os: macos-latest
-            artifact_path: build/cli/art2img
+            artifact_path: build/art2img
             asset_name: art2img-macos-x64
             archive_name: art2img-${{ github.ref_name }}-macos-x64
             archive_ext: .tar.gz
           - os: windows-latest
-            artifact_path: build/cli/art2img.exe
+            artifact_path: build/art2img.exe
             asset_name: art2img-windows-x64.exe
             archive_name: art2img-${{ github.ref_name }}-windows-x64
             archive_ext: .zip
@@ -80,7 +80,7 @@ jobs:
       run: |
         mkdir -p package
         cp "${{ matrix.artifact_path }}" package/
-        cp README.md LICENSE USAGE.md package/ 2>/dev/null || true
+        cp README.md LICENSE package/ 2>/dev/null || true
 
     - name: Create archive
       shell: bash
@@ -137,8 +137,8 @@ jobs:
         mkdir -p source_dist/art2img
 
         # Copy essential files
-        cp -r cli cmake docs include src tests source_dist/art2img/
-        cp CMakeLists.txt LICENSE README.md USAGE.md Makefile source_dist/art2img/
+        cp -r cli docs include src tests source_dist/art2img/
+        cp CMakeLists.txt LICENSE README.md Makefile source_dist/art2img/
 
         # Create archives
         cd source_dist
