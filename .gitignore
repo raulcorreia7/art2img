@@ -28,3 +28,4 @@ tests/shareware/DUKE3D.GRP
 # Temporary files
 *.tmp
 *.log
+.cache/
