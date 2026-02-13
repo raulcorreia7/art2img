@@ -195,6 +195,128 @@ TEST_SUITE("Shareware Render Options") {
     CHECK(found);
   }
 
+  TEST_CASE("Render with transparency fix enabled" * doctest::skip(!shareware_available())) {
+    auto output_dir = get_test_output_dir("shareware_render_transparency_fix");
+
+    auto grp = GrpFile::load(SHAREWARE_GRP_PATH);
+    REQUIRE(grp.ok());
+
+    auto pal = Palette::from_grp(grp.value());
+    REQUIRE(pal.ok());
+
+    auto art = ArtFile::from_grp(grp.value(), TILES000_ART);
+    REQUIRE(art.ok());
+
+    // Find first non-empty tile
+    bool found = false;
+    for (size_t i = 0; i < art.value().tile_count() && !found; ++i) {
+      auto tile = art.value().get_tile(i);
+      if (!tile.has_value() || tile->width == 0 || tile->height == 0)
+        continue;
+
+      // Render with transparency fix enabled
+      RenderOptions opts;
+      opts.fix_transparency = true;
+
+      auto img = render(*tile, pal.value(), opts);
+      REQUIRE(img.ok());
+
+      // Encode to all formats
+      auto png = encode(img.value(), Format::png);
+      REQUIRE(png.ok());
+      auto png_path = output_dir / "transparency_fix.png";
+      CHECK(write_file(png_path.string(), png.value()).ok());
+      CHECK(file_exists(png_path.string()));
+
+      auto tga = encode(img.value(), Format::tga);
+      REQUIRE(tga.ok());
+      auto tga_path = output_dir / "transparency_fix.tga";
+      CHECK(write_file(tga_path.string(), tga.value()).ok());
+      CHECK(file_exists(tga_path.string()));
+
+      auto bmp = encode(img.value(), Format::bmp);
+      REQUIRE(bmp.ok());
+      auto bmp_path = output_dir / "transparency_fix.bmp";
+      CHECK(write_file(bmp_path.string(), bmp.value()).ok());
+      CHECK(file_exists(bmp_path.string()));
+
+      found = true;
+    }
+
+    CHECK(found);
+  }
+
+  TEST_CASE("Convert with transparency fix for all formats" *
+            doctest::skip(!shareware_available())) {
+    auto grp = GrpFile::load(SHAREWARE_GRP_PATH);
+    REQUIRE(grp.ok());
+
+    auto pal = Palette::from_grp(grp.value());
+    REQUIRE(pal.ok());
+
+    auto art = ArtFile::from_grp(grp.value(), TILES000_ART);
+    REQUIRE(art.ok());
+
+    Format formats[] = {Format::png, Format::tga, Format::bmp};
+    const char* suffixes[] = {".png", ".tga", ".bmp"};
+    bool transp_fixes[] = {false, true};
+
+    for (size_t t = 0; t < 2; ++t) {
+      bool fix_transp = transp_fixes[t];
+      std::string prefix =
+          fix_transp ? "shareware_convert_transp_fix_" : "shareware_convert_no_transp_";
+
+      for (size_t f = 0; f < 3; ++f) {
+        auto output_dir = get_test_output_dir(prefix + std::to_string(f));
+
+        ConvertOptions opts;
+        opts.fmt = formats[f];
+        opts.render.fix_transparency = fix_transp;
+        opts.output_prefix = (output_dir / "tile_").string();
+        opts.output_suffix = suffixes[f];
+
+        auto result = convert_art(art.value(), pal.value(), opts);
+        CHECK(result.ok());
+        CHECK(result.value() > 0);
+      }
+    }
+  }
+
+  TEST_CASE("Extract single title to PNG/BMP/TGA" * doctest::skip(!shareware_available())) {
+    auto grp = GrpFile::load(SHAREWARE_GRP_PATH);
+    REQUIRE(grp.ok());
+
+    auto pal = Palette::from_grp(grp.value());
+    REQUIRE(pal.ok());
+
+    auto art = ArtFile::from_grp(grp.value(), TILES000_ART);
+    REQUIRE(art.ok());
+
+    // Find a specific tile (tile 1 usually exists)
+    auto tile_opt = art.value().get_tile(1);
+    REQUIRE(tile_opt.has_value());
+    const auto& tile = *tile_opt;
+
+    // Test each format with a single tile
+    Format formats[] = {Format::png, Format::bmp, Format::tga};
+    const char* suffixes[] = {".png", ".bmp", ".tga"};
+    const char* names[] = {"png", "bmp", "tga"};
+
+    for (size_t i = 0; i < 3; ++i) {
+      auto output_dir = get_test_output_dir("shareware_extract_single_" + std::string(names[i]));
+
+      auto img = render(tile, pal.value(), {});
+      REQUIRE(img.ok());
+
+      auto encoded = encode(img.value(), formats[i]);
+      REQUIRE(encoded.ok());
+
+      auto out_path = output_dir / ("title_1." + std::string(suffixes[i]));
+      CHECK(write_file(out_path.string(), encoded.value()).ok());
+      CHECK(file_exists(out_path.string()));
+    }
+  }
+
   TEST_CASE("Render with lookup table" * doctest::skip(!shareware_available())) {
     auto output_dir = get_test_output_dir("shareware_render_lookup");
 
