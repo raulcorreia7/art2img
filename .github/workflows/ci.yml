@@ -101,7 +101,7 @@ jobs:
     - name: Run tests
       shell: bash
       run: |
-        cd build && ctest --output-on-failure
+        cd build && ctest --output-on-failure -C ${{ matrix.build_type }}
 
     - name: Upload artifacts
       if: always()
