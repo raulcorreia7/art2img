@@ -207,17 +207,16 @@ using namespace art2img::test::constants;
 // Clean test output before running tests
 struct TestSetup {
   TestSetup() {
-    // Set default output root
-    g_test_output_root = "test_output";
-
-    // Clean and recreate
-    std::filesystem::remove_all(g_test_output_root);
-    std::filesystem::create_directories(g_test_output_root);
+    // Default to build directory (gets cleaned with make clean)
+    g_test_output_root = "build/test_output";
 
     // Can be overridden by environment variable
     if (const char* env = std::getenv("TEST_OUTPUT_DIR")) {
       g_test_output_root = env;
-      std::filesystem::create_directories(g_test_output_root);
     }
+
+    // Clean and recreate
+    std::filesystem::remove_all(g_test_output_root);
+    std::filesystem::create_directories(g_test_output_root);
   }
 } g_test_setup;
