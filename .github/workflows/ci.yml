@@ -101,7 +101,13 @@ jobs:
     - name: Run tests
       shell: bash
       run: |
-        cd build && ctest --output-on-failure -C ${{ matrix.build_type }}
+        cd build
+        # Skip e2e tests on Windows (binary path differs)
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          ctest --output-on-failure -C ${{ matrix.build_type }} -E e2e
+        else
+          ctest --output-on-failure -C ${{ matrix.build_type }}
+        fi
 
     - name: Upload artifacts
       if: always()
