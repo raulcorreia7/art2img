@@ -1,6 +1,10 @@
 #include "ops.hpp"
 
+#include <atomic>
+#include <filesystem>
 #include <iostream>
+#include <thread>
+#include <vector>
 
 namespace art2img_cli {
 
@@ -187,16 +191,87 @@ int cmd_convert(const Config& cfg) noexcept {
               << "\n";
   }
 
-  // Convert
+  // Create output directory if needed
+  std::error_code ec;
+  std::filesystem::create_directories(cfg.output_dir, ec);
+
+  // Determine thread count
+  size_t num_jobs = cfg.jobs > 0 ? cfg.jobs : std::thread::hardware_concurrency();
+  if (num_jobs == 0)
+    num_jobs = 1;
+  if (!cfg.parallel)
+    num_jobs = 1;
+
+  if (cfg.verbose) {
+    std::clog << "Threads: " << num_jobs << "\n";
+  }
+
   auto copts = make_convert_opts(cfg);
-  auto result = convert_art(art, pal, copts);
-  if (!result) {
-    std::cerr << "Error: " << result.message() << "\n";
+
+  size_t count = art.tile_count();
+  std::atomic<size_t> success{0};
+  std::atomic<bool> has_error{false};
+  std::string error_msg;
+
+  auto worker = [&](size_t start, size_t end) {
+    for (size_t i = start; i < end && !has_error; ++i) {
+      uint16_t w, h;
+      if (!art.get_tile_size(i, &w, &h) || w == 0 || h == 0) {
+        continue;
+      }
+
+      auto img_result = art2img::extract_tile(art, pal, i, cfg.render);
+      if (!img_result.ok()) {
+        error_msg = "Tile " + std::to_string(i) + ": " + img_result.message();
+        has_error = true;
+        return;
+      }
+
+      auto enc_result = art2img::encode(img_result.value(), cfg.fmt);
+      if (!enc_result.ok()) {
+        error_msg = "Tile " + std::to_string(i) + ": " + enc_result.message();
+        has_error = true;
+        return;
+      }
+
+      std::string filename = copts.output_prefix + std::to_string(i) + copts.output_suffix;
+      auto write_result = art2img::write_file(filename, enc_result.value());
+      if (!write_result.ok()) {
+        error_msg = "Tile " + std::to_string(i) + ": " + write_result.message();
+        has_error = true;
+        return;
+      }
+
+      ++success;
+    }
+  };
+
+  // Single-threaded
+  if (num_jobs == 1) {
+    worker(0, count);
+  } else {
+    // Multi-threaded
+    std::vector<std::thread> threads;
+    size_t chunk_size = (count + num_jobs - 1) / num_jobs;
+
+    for (size_t t = 0; t < num_jobs; ++t) {
+      size_t start = t * chunk_size;
+      size_t end = std::min(start + chunk_size, count);
+      threads.emplace_back(worker, start, end);
+    }
+
+    for (auto& th : threads) {
+      th.join();
+    }
+  }
+
+  if (has_error) {
+    std::cerr << "Error: " << error_msg << "\n";
     return 1;
   }
 
-  if (cfg.verbose) {
-    std::clog << "Converted " << result.value() << " tiles\n";
+  if (!cfg.quiet) {
+    std::cout << "Converted " << success.load() << " tiles\n";
   }
 
   return 0;

@@ -862,7 +862,6 @@ Result<size_t> convert_art(const ArtFile& art,
   size_t success = 0;
 
   for (size_t i = 0; i < count; ++i) {
-    // Skip empty tiles (0x0 dimensions)
     uint16_t w, h;
     if (!art.get_tile_size(i, &w, &h) || w == 0 || h == 0) {
       continue;

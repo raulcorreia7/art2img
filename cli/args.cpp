@@ -34,6 +34,9 @@ void print_usage(const char* prog) {
             << "\n"
             << "Other:\n"
             << "  -v, --verbose         Verbose output\n"
+            << "  -q, --quiet           Suppress non-error output\n"
+            << "  -j, --jobs <n>        Number of parallel jobs (0=auto)\n"
+            << "  --no-parallel         Disable parallel processing\n"
             << "\n"
             << "Examples:\n"
             << "  " << prog << " --grp DUKE3D.GRP --list\n"
@@ -115,6 +118,15 @@ art2img::Result<Config> parse_args(int argc, char** argv) noexcept {
     // Behavior
     else if (arg == "-v" || arg == "--verbose") {
       cfg.verbose = true;
+    } else if (arg == "-q" || arg == "--quiet") {
+      cfg.quiet = true;
+    } else if (arg == "-j" || arg == "--jobs") {
+      if (i + 1 >= argc) {
+        return art2img::Error{art2img::error::invalid_argument, "Missing argument for " + arg};
+      }
+      cfg.jobs = static_cast<size_t>(std::atoi(argv[++i]));
+    } else if (arg == "--no-parallel") {
+      cfg.parallel = false;
     }
 
     // Positional arguments

@@ -36,6 +36,9 @@ struct Config {
 
   // Behavior
   bool verbose = false;
+  bool quiet = false;
+  bool parallel = true;
+  size_t jobs = 0;  // 0 = auto-detect
 };
 
 // ============================================================================
