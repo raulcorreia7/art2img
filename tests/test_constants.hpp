@@ -31,9 +31,8 @@ inline constexpr const char* GRP_SIGNATURE = "KenSilverman";
 inline constexpr size_t GRP_SIGNATURE_LENGTH = 12;
 
 /// PNG file magic bytes: 0x89 PNG\r\n\x1a\n
-inline constexpr std::array<uint8_t, 8> PNG_MAGIC = {
-    0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
-};
+inline constexpr std::array<uint8_t, 8> PNG_MAGIC = {0x89, 0x50, 0x4E, 0x47,
+                                                     0x0D, 0x0A, 0x1A, 0x0A};
 
 /// BMP file magic bytes: "BM"
 inline constexpr std::array<uint8_t, 2> BMP_MAGIC = {0x42, 0x4D};
@@ -220,55 +219,30 @@ inline constexpr const char* EXPECTED_VERSION = "2.0.0";
 // ============================================================================
 
 /// Standard ART files found in Duke3D GRP
-inline constexpr std::array<const char*, 3> ART_FILES = {
-    TILES000_ART,
-    TILES001_ART,
-    TILES002_ART
-};
+inline constexpr std::array<const char*, 3> ART_FILES = {TILES000_ART, TILES001_ART, TILES002_ART};
 
 /// Configuration files in shareware GRP
-inline constexpr std::array<const char*, 3> CON_FILES = {
-    "defs.con",
-    "game.con",
-    "user.con"
-};
+inline constexpr std::array<const char*, 3> CON_FILES = {"defs.con", "game.con", "user.con"};
 
 /// Shade levels for testing (min, mid, max, and intermediate values)
 inline constexpr std::array<uint8_t, 5> SHADE_TEST_LEVELS = {
-    SHADE_MIN,    // Full brightness
-    8,            // Light shading
-    SHADE_MID,    // Medium shading
-    24,           // Heavy shading
-    SHADE_MAX     // Full shading
+    SHADE_MIN,  // Full brightness
+    8,          // Light shading
+    SHADE_MID,  // Medium shading
+    24,         // Heavy shading
+    SHADE_MAX   // Full shading
 };
 
 /// Supported output formats for conversion tests
-inline constexpr std::array<const char*, 3> OUTPUT_FORMATS = {
-    "png",
-    "tga",
-    "bmp"
-};
+inline constexpr std::array<const char*, 3> OUTPUT_FORMATS = {"png", "tga", "bmp"};
 
 /// Supported output format extensions (aligned with OUTPUT_FORMATS)
-inline constexpr std::array<const char*, 3> OUTPUT_EXTENSIONS = {
-    EXT_PNG,
-    EXT_TGA,
-    EXT_BMP
-};
+inline constexpr std::array<const char*, 3> OUTPUT_EXTENSIONS = {EXT_PNG, EXT_TGA, EXT_BMP};
 
 /// All ART file patterns in shareware GRP
 inline constexpr std::array<const char*, 10> ALL_ART_PATTERNS = {
-    "tiles000.art",
-    "tiles001.art",
-    "tiles002.art",
-    "tiles003.art",
-    "tiles004.art",
-    "tiles005.art",
-    "tiles006.art",
-    "tiles007.art",
-    "tiles008.art",
-    "tiles009.art"
-};
+    "tiles000.art", "tiles001.art", "tiles002.art", "tiles003.art", "tiles004.art",
+    "tiles005.art", "tiles006.art", "tiles007.art", "tiles008.art", "tiles009.art"};
 
 // ============================================================================
 // Helper Functions
@@ -299,7 +273,8 @@ inline constexpr uint8_t scale_6bit_to_8bit(uint8_t value) noexcept {
  * @return true if data starts with PNG signature
  */
 inline bool is_png_signature(const std::byte* data) noexcept {
-    if (!data) return false;
+    if (!data)
+        return false;
     for (size_t i = 0; i < PNG_MAGIC.size(); ++i) {
         if (static_cast<uint8_t>(data[i]) != PNG_MAGIC[i]) {
             return false;
@@ -314,7 +289,8 @@ inline bool is_png_signature(const std::byte* data) noexcept {
  * @return true if data starts with BMP signature
  */
 inline bool is_bmp_signature(const std::byte* data) noexcept {
-    if (!data) return false;
+    if (!data)
+        return false;
     return static_cast<uint8_t>(data[0]) == BMP_MAGIC[0] &&
            static_cast<uint8_t>(data[1]) == BMP_MAGIC[1];
 }
@@ -326,7 +302,8 @@ inline bool is_bmp_signature(const std::byte* data) noexcept {
  * @return true if data starts with "KenSilverman"
  */
 inline bool is_grp_signature(const std::byte* data, size_t size) noexcept {
-    if (!data || size < GRP_SIGNATURE_LENGTH) return false;
+    if (!data || size < GRP_SIGNATURE_LENGTH)
+        return false;
     for (size_t i = 0; i < GRP_SIGNATURE_LENGTH; ++i) {
         if (static_cast<char>(data[i]) != GRP_SIGNATURE[i]) {
             return false;

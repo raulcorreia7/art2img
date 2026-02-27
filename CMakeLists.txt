@@ -4,6 +4,7 @@ project(art2img LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ----------------------------------------------------------------------------
 # Library
@@ -19,6 +20,8 @@ target_include_directories(art2img
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/vendor
 )
+
+target_compile_definitions(art2img PUBLIC ART2IMG_USE_STB_IMAGE)
 
 # ----------------------------------------------------------------------------
 # CLI Executable

@@ -23,9 +23,8 @@ std::vector<std::byte> read_file_bytes(const std::string& path);
 
 // Test data generators
 std::vector<std::byte> make_test_grp();
-std::vector<std::byte> make_test_art(uint16_t width = 2,
-                                      uint16_t height = 2,
-                                      uint8_t num_tiles = 1);
+std::vector<std::byte> make_test_art(uint16_t width = 2, uint16_t height = 2,
+                                     uint8_t num_tiles = 1);
 std::vector<std::byte> make_test_palette();
 
 }  // namespace art2img::test

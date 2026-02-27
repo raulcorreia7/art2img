@@ -20,78 +20,79 @@ using namespace art2img::test;
 using namespace art2img::test::constants;
 
 TEST_SUITE("Palette") {
-  TEST_CASE("Palette load too small") {
-    std::vector<std::byte> small(100);
-    auto result = Palette::load(small);
-    CHECK(!result.ok());
-    CHECK(result.code() == error::corrupted_data);
-  }
-
-  TEST_CASE("Palette load exact size") {
-    auto data = make_test_palette();
-    CHECK(data.size() == PALETTE_BASE_SIZE);
-    auto result = Palette::load(data);
-    CHECK(result.ok());
-  }
-
-  TEST_CASE("Palette load ignores extra data") {
-    // The basic load() function only loads 768 bytes (the Palette)
-    // Shade tables require load_extended()
-    std::vector<std::byte> data(PALETTE_EXTENDED_SIZE);
-    for (size_t i = 0; i < PALETTE_COLOR_COUNT; ++i) {
-      data[i * 3] = std::byte{63};
-      data[i * 3 + 1] = std::byte{63};
-      data[i * 3 + 2] = std::byte{63};
-    }
-    for (size_t i = PALETTE_BASE_SIZE; i < PALETTE_EXTENDED_SIZE; ++i) {
-      data[i] = std::byte{static_cast<uint8_t>(i % 256)};
+    TEST_CASE("Palette load too small") {
+        std::vector<std::byte> small(100);
+        auto result = Palette::load(small);
+        CHECK(!result.ok());
+        CHECK(result.code() == error::corrupted_data);
     }
 
-    auto result = Palette::load(data);
-    CHECK(result.ok());
-    // Basic load() ignores extra data
-    CHECK(result.value().shade_count() == 0);
-  }
+    TEST_CASE("Palette load exact size") {
+        auto data = make_test_palette();
+        CHECK(data.size() == PALETTE_BASE_SIZE);
+        auto result = Palette::load(data);
+        CHECK(result.ok());
+    }
 
-  TEST_CASE("Palette get_color valid") {
-    auto data = make_test_palette();
-    auto result = Palette::load(data);
-    REQUIRE(result.ok());
+    TEST_CASE("Palette load ignores extra data") {
+        // The basic load() function only loads 768 bytes (the Palette)
+        // Shade tables require load_extended()
+        std::vector<std::byte> data(PALETTE_EXTENDED_SIZE);
+        for (size_t i = 0; i < PALETTE_COLOR_COUNT; ++i) {
+            data[i * 3] = std::byte{63};
+            data[i * 3 + 1] = std::byte{63};
+            data[i * 3 + 2] = std::byte{63};
+        }
+        for (size_t i = PALETTE_BASE_SIZE; i < PALETTE_EXTENDED_SIZE; ++i) {
+            data[i] = std::byte{static_cast<uint8_t>(i % 256)};
+        }
 
-    auto& pal = result.value();
-    uint8_t rgba[4];
+        auto result = Palette::load(data);
+        CHECK(result.ok());
+        // Basic load() ignores extra data
+        CHECK(result.value().shade_count() == 0);
+    }
 
-    // Color 0
-    CHECK(pal.get_color(0, rgba));
-    CHECK(rgba[3] == 255);  // Alpha = 255 (opaque)
+    TEST_CASE("Palette get_color valid") {
+        auto data = make_test_palette();
+        auto result = Palette::load(data);
+        REQUIRE(result.ok());
 
-    // Color 255 (transparent in default Palette handling)
-    CHECK(pal.get_color(TRANSPARENT_COLOR_INDEX, rgba));
-    CHECK(rgba[3] == 0);  // Alpha = 0 (transparent)
-  }
+        auto& pal = result.value();
 
-  TEST_CASE("Palette color scaling") {
-    // Test that 6-bit Palette colors are scaled to 8-bit
-    std::vector<std::byte> data(PALETTE_BASE_SIZE);
-    // Index 0: RGB = 0, 32, 63
-    data[0] = std::byte{0};
-    data[1] = std::byte{32};
-    data[2] = std::byte{63};
+        // Color 0
+        auto color0 = pal.get_color(0);
+        CHECK(color0.has_value());
+        CHECK(color0->a == 255);  // Alpha = 255 (opaque)
 
-    auto result = Palette::load(data);
-    REQUIRE(result.ok());
+        // Color 255 (transparent in default Palette handling)
+        auto color255 = pal.get_color(TRANSPARENT_COLOR_INDEX);
+        CHECK(color255.has_value());
+        CHECK(color255->a == 0);  // Alpha = 0 (transparent)
+    }
 
-    auto& pal = result.value();
-    uint8_t rgba[4];
-    CHECK(pal.get_color(0, rgba));
+    TEST_CASE("Palette color scaling") {
+        // Test that 6-bit Palette colors are scaled to 8-bit
+        std::vector<std::byte> data(PALETTE_BASE_SIZE);
+        // Index 0: RGB = 0, 32, 63
+        data[0] = std::byte{0};
+        data[1] = std::byte{32};
+        data[2] = std::byte{63};
 
-    // Scaling formula: (x << 2) | (x >> 4)
-    // 0 -> 0
-    // 32 -> (32 << 2) | (32 >> 4) = 128 | 2 = 130
-    // 63 -> (63 << 2) | (63 >> 4) = 252 | 3 = 255
-    CHECK(rgba[0] == 0);
-    CHECK(rgba[1] == 130);  // (32 << 2) | (32 >> 4)
-    CHECK(rgba[2] == 255);  // (63 << 2) | (63 >> 4)
-  }
+        auto result = Palette::load(data);
+        REQUIRE(result.ok());
+
+        auto& pal = result.value();
+        auto color = pal.get_color(0);
+        CHECK(color.has_value());
+
+        // Scaling formula: (x << 2) | (x >> 4)
+        // 0 -> 0
+        // 32 -> (32 << 2) | (32 >> 4) = 128 | 2 = 130
+        // 63 -> (63 << 2) | (63 >> 4) = 252 | 3 = 255
+        CHECK(color->r == 0);
+        CHECK(color->g == 130);  // (32 << 2) | (32 >> 4)
+        CHECK(color->b == 255);  // (63 << 2) | (63 >> 4)
+    }
 
 }  // TEST_SUITE

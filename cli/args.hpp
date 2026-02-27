@@ -12,33 +12,33 @@ namespace art2img_cli {
 // ============================================================================
 
 enum class Mode {
-  kConvert,  // Convert ART to images
-  kList,     // List GRP contents
-  kHelp,     // Show help
-  kVersion   // Show version
+    kConvert,  // Convert ART to images
+    kList,     // List GRP contents
+    kHelp,     // Show help
+    kVersion   // Show version
 };
 
 struct Config {
-  Mode run_mode = Mode::kConvert;
+    Mode run_mode = Mode::kConvert;
 
-  // Input options
-  std::optional<std::string> grp_path;
-  std::optional<std::string> art_path;
-  std::optional<std::string> art_name;  // For GRP extraction
-  std::optional<std::string> palette_path;
+    // Input options
+    std::optional<std::string> grp_path;
+    std::optional<std::string> art_path;
+    std::optional<std::string> art_name;  // For GRP extraction
+    std::optional<std::string> palette_path;
 
-  // Output options
-  std::string output_dir = ".";
-  art2img::Format fmt = art2img::Format::png;
+    // Output options
+    std::string output_dir = ".";
+    art2img::Format fmt = art2img::Format::png;
 
-  // Rendering options
-  art2img::RenderOptions render;
+    // Rendering options
+    art2img::RenderOptions render;
 
-  // Behavior
-  bool verbose = false;
-  bool quiet = false;
-  bool parallel = true;
-  size_t jobs = 0;  // 0 = auto-detect
+    // Behavior
+    bool verbose = false;
+    bool quiet = false;
+    bool parallel = true;
+    size_t jobs = 0;  // 0 = auto-detect
 };
 
 // ============================================================================
