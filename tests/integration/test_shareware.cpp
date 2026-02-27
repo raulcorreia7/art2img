@@ -1,20 +1,13 @@
 // Integration tests: Duke3D Shareware GRP
-// These tests require the shareware GRP to be present
+//
+// These tests require the shareware GRP to be present.
 
 #include "../test_common.hpp"
-#include "../test_harness.hpp"
-
-// Undef CLI_BINARY_PATH macro if set by build system to avoid conflict with test_constants.hpp
-#ifdef CLI_BINARY_PATH
-#undef CLI_BINARY_PATH
-#endif
 #include "../test_constants.hpp"
 
 #include "doctest.h"
 
 #include <art2img.hpp>
-
-#include <fstream>
 
 using namespace art2img;
 using namespace art2img::test;

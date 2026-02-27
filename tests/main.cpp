@@ -1,27 +1,23 @@
-// art2img test runner
-// Uses doctest: https://github.com/doctest/doctest
+// main.cpp
+//
+// Test runner and global setup for art2img tests.
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
 
-// Undef CLI_BINARY_PATH macro if set by build system to avoid conflict with test_constants.hpp
-#ifdef CLI_BINARY_PATH
-#undef CLI_BINARY_PATH
-#endif
+#include "test_common.hpp"
 #include "test_constants.hpp"
 
 #include <art2img.hpp>
 
-#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
-#include <string>
 
 namespace art2img::test {
 
 // ============================================================================
-// Test Output Directory Management
+// Test Output Directory
 // ============================================================================
 
 static std::filesystem::path g_test_output_root;
@@ -41,7 +37,7 @@ std::filesystem::path get_test_output_root() {
 }
 
 // ============================================================================
-// Test Utilities
+// File Utilities
 // ============================================================================
 
 bool file_exists(const std::string& path) {
@@ -51,10 +47,6 @@ bool file_exists(const std::string& path) {
 size_t file_size(const std::string& path) {
     return std::filesystem::file_size(path);
 }
-
-// Forward declarations
-std::vector<std::byte> make_test_art(uint16_t width = 2, uint16_t height = 2,
-                                     uint8_t num_tiles = 1);
 
 std::vector<std::byte> read_file_bytes(const std::string& path) {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
@@ -69,25 +61,27 @@ std::vector<std::byte> read_file_bytes(const std::string& path) {
                                   reinterpret_cast<std::byte*>(buffer.data() + size));
 }
 
-// Create a minimal valid GRP file in memory
+// ============================================================================
+// Test Data Builders
+// ============================================================================
+
 std::vector<std::byte> make_test_grp() {
     std::vector<std::byte> data;
 
-    // Signature: "KenSilverman"
+    // Signature
     data.insert(data.end(), reinterpret_cast<const std::byte*>(constants::GRP_SIGNATURE),
                 reinterpret_cast<const std::byte*>(constants::GRP_SIGNATURE +
                                                    constants::GRP_SIGNATURE_LENGTH));
 
-    // File count: 2 files
+    // File count: 2
     data.push_back(std::byte{2});
     data.push_back(std::byte{0});
     data.push_back(std::byte{0});
     data.push_back(std::byte{0});
 
-    // Create ART file content first to know its size
     auto art_content = make_test_art(2, 2, 1);
 
-    // Directory entry 1: "test.txt"
+    // Entry 1: test.txt
     char name1[12] = "test.txt";
     data.insert(data.end(), reinterpret_cast<std::byte*>(name1),
                 reinterpret_cast<std::byte*>(name1 + 12));
@@ -97,7 +91,7 @@ std::vector<std::byte> make_test_grp() {
     data.push_back(std::byte{static_cast<uint8_t>((size1 >> 16) & 0xFF)});
     data.push_back(std::byte{static_cast<uint8_t>((size1 >> 24) & 0xFF)});
 
-    // Directory entry 2: "tiles.art"
+    // Entry 2: tiles.art
     char name2[12] = "tiles.art";
     data.insert(data.end(), reinterpret_cast<std::byte*>(name2),
                 reinterpret_cast<std::byte*>(name2 + 12));
@@ -107,19 +101,18 @@ std::vector<std::byte> make_test_grp() {
     data.push_back(std::byte{static_cast<uint8_t>((size2 >> 16) & 0xFF)});
     data.push_back(std::byte{static_cast<uint8_t>((size2 >> 24) & 0xFF)});
 
-    // File content 1: "test"
+    // Content 1: "test"
     data.push_back(std::byte{'t'});
     data.push_back(std::byte{'e'});
     data.push_back(std::byte{'s'});
     data.push_back(std::byte{'t'});
 
-    // File content 2: ART file
+    // Content 2: ART
     data.insert(data.end(), art_content.begin(), art_content.end());
 
     return data;
 }
 
-// Create a minimal valid ART file in memory
 std::vector<std::byte> make_test_art(uint16_t width, uint16_t height, uint8_t num_tiles) {
     std::vector<std::byte> data;
 
@@ -135,33 +128,33 @@ std::vector<std::byte> make_test_art(uint16_t width, uint16_t height, uint8_t nu
     data.push_back(std::byte{0});
     data.push_back(std::byte{0});
 
-    // Tile start: 0 (or 1 if num_tiles is 0 to indicate empty range)
-    // For zero tiles, we use start=1, end=0 which gives count=0
+    // Tile start (0 if num_tiles > 0, else 1 for empty range)
     uint32_t tile_start = (num_tiles > 0) ? 0 : 1;
     data.push_back(std::byte{static_cast<uint8_t>(tile_start & 0xFF)});
     data.push_back(std::byte{static_cast<uint8_t>((tile_start >> 8) & 0xFF)});
     data.push_back(std::byte{static_cast<uint8_t>((tile_start >> 16) & 0xFF)});
     data.push_back(std::byte{static_cast<uint8_t>((tile_start >> 24) & 0xFF)});
 
-    // Tile end: num_tiles - 1 (or 0 if num_tiles is 0)
+    // Tile end
     uint32_t tile_end = (num_tiles > 0) ? (num_tiles - 1) : 0;
     data.push_back(std::byte{static_cast<uint8_t>(tile_end & 0xFF)});
     data.push_back(std::byte{static_cast<uint8_t>((tile_end >> 8) & 0xFF)});
     data.push_back(std::byte{static_cast<uint8_t>((tile_end >> 16) & 0xFF)});
     data.push_back(std::byte{static_cast<uint8_t>((tile_end >> 24) & 0xFF)});
 
-    // Local tile info: all widths first, then all heights, then all picanm
-    // Widths (2 bytes each)
+    // Widths
     for (uint8_t i = 0; i < num_tiles; ++i) {
         data.push_back(std::byte{static_cast<uint8_t>(width & 0xFF)});
         data.push_back(std::byte{static_cast<uint8_t>((width >> 8) & 0xFF)});
     }
-    // Heights (2 bytes each)
+
+    // Heights
     for (uint8_t i = 0; i < num_tiles; ++i) {
         data.push_back(std::byte{static_cast<uint8_t>(height & 0xFF)});
         data.push_back(std::byte{static_cast<uint8_t>((height >> 8) & 0xFF)});
     }
-    // Picanm (4 bytes each)
+
+    // Picanm
     for (uint8_t i = 0; i < num_tiles; ++i) {
         data.push_back(std::byte{0});
         data.push_back(std::byte{0});
@@ -169,11 +162,10 @@ std::vector<std::byte> make_test_art(uint16_t width, uint16_t height, uint8_t nu
         data.push_back(std::byte{0});
     }
 
-    // Pixel data for each tile
+    // Pixels: pattern 0, 1, 2, 255 (transparent)
     for (uint8_t i = 0; i < num_tiles; ++i) {
         size_t pixel_count = static_cast<size_t>(width) * height;
         for (size_t j = 0; j < pixel_count; ++j) {
-            // Alternating pattern: 0, 1, 2, 255 (transparent)
             uint8_t val = (j % 4 == 3) ? 255 : static_cast<uint8_t>(j % 3);
             data.push_back(std::byte{val});
         }
@@ -182,16 +174,29 @@ std::vector<std::byte> make_test_art(uint16_t width, uint16_t height, uint8_t nu
     return data;
 }
 
-// Create a valid 768-byte Palette
 std::vector<std::byte> make_test_palette() {
     std::vector<std::byte> data(constants::PALETTE_BASE_SIZE);
     for (size_t i = 0; i < constants::PALETTE_COLOR_COUNT; ++i) {
-        // Create a gradient
-        data[i * 3] = std::byte{static_cast<uint8_t>(i % 64)};            // R
-        data[i * 3 + 1] = std::byte{static_cast<uint8_t>((i * 2) % 64)};  // G
-        data[i * 3 + 2] = std::byte{static_cast<uint8_t>((i * 3) % 64)};  // B
+        data[i * 3] = std::byte{static_cast<uint8_t>(i % 64)};
+        data[i * 3 + 1] = std::byte{static_cast<uint8_t>((i * 2) % 64)};
+        data[i * 3 + 2] = std::byte{static_cast<uint8_t>((i * 3) % 64)};
     }
     return data;
+}
+
+// ============================================================================
+// Shareware Detection
+// ============================================================================
+
+bool shareware_available() noexcept {
+    static bool checked = false;
+    static bool available = false;
+    if (!checked) {
+        std::ifstream f("tests/shareware/DUKE3D.GRP");
+        available = f.good();
+        checked = true;
+    }
+    return available;
 }
 
 }  // namespace art2img::test
@@ -200,22 +205,15 @@ std::vector<std::byte> make_test_palette() {
 // Global Setup
 // ============================================================================
 
-using namespace art2img::test;
-using namespace art2img::test::constants;
-
-// Clean test output before running tests
 struct TestSetup {
     TestSetup() {
-        // Default to build directory (gets cleaned with make clean)
-        g_test_output_root = "build/test_output";
+        art2img::test::g_test_output_root = "build/test_output";
 
-        // Can be overridden by environment variable
         if (const char* env = std::getenv("TEST_OUTPUT_DIR")) {
-            g_test_output_root = env;
+            art2img::test::g_test_output_root = env;
         }
 
-        // Clean and recreate
-        std::filesystem::remove_all(g_test_output_root);
-        std::filesystem::create_directories(g_test_output_root);
+        std::filesystem::remove_all(art2img::test::g_test_output_root);
+        std::filesystem::create_directories(art2img::test::g_test_output_root);
     }
 } g_test_setup;

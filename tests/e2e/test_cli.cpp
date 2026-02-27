@@ -1,13 +1,6 @@
 // End-to-end tests: CLI
 
 #include "../test_common.hpp"
-#include "../test_harness.hpp"
-
-// Undef CLI_BINARY_PATH macro if set by build system to avoid conflict with test_constants.hpp
-// We define our own fallback below
-#ifdef CLI_BINARY_PATH
-#undef CLI_BINARY_PATH
-#endif
 #include "../test_constants.hpp"
 
 #include "doctest.h"
